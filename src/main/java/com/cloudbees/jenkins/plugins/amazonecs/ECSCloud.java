@@ -26,23 +26,35 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
 import com.amazonaws.services.ecs.AmazonECSClient;
-import com.amazonaws.services.ecs.model.ContainerDefinition;
+import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
+import com.amazonaws.services.ecs.model.StopTaskRequest;
+import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.Node;
+import hudson.security.ACL;
 import hudson.slaves.Cloud;
+import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProvisioner;
+import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
+import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,13 +66,28 @@ public class ECSCloud extends Cloud {
 
     private final List<ECSTaskTemplate> templates;
 
-    protected ECSCloud(String name, List<ECSTaskTemplate> templates) {
+    private final String credentialsId;
+
+    @DataBoundConstructor
+    public ECSCloud(String name, List<ECSTaskTemplate> templates, String credentialsId) {
         super(name);
         this.templates = templates;
+        this.credentialsId = credentialsId;
     }
 
     public List<ECSTaskTemplate> getTemplates() {
         return templates;
+    }
+
+    public String getCredentialsId() {
+        return credentialsId;
+    }
+
+    public AmazonWebServicesCredentials getCredentials() {
+        return (AmazonWebServicesCredentials) CredentialsMatchers.firstOrNull(
+                CredentialsProvider.lookupCredentials(AmazonWebServicesCredentials.class, Jenkins.getInstance(),
+                        ACL.SYSTEM, Collections.EMPTY_LIST),
+                CredentialsMatchers.withId(credentialsId));
     }
 
     @Override
@@ -97,6 +124,11 @@ public class ECSCloud extends Cloud {
         }
     }
 
+    void deleteTask(String nodeName) {
+        final AmazonECSClient client = new AmazonECSClient(getCredentials());
+        client.stopTask(new StopTaskRequest().withTask(""));
+    }
+
     private class ProvisioningCallback implements Callable<Node> {
 
         private final ECSTaskTemplate template;
@@ -108,24 +140,51 @@ public class ECSCloud extends Cloud {
         }
 
         public Node call() throws Exception {
-            ECSSlave slave = null;
+            ECSSlave slave = new ECSSlave(ECSCloud.this, UUID.randomUUID().toString(), template.getRemoteFSRoot(), label.toString(), new JNLPLauncher());
+            Jenkins.getInstance().addNode(slave);
+            LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
-            // TODO use ECS API to create a new slave
+            final RegisterTaskDefinitionRequest req = template.asRegisterTaskDefinitionRequest(slave);
 
-            final RegisterTaskDefinitionRequest req = template.asRegisterTaskDefinitionRequest();
-
-            final AmazonECSClient client = new AmazonECSClient();
+            final AmazonECSClient client = new AmazonECSClient(getCredentials());
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
-            String task = result.getTaskDefinition().getTaskDefinitionArn();
+            String definitionArn = result.getTaskDefinition().getTaskDefinitionArn();
+            LOGGER.log(Level.INFO, "Created Task Definition: {0}", definitionArn);
 
             final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
-                    .withTaskDefinition(task));
+                    .withTaskDefinition(definitionArn));
 
-            if (runTaskResult.getFailures().isEmpty()) {
-                return new ECSSlave(task, "ECS slave", "TODO", Node.Mode.EXCLUSIVE, label.toString(), null /* TODO ComputerLauncher */);
+            if (! runTaskResult.getFailures().isEmpty()) {
+                for (Failure failure : runTaskResult.getFailures()) {
+                    LOGGER.log(Level.WARNING, "{0} : {1}", new Object[] { failure.getReason(), failure.getArn() });
+                }
+                throw new IOException("Failed to run slave container.");
             }
 
-                return slave;
+            String taskArn = runTaskResult.getTasks().get(0).getTaskArn();
+            LOGGER.log(Level.INFO, "Slave Task Started : {0}", taskArn);
+            slave.setTaskArn(taskArn);
+
+            int i = 0;
+            int j = 100; // wait 100 seconds
+
+            // now wait for slave to be online
+            for (; i < j; i++) {
+                if (slave.getComputer() == null) {
+                    throw new IllegalStateException("Node was deleted, computer is null");
+                }
+                if (slave.getComputer().isOnline()) {
+                    break;
+                }
+                LOGGER.log(Level.FINE, "Waiting for slave to connect ({1}/{2}): {0}", new Object[] { taskArn, i, j});
+                Thread.sleep(1000);
+            }
+            if (!slave.getComputer().isOnline()) {
+                throw new IllegalStateException("Slave is not connected after " + j + " seconds");
+            }
+
+            LOGGER.log(Level.INFO, "Slave connected: {0}", taskArn);
+            return slave;
         }
     }
 
@@ -137,6 +196,18 @@ public class ECSCloud extends Cloud {
         public String getDisplayName() {
             return Messages.DisplayName();
         }
+
+        public ListBoxModel doFillCredentialsIdItems() {
+            return new StandardListBoxModel()
+                    .withEmptySelection()
+                    .withMatching(
+                            CredentialsMatchers.always(),
+                            CredentialsProvider.lookupCredentials(AmazonWebServicesCredentials.class,
+                                    Jenkins.getInstance(),
+                                    ACL.SYSTEM,
+                                    Collections.EMPTY_LIST));
+        }
+
     }
 
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());

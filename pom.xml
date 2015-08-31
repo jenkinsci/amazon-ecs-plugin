@@ -56,8 +56,13 @@
   <dependencies>
     <dependency>
       <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk</artifactId>
-      <version>1.10.12</version>
+      <artifactId>aws-java-sdk-ecs</artifactId>
+      <version>1.10.13</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>aws-credentials</artifactId>
+      <version>1.9</version>
     </dependency>
   </dependencies>
 

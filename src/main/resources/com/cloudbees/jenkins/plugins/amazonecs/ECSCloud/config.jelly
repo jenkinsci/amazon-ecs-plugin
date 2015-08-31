@@ -24,9 +24,13 @@
   ~
   -->
 
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
   <f:entry title="Name" field="name">
     <f:textbox />
+  </f:entry>
+
+  <f:entry field="credentialsId" title="Amazon ECS Crendentials">
+    <c:select />
   </f:entry>
 
   <f:entry title="ECS slave templates">

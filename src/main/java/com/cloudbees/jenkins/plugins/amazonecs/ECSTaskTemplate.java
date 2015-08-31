@@ -26,12 +26,14 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
 import com.amazonaws.services.ecs.model.ContainerDefinition;
+import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
+import jenkins.model.JenkinsLocationConfiguration;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -44,19 +46,30 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     private final String label;
     private final String image;
+    private final String remoteFSRoot;
+    private final int memory;
+    private final int cpu;
 
-    private String command;
+    private String entrypoint;
+    private String jvmArgs;
 
     @DataBoundConstructor
-    public ECSTaskTemplate(String label, String image) {
+    public ECSTaskTemplate(String label, String image, String remoteFSRoot, int memory, int cpu) {
         this.label = label;
-
         this.image = image;
+        this.remoteFSRoot = remoteFSRoot;
+        this.memory = memory;
+        this.cpu = cpu;
     }
 
     @DataBoundSetter
-    public void setCommand(String command) {
-        this.command = command;
+    public void setEntrypoint(String entrypoint) {
+        this.entrypoint = entrypoint;
+    }
+
+    @DataBoundSetter
+    public void setJvmArgs(String jvmArgs) {
+        this.jvmArgs = jvmArgs;
     }
 
     public String getLabel() {
@@ -67,8 +80,24 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return image;
     }
 
-    public String getCommand() {
-        return command;
+    public String getRemoteFSRoot() {
+        return remoteFSRoot;
+    }
+
+    public int getMemory() {
+        return memory;
+    }
+
+    public int getCpu() {
+        return cpu;
+    }
+
+    public String getEntrypoint() {
+        return entrypoint;
+    }
+
+    public String getJvmArgs() {
+        return jvmArgs;
     }
 
     public Set<LabelAtom> getLabelSet() {
@@ -79,13 +108,20 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return "ECS Slave " + label;
     }
 
-    public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest() {
+    public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest(ECSSlave slave) {
+        final String[] o = entrypoint != null ? entrypoint.split(" ") : new String[0];
         return new RegisterTaskDefinitionRequest()
+            .withFamily("jenkins-slave")
             .withContainerDefinitions(new ContainerDefinition()
-                .withImage("")
-                .withEssential(true)
-                .withName("")
-                .withCommand(""));
+                    .withName("jenkins-slave")
+                    .withImage(image)
+                    .withMemory(memory)
+                    .withCpu(cpu)
+                    .withEntryPoint(o)
+                    .withCommand("-url", JenkinsLocationConfiguration.get().getUrl(), slave.getComputer().getJnlpMac(), slave.getComputer().getName())
+                    .withEnvironment(new KeyValuePair()
+                            .withName("JAVA_OPTS").withValue(jvmArgs))
+                    .withEssential(true));
     }
 
     @Extension

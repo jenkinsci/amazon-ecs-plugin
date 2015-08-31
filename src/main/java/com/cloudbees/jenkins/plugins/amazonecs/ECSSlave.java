@@ -26,6 +26,7 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
 import hudson.model.Descriptor;
+import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
@@ -41,8 +42,17 @@ import java.util.Collections;
  */
 public class ECSSlave extends AbstractCloudSlave {
 
-    public ECSSlave(String name, String nodeDescription, String remoteFS, Mode mode, String labelString, ComputerLauncher launcher) throws Descriptor.FormException, IOException {
-        super(name, nodeDescription, remoteFS, 1, mode, labelString, launcher, ONCE, Collections.EMPTY_LIST);
+    private final ECSCloud cloud;
+
+    private String taskArn;
+
+    public ECSSlave(ECSCloud cloud, String name, String remoteFS, String labelString, ComputerLauncher launcher) throws Descriptor.FormException, IOException {
+        super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, ONCE, Collections.EMPTY_LIST);
+        this.cloud = cloud;
+    }
+
+    void setTaskArn(String taskArn) {
+        this.taskArn = taskArn;
     }
 
     @Override
@@ -52,7 +62,9 @@ public class ECSSlave extends AbstractCloudSlave {
 
     @Override
     protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
-        // TODO Use ECS API to delete this container
+        if (taskArn != null) {
+            cloud.deleteTask(taskArn);
+        }
     }
 
     private final static RetentionStrategy ONCE = new CloudRetentionStrategy(1);
