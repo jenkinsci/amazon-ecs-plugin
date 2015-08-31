@@ -1,5 +1,4 @@
-<?jelly escape-by-default='true'?>
-<!--
+
   ~ The MIT License
   ~
   ~  Copyright (c) 2015, CloudBees, Inc.
@@ -24,26 +23,4 @@
   ~
   -->
 
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
-  <f:entry field="name" title="${%Name}" >
-    <f:textbox />
-  </f:entry>
-
-  <f:entry field="credentialsId" title="${%Amazon ECS Crendentials}">
-    <c:select />
-  </f:entry>
-
-  <f:entry field="cluster" title="${%ECS Cluster}">
-    <f:select />
-  </f:entry>
-
-  <f:entry title="${%ECS slave templates}">
-    <f:repeatableProperty field="templates" >
-      <f:entry title="">
-        <div align="right">
-          <f:repeatableDeleteButton />
-        </div>
-      </f:entry>
-    </f:repeatableProperty>
-  </f:entry>
-</j:jelly>
+The number of cpu units to reserve for the container. A container instance has 1,024 cpu units for every CPU core.

@@ -28,23 +28,23 @@
   <f:entry title="Label" field="label">
     <f:textbox />
   </f:entry>
-  <f:entry title="Docker Image" field="image">
+  <f:entry title="${%Docker Image}" field="image">
     <f:textbox default="jenkinsci/jnlp-slave" />
   </f:entry>
-  <f:entry title="Filesystem root" field="remoteFSRoot">
+  <f:entry title="${%Filesystem root}" field="remoteFSRoot">
     <f:textbox default="/home/jenkins" />
   </f:entry>
-  <f:entry title="Memory (Mb)" field="memory">
+  <f:entry title="${%Memory (Mb)}" field="memory">
     <f:textbox />
   </f:entry>
-  <f:entry title="CPU units" field="cpu">
+  <f:entry title="${%CPU units}" field="cpu">
     <f:textbox default="1"/>
   </f:entry>
   <f:advanced>
-    <f:entry title="Override entrypoint" field="entrypoint">
+    <f:entry title="${%Override entrypoint}" field="entrypoint">
       <f:textbox />
     </f:entry>
-    <f:entry title="JVM arguments" field="jvmArgs">
+    <f:entry title="${%JVM arguments}" field="jvmArgs">
       <f:textbox />
     </f:entry>
   </f:advanced>

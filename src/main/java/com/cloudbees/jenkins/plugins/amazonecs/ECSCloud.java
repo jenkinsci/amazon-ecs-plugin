@@ -25,6 +25,8 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
+import com.amazonaws.event.ProgressEvent;
+import com.amazonaws.event.ProgressListener;
 import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
@@ -48,6 +50,7 @@ import hudson.slaves.NodeProvisioner;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -68,11 +71,14 @@ public class ECSCloud extends Cloud {
 
     private final String credentialsId;
 
+    private final String cluster;
+
     @DataBoundConstructor
-    public ECSCloud(String name, List<ECSTaskTemplate> templates, String credentialsId) {
+    public ECSCloud(String name, List<ECSTaskTemplate> templates, String credentialsId, String cluster) {
         super(name);
         this.templates = templates;
         this.credentialsId = credentialsId;
+        this.cluster = cluster;
     }
 
     public List<ECSTaskTemplate> getTemplates() {
@@ -83,7 +89,11 @@ public class ECSCloud extends Cloud {
         return credentialsId;
     }
 
-    public AmazonWebServicesCredentials getCredentials() {
+    public String getCluster() {
+        return cluster;
+    }
+
+    private static AmazonWebServicesCredentials getCredentials(String credentialsId) {
         return (AmazonWebServicesCredentials) CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(AmazonWebServicesCredentials.class, Jenkins.getInstance(),
                         ACL.SYSTEM, Collections.EMPTY_LIST),
@@ -125,7 +135,7 @@ public class ECSCloud extends Cloud {
     }
 
     void deleteTask(String nodeName) {
-        final AmazonECSClient client = new AmazonECSClient(getCredentials());
+        final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
         client.stopTask(new StopTaskRequest().withTask(""));
     }
 
@@ -146,13 +156,15 @@ public class ECSCloud extends Cloud {
 
             final RegisterTaskDefinitionRequest req = template.asRegisterTaskDefinitionRequest(slave);
 
-            final AmazonECSClient client = new AmazonECSClient(getCredentials());
+            final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
             String definitionArn = result.getTaskDefinition().getTaskDefinitionArn();
             LOGGER.log(Level.INFO, "Created Task Definition: {0}", definitionArn);
 
             final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
-                    .withTaskDefinition(definitionArn));
+                    .withTaskDefinition(definitionArn)
+                    .withCluster(cluster)
+            );
 
             if (! runTaskResult.getFailures().isEmpty()) {
                 for (Failure failure : runTaskResult.getFailures()) {
@@ -206,6 +218,15 @@ public class ECSCloud extends Cloud {
                                     Jenkins.getInstance(),
                                     ACL.SYSTEM,
                                     Collections.EMPTY_LIST));
+        }
+
+        public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId) {
+            final ListBoxModel options = new ListBoxModel();
+            final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
+            for (String arn : client.listClusters().getClusterArns()) {
+                options.add(arn);
+            }
+            return options;
         }
 
     }
