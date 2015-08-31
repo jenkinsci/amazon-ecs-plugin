@@ -25,8 +25,6 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
-import com.amazonaws.event.ProgressEvent;
-import com.amazonaws.event.ProgressListener;
 import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
@@ -49,7 +47,10 @@ import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProvisioner;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
+import jenkins.model.JenkinsLocationConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
@@ -73,6 +74,8 @@ public class ECSCloud extends Cloud {
 
     private final String cluster;
 
+    private String tunnel;
+
     @DataBoundConstructor
     public ECSCloud(String name, List<ECSTaskTemplate> templates, String credentialsId, String cluster) {
         super(name);
@@ -91,6 +94,15 @@ public class ECSCloud extends Cloud {
 
     public String getCluster() {
         return cluster;
+    }
+
+    public String getTunnel() {
+        return tunnel;
+    }
+
+    @DataBoundSetter
+    public void setTunnel(String tunnel) {
+        this.tunnel = tunnel;
     }
 
     private static AmazonWebServicesCredentials getCredentials(String credentialsId) {
@@ -154,7 +166,8 @@ public class ECSCloud extends Cloud {
             Jenkins.getInstance().addNode(slave);
             LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
-            final RegisterTaskDefinitionRequest req = template.asRegisterTaskDefinitionRequest(slave);
+            Collection<String> command = getDockerRunCommand(slave);
+            final RegisterTaskDefinitionRequest req = template.asRegisterTaskDefinitionRequest(command);
 
             final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
@@ -198,6 +211,19 @@ public class ECSCloud extends Cloud {
             LOGGER.log(Level.INFO, "Slave connected: {0}", taskArn);
             return slave;
         }
+    }
+
+    private Collection<String> getDockerRunCommand(ECSSlave slave) {
+        Collection<String> command = new ArrayList<String>();
+        command.add("-url");
+        command.add(JenkinsLocationConfiguration.get().getUrl());
+        if (StringUtils.isNotBlank(tunnel)) {
+            command.add("-tunnel");
+            command.add(tunnel);
+        }
+        command.add(slave.getComputer().getJnlpMac());
+        command.add(slave.getComputer().getName());
+        return command;
     }
 
 

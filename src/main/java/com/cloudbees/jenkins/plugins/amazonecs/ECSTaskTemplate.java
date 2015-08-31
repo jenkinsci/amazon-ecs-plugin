@@ -37,6 +37,7 @@ import jenkins.model.JenkinsLocationConfiguration;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -108,7 +109,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return "ECS Slave " + label;
     }
 
-    public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest(ECSSlave slave) {
+    public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest(Collection<String> command) {
         final String[] o = entrypoint != null ? entrypoint.split(" ") : new String[0];
         return new RegisterTaskDefinitionRequest()
             .withFamily("jenkins-slave")
@@ -118,7 +119,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                     .withMemory(memory)
                     .withCpu(cpu)
                     .withEntryPoint(o)
-                    .withCommand("-url", JenkinsLocationConfiguration.get().getUrl(), slave.getComputer().getJnlpMac(), slave.getComputer().getName())
+                    .withCommand(command)
                     .withEnvironment(new KeyValuePair()
                             .withName("JAVA_OPTS").withValue(jvmArgs))
                     .withEssential(true));
