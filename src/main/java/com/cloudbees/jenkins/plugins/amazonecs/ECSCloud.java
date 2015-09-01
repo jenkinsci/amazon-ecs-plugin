@@ -146,9 +146,10 @@ public class ECSCloud extends Cloud {
         }
     }
 
-    void deleteTask(String nodeName) {
+    void deleteTask(String taskArn) {
+        LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
         final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
-        client.stopTask(new StopTaskRequest().withTask(""));
+        client.stopTask(new StopTaskRequest().withTask(taskArn));
     }
 
     private class ProvisioningCallback implements Callable<Node> {
