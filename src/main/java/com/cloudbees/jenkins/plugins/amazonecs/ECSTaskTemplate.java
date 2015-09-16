@@ -34,6 +34,7 @@ import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import jenkins.model.JenkinsLocationConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -65,12 +66,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     @DataBoundSetter
     public void setEntrypoint(String entrypoint) {
-        this.entrypoint = entrypoint;
+        this.entrypoint = StringUtils.trimToNull(entrypoint);
     }
 
     @DataBoundSetter
     public void setJvmArgs(String jvmArgs) {
-        this.jvmArgs = jvmArgs;
+        this.jvmArgs = StringUtils.trimToNull(jvmArgs);
     }
 
     public String getLabel() {
@@ -110,19 +111,23 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest(Collection<String> command) {
-        final String[] o = entrypoint != null ? entrypoint.split(" ") : new String[0];
+        final ContainerDefinition def = new ContainerDefinition()
+                .withName("jenkins-slave")
+                .withImage(image)
+                .withMemory(memory)
+                .withCpu(cpu)
+                .withCommand(command);
+        if (entrypoint != null)
+            def.withEntryPoint(StringUtils.split(entrypoint));
+
+        if (jvmArgs != null)
+            def.withEnvironment(new KeyValuePair()
+                .withName("JAVA_OPTS").withValue(jvmArgs))
+                .withEssential(true);
+
         return new RegisterTaskDefinitionRequest()
             .withFamily("jenkins-slave")
-            .withContainerDefinitions(new ContainerDefinition()
-                    .withName("jenkins-slave")
-                    .withImage(image)
-                    .withMemory(memory)
-                    .withCpu(cpu)
-                    .withEntryPoint(o)
-                    .withCommand(command)
-                    .withEnvironment(new KeyValuePair()
-                            .withName("JAVA_OPTS").withValue(jvmArgs))
-                    .withEssential(true));
+            .withContainerDefinitions(def);
     }
 
     @Extension
