@@ -174,6 +174,7 @@ public class ECSCloud extends Cloud {
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
             String definitionArn = result.getTaskDefinition().getTaskDefinitionArn();
             LOGGER.log(Level.INFO, "Created Task Definition: {0}", definitionArn);
+            slave.setTaskDefinitonArn(definitionArn);
 
             final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
                     .withTaskDefinition(definitionArn)

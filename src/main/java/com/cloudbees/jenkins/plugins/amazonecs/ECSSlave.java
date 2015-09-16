@@ -44,6 +44,7 @@ public class ECSSlave extends AbstractCloudSlave {
 
     private final ECSCloud cloud;
 
+    private String taskDefinitonArn;
     private String taskArn;
 
     public ECSSlave(ECSCloud cloud, String name, String remoteFS, String labelString, ComputerLauncher launcher) throws Descriptor.FormException, IOException {
@@ -51,8 +52,20 @@ public class ECSSlave extends AbstractCloudSlave {
         this.cloud = cloud;
     }
 
+    public String getTaskDefinitonArn() {
+        return taskDefinitonArn;
+    }
+
+    public String getTaskArn() {
+        return taskArn;
+    }
+
     void setTaskArn(String taskArn) {
         this.taskArn = taskArn;
+    }
+
+    public void setTaskDefinitonArn(String taskDefinitonArn) {
+        this.taskDefinitonArn = taskDefinitonArn;
     }
 
     @Override
@@ -67,5 +80,5 @@ public class ECSSlave extends AbstractCloudSlave {
         }
     }
 
-    private final static RetentionStrategy ONCE = new CloudRetentionStrategy(1);
+    private final static RetentionStrategy  ONCE = new CloudRetentionStrategy(1);
 }
