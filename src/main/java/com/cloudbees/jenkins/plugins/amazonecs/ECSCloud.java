@@ -26,6 +26,7 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
 import com.amazonaws.services.ecs.AmazonECSClient;
+import com.amazonaws.services.ecs.model.DeregisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
@@ -146,10 +147,14 @@ public class ECSCloud extends Cloud {
         }
     }
 
-    void deleteTask(String taskArn) {
-        LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
+    void deleteTask(String taskArn, String taskDefinitonArn) {
         final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
+
+        LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
         client.stopTask(new StopTaskRequest().withTask(taskArn));
+
+        LOGGER.log(Level.INFO, "Delete ECS task definition: {0}", taskDefinitonArn);
+        client.deregisterTaskDefinition(new DeregisterTaskDefinitionRequest().withTaskDefinition(taskDefinitonArn));
     }
 
     private class ProvisioningCallback implements Callable<Node> {
