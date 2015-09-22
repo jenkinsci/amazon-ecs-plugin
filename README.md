@@ -1,8 +1,8 @@
-# Amazon EC2 Plugin for Jenkins
+# Amazon EC2 Container Service Plugin for Jenkins
 
 ## About
 
-This jenkins plugin do use Amazon ECS to host jobs execution inside docker containers.
+This jenkins plugin do use [Amazon EC2 Container Service](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html) to host jobs execution inside docker containers.
 
 ## Installation
 
