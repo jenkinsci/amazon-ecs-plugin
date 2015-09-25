@@ -1,0 +1,8 @@
+
+# INTELLIJ
+.idea/
+*.iml
+
+# MAVEN
+target/
+work/

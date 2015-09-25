@@ -54,6 +54,9 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -71,14 +74,22 @@ public class ECSCloud extends Cloud {
 
     private final List<ECSTaskTemplate> templates;
 
+    /**
+     * Id of the {@link AmazonWebServicesCredentials} used to connect to Amazon ECS
+     */
+    @Nonnull
     private final String credentialsId;
 
     private final String cluster;
 
+    /**
+     * Tunnel connection through
+     */
+    @CheckForNull
     private String tunnel;
 
     @DataBoundConstructor
-    public ECSCloud(String name, List<ECSTaskTemplate> templates, String credentialsId, String cluster) {
+    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, String cluster) {
         super(name);
         this.templates = templates;
         this.credentialsId = credentialsId;
@@ -106,7 +117,11 @@ public class ECSCloud extends Cloud {
         this.tunnel = tunnel;
     }
 
-    private static AmazonWebServicesCredentials getCredentials(String credentialsId) {
+    @CheckForNull
+    private static AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
+        if (StringUtils.isBlank(credentialsId)) {
+            return null;
+        }
         return (AmazonWebServicesCredentials) CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(AmazonWebServicesCredentials.class, Jenkins.getInstance(),
                         ACL.SYSTEM, Collections.EMPTY_LIST),
@@ -160,15 +175,17 @@ public class ECSCloud extends Cloud {
     private class ProvisioningCallback implements Callable<Node> {
 
         private final ECSTaskTemplate template;
+        @CheckForNull
         private Label label;
 
-        public ProvisioningCallback(ECSTaskTemplate template, Label label) {
+        public ProvisioningCallback(ECSTaskTemplate template, @Nullable Label label) {
             this.template = template;
             this.label = label;
         }
 
         public Node call() throws Exception {
-            ECSSlave slave = new ECSSlave(ECSCloud.this, UUID.randomUUID().toString(), template.getRemoteFSRoot(), label.toString(), new JNLPLauncher());
+
+            ECSSlave slave = new ECSSlave(ECSCloud.this, UUID.randomUUID().toString(), template.getRemoteFSRoot(), label == null ? null: label.toString(), new JNLPLauncher());
             Jenkins.getInstance().addNode(slave);
             LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
@@ -255,7 +272,12 @@ public class ECSCloud extends Cloud {
 
         public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId) {
             final ListBoxModel options = new ListBoxModel();
-            final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
+            AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
+            if (credentials == null) {
+                return options;
+            }
+
+            final AmazonECSClient client = new AmazonECSClient(credentials);
             for (String arn : client.listClusters().getClusterArns()) {
                 options.add(arn);
             }

@@ -38,6 +38,9 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
 
@@ -46,17 +49,58 @@ import java.util.Set;
  */
 public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
+    /**
+     * White-space separated list of {@link hudson.model.Node} labels.
+     *
+     * @see Label
+     */
+    @CheckForNull
     private final String label;
+    /**
+     * Docker image
+     * @see ContainerDefinition#withImage(String)
+     */
+    @Nonnull
     private final String image;
+    /**
+     * Slave remote FS
+     */
+    @Nullable
     private final String remoteFSRoot;
+    /**
+     * The number of MiB of memory reserved for the Docker container. If your
+     * container attempts to exceed the memory allocated here, the container
+     * is killed by ECS.
+     *
+     * @see ContainerDefinition#withMemory(Integer)
+     */
     private final int memory;
+    /**
+     * The number of <code>cpu</code> units reserved for the container. A
+     * container instance has 1,024 <code>cpu</code> units for every CPU
+     * core. This parameter specifies the minimum amount of CPU to reserve
+     * for a container, and containers share unallocated CPU units with other
+     * containers on the instance with the same ratio as their allocated
+     * amount.
+     *
+     * @see ContainerDefinition#withCpu(Integer)
+     */
     private final int cpu;
-
+    /**
+     * Space delimited list of Docker entry points
+     *
+     * @see ContainerDefinition#withEntryPoint(String...)
+     */
+    @CheckForNull
     private String entrypoint;
+    /**
+      JVM arguments to start slave.jar
+     */
+    @CheckForNull
     private String jvmArgs;
 
     @DataBoundConstructor
-    public ECSTaskTemplate(String label, String image, String remoteFSRoot, int memory, int cpu) {
+    public ECSTaskTemplate(@Nullable String label, @Nonnull String image, @Nullable String remoteFSRoot, int memory, int cpu) {
         this.label = label;
         this.image = image;
         this.remoteFSRoot = remoteFSRoot;

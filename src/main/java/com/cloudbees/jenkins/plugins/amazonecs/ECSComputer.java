@@ -28,6 +28,8 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 import hudson.slaves.AbstractCloudComputer;
 
 /**
+ * Amazon EC2 Container Service implementation of {@link hudson.model.Computer}
+ *
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class ECSComputer extends AbstractCloudComputer {
