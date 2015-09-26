@@ -34,6 +34,9 @@ import hudson.slaves.CloudRetentionStrategy;
 import hudson.slaves.ComputerLauncher;
 import hudson.slaves.RetentionStrategy;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Collections;
 
@@ -42,12 +45,20 @@ import java.util.Collections;
  */
 public class ECSSlave extends AbstractCloudSlave {
 
+    @Nonnull
     private final ECSCloud cloud;
 
+    /**
+     * AWS Resource Name (ARN) of the ECS Task Definition.
+     */
     private String taskDefinitonArn;
+    /**
+     * AWS Resource Name (ARN) of the ECS Task.
+     */
+    @CheckForNull
     private String taskArn;
 
-    public ECSSlave(ECSCloud cloud, String name, String remoteFS, String labelString, ComputerLauncher launcher) throws Descriptor.FormException, IOException {
+    public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
         super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, ONCE, Collections.EMPTY_LIST);
         this.cloud = cloud;
     }

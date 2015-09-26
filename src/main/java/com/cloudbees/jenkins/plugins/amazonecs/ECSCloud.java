@@ -54,6 +54,9 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -71,14 +74,22 @@ public class ECSCloud extends Cloud {
 
     private final List<ECSTaskTemplate> templates;
 
+    /**
+     * Id of the {@link AmazonWebServicesCredentials} used to connect to Amazon ECS
+     */
+    @Nonnull
     private final String credentialsId;
 
     private final String cluster;
 
+    /**
+     * Tunnel connection through
+     */
+    @CheckForNull
     private String tunnel;
 
     @DataBoundConstructor
-    public ECSCloud(String name, List<ECSTaskTemplate> templates, String credentialsId, String cluster) {
+    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, String cluster) {
         super(name);
         this.templates = templates;
         this.credentialsId = credentialsId;
@@ -106,7 +117,11 @@ public class ECSCloud extends Cloud {
         this.tunnel = tunnel;
     }
 
-    private static AmazonWebServicesCredentials getCredentials(String credentialsId) {
+    @CheckForNull
+    private static AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
+        if (StringUtils.isBlank(credentialsId)) {
+            return null;
+        }
         return (AmazonWebServicesCredentials) CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(AmazonWebServicesCredentials.class, Jenkins.getInstance(),
                         ACL.SYSTEM, Collections.EMPTY_LIST),
@@ -160,15 +175,17 @@ public class ECSCloud extends Cloud {
     private class ProvisioningCallback implements Callable<Node> {
 
         private final ECSTaskTemplate template;
+        @CheckForNull
         private Label label;
 
-        public ProvisioningCallback(ECSTaskTemplate template, Label label) {
+        public ProvisioningCallback(ECSTaskTemplate template, @Nullable Label label) {
             this.template = template;
             this.label = label;
         }
 
         public Node call() throws Exception {
-            ECSSlave slave = new ECSSlave(ECSCloud.this, UUID.randomUUID().toString(), template.getRemoteFSRoot(), label.toString(), new JNLPLauncher());
+
+            ECSSlave slave = new ECSSlave(ECSCloud.this, name + "-" + UUID.randomUUID().toString(), template.getRemoteFSRoot(), label == null ? null: label.toString(), new JNLPLauncher());
             Jenkins.getInstance().addNode(slave);
             LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
@@ -178,7 +195,8 @@ public class ECSCloud extends Cloud {
             final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
             String definitionArn = result.getTaskDefinition().getTaskDefinitionArn();
-            LOGGER.log(Level.INFO, "Created Task Definition: {0}", definitionArn);
+            LOGGER.log(Level.FINE, "Slave {0} - Created Task Definition {1}: {2}", new Object[] { slave.getNodeName(), definitionArn, req });
+            LOGGER.log(Level.INFO, "Slave {0} - Created Task Definition: {1}", new Object[] { slave.getNodeName(), definitionArn });
             slave.setTaskDefinitonArn(definitionArn);
 
             final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
@@ -188,13 +206,13 @@ public class ECSCloud extends Cloud {
 
             if (! runTaskResult.getFailures().isEmpty()) {
                 for (Failure failure : runTaskResult.getFailures()) {
-                    LOGGER.log(Level.WARNING, "{0} : {1}", new Object[] { failure.getReason(), failure.getArn() });
+                    LOGGER.log(Level.WARNING, "Slave {0} - {1} : {2}", new Object[] { slave.getNodeName(), failure.getReason(), failure.getArn() });
                 }
-                throw new IOException("Failed to run slave container.");
+                throw new IOException("Failed to run slave container " + slave.getNodeName());
             }
 
             String taskArn = runTaskResult.getTasks().get(0).getTaskArn();
-            LOGGER.log(Level.INFO, "Slave Task Started : {0}", taskArn);
+            LOGGER.log(Level.INFO, "Slave {0} - Slave Task Started : {1}", new Object[] {slave.getNodeName(),  taskArn});
             slave.setTaskArn(taskArn);
 
             int i = 0;
@@ -203,19 +221,19 @@ public class ECSCloud extends Cloud {
             // now wait for slave to be online
             for (; i < j; i++) {
                 if (slave.getComputer() == null) {
-                    throw new IllegalStateException("Node was deleted, computer is null");
+                    throw new IllegalStateException("Slave " + slave.getNodeName() + " - Node was deleted, computer is null");
                 }
                 if (slave.getComputer().isOnline()) {
                     break;
                 }
-                LOGGER.log(Level.FINE, "Waiting for slave to connect ({1}/{2}): {0}", new Object[] { taskArn, i, j});
+                LOGGER.log(Level.FINE, "Waiting for slave {0} to connect ({2}/{3}): {1}", new Object[] { slave.getNodeName(), taskArn, i, j});
                 Thread.sleep(1000);
             }
             if (!slave.getComputer().isOnline()) {
-                throw new IllegalStateException("Slave is not connected after " + j + " seconds");
+                throw new IllegalStateException("ECS Slave " + slave.getNodeName() + "is not connected after " + j + " seconds");
             }
 
-            LOGGER.log(Level.INFO, "Slave connected: {0}", taskArn);
+            LOGGER.log(Level.INFO, "ECS Slave " + slave.getNodeName() + " connected: {0}", taskArn);
             return slave;
         }
     }
@@ -255,7 +273,12 @@ public class ECSCloud extends Cloud {
 
         public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId) {
             final ListBoxModel options = new ListBoxModel();
-            final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
+            AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
+            if (credentials == null) {
+                return options;
+            }
+
+            final AmazonECSClient client = new AmazonECSClient(credentials);
             for (String arn : client.listClusters().getClusterArns()) {
                 options.add(arn);
             }
