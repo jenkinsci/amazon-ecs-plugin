@@ -304,6 +304,7 @@ public class ECSCloud extends Cloud {
                 }
                 return options;
             } catch (RuntimeException e) {
+                // missing credentials will throw an "AmazonClientException: Unable to load AWS credentials from any provider in the chain"
                 LOGGER.log(Level.INFO, "Exception searching clusters for credentials=" + credentialsId, e);
                 return new ListBoxModel();
             }
