@@ -33,10 +33,12 @@ import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
+import com.amazonaws.services.lambda.model.Runtime;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import hudson.AbortException;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -185,18 +187,31 @@ public class ECSCloud extends Cloud {
 
         public Node call() throws Exception {
 
-            ECSSlave slave = new ECSSlave(ECSCloud.this, name + "-" + UUID.randomUUID().toString(), template.getRemoteFSRoot(), label == null ? null: label.toString(), new JNLPLauncher());
+            ECSSlave slave = new ECSSlave(ECSCloud.this, name + "-" + UUID.randomUUID().toString(), template.getRemoteFSRoot(), label == null ? null : label.toString(), new JNLPLauncher());
             Jenkins.getInstance().addNode(slave);
             LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
             Collection<String> command = getDockerRunCommand(slave);
             final RegisterTaskDefinitionRequest req = template.asRegisterTaskDefinitionRequest(command);
 
-            final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
+            final AmazonECSClient client;
+            AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
+            if (credentials == null) {
+                // no credentials provided, rely on com.amazonaws.auth.DefaultAWSCredentialsProviderChain
+                // to use IAM Role define at the EC2 instance level ...
+                client = new AmazonECSClient();
+            } else {
+                String awsAccessKeyId = credentials.getCredentials().getAWSAccessKeyId();
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    String obfuscatedAccessKeyId = StringUtils.left(awsAccessKeyId, 4) + StringUtils.repeat("*", awsAccessKeyId.length() - (2 * 4)) + StringUtils.right(awsAccessKeyId, 4);
+                    LOGGER.log(Level.FINE, "Slave {0} - Connect to Amazon ECS with IAM Access Key {1}", new Object[]{slave.getNodeName(), obfuscatedAccessKeyId});
+                }
+                client = new AmazonECSClient(credentials);
+            }
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
             String definitionArn = result.getTaskDefinition().getTaskDefinitionArn();
-            LOGGER.log(Level.FINE, "Slave {0} - Created Task Definition {1}: {2}", new Object[] { slave.getNodeName(), definitionArn, req });
-            LOGGER.log(Level.INFO, "Slave {0} - Created Task Definition: {1}", new Object[] { slave.getNodeName(), definitionArn });
+            LOGGER.log(Level.FINE, "Slave {0} - Created Task Definition {1}: {2}", new Object[]{slave.getNodeName(), definitionArn, req});
+            LOGGER.log(Level.INFO, "Slave {0} - Created Task Definition: {1}", new Object[]{slave.getNodeName(), definitionArn});
             slave.setTaskDefinitonArn(definitionArn);
 
             final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
@@ -204,15 +219,16 @@ public class ECSCloud extends Cloud {
                     .withCluster(cluster)
             );
 
-            if (! runTaskResult.getFailures().isEmpty()) {
+            if (!runTaskResult.getFailures().isEmpty()) {
+                LOGGER.log(Level.WARNING, "Slave {0} - Failure to run task with definition {1} on ECS cluster {2}", new Object[]{slave.getNodeName(), definitionArn, cluster});
                 for (Failure failure : runTaskResult.getFailures()) {
-                    LOGGER.log(Level.WARNING, "Slave {0} - {1} : {2}", new Object[] { slave.getNodeName(), failure.getReason(), failure.getArn() });
+                    LOGGER.log(Level.WARNING, "Slave {0} - Failure reason={1}, arn={2}", new Object[]{slave.getNodeName(), failure.getReason(), failure.getArn()});
                 }
-                throw new IOException("Failed to run slave container " + slave.getNodeName());
+                throw new AbortException("Failed to run slave container " + slave.getNodeName());
             }
 
             String taskArn = runTaskResult.getTasks().get(0).getTaskArn();
-            LOGGER.log(Level.INFO, "Slave {0} - Slave Task Started : {1}", new Object[] {slave.getNodeName(),  taskArn});
+            LOGGER.log(Level.INFO, "Slave {0} - Slave Task Started : {1}", new Object[]{slave.getNodeName(), taskArn});
             slave.setTaskArn(taskArn);
 
             int i = 0;
@@ -226,14 +242,14 @@ public class ECSCloud extends Cloud {
                 if (slave.getComputer().isOnline()) {
                     break;
                 }
-                LOGGER.log(Level.FINE, "Waiting for slave {0} to connect ({2}/{3}): {1}", new Object[] { slave.getNodeName(), taskArn, i, j});
+                LOGGER.log(Level.FINE, "Waiting for slave {0} (ecs task {1}) to connect ({2}/{3}).", new Object[]{slave.getNodeName(), taskArn, i, j});
                 Thread.sleep(1000);
             }
             if (!slave.getComputer().isOnline()) {
-                throw new IllegalStateException("ECS Slave " + slave.getNodeName() + "is not connected after " + j + " seconds");
+                throw new IllegalStateException("ECS Slave " + slave.getNodeName()  + " (ecs task " + taskArn + ") is not connected after " + j + " seconds");
             }
 
-            LOGGER.log(Level.INFO, "ECS Slave " + slave.getNodeName() + " connected: {0}", taskArn);
+            LOGGER.log(Level.INFO, "ECS Slave " + slave.getNodeName() + " (ecs task {0}) connected", taskArn);
             return slave;
         }
     }
@@ -272,17 +288,26 @@ public class ECSCloud extends Cloud {
         }
 
         public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId) {
-            final ListBoxModel options = new ListBoxModel();
-            AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
-            if (credentials == null) {
-                return options;
-            }
+            try {
+                AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
+                final AmazonECSClient client;
+                if (credentials == null) {
+                    // implicit authentication (IAM role defined as the ec2 instance level ...)
+                    client = new AmazonECSClient();
+                } else {
+                    client = new AmazonECSClient(credentials);
+                }
 
-            final AmazonECSClient client = new AmazonECSClient(credentials);
-            for (String arn : client.listClusters().getClusterArns()) {
-                options.add(arn);
+                final ListBoxModel options = new ListBoxModel();
+                for (String arn : client.listClusters().getClusterArns()) {
+                    options.add(arn);
+                }
+                return options;
+            } catch (RuntimeException e) {
+                // missing credentials will throw an "AmazonClientException: Unable to load AWS credentials from any provider in the chain"
+                LOGGER.log(Level.INFO, "Exception searching clusters for credentials=" + credentialsId, e);
+                return new ListBoxModel();
             }
-            return options;
         }
 
     }
