@@ -164,8 +164,27 @@ public class ECSCloud extends Cloud {
         }
     }
 
+    private static AmazonECSClient getAmazonECSClient(String credentialsId){
+        final AmazonECSClient client;
+        AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
+        if (credentials == null) {
+            // no credentials provided, rely on com.amazonaws.auth.DefaultAWSCredentialsProviderChain
+            // to use IAM Role define at the EC2 instance level ...
+            client = new AmazonECSClient();
+        } else {
+            if (LOGGER.isLoggable(Level.FINE)) {
+                String awsAccessKeyId = credentials.getCredentials().getAWSAccessKeyId();
+                String obfuscatedAccessKeyId = StringUtils.left(awsAccessKeyId, 4) + StringUtils.repeat("*", awsAccessKeyId.length() - (2 * 4)) + StringUtils.right(awsAccessKeyId, 4);
+                LOGGER.log(Level.FINE, "Connect to Amazon ECS with IAM Access Key {1}", new Object[]{obfuscatedAccessKeyId});
+            }
+            client = new AmazonECSClient(credentials);
+        }
+        return client;
+
+    }
+
     void deleteTask(String taskArn, String taskDefinitonArn) {
-        final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
+        final AmazonECSClient client = getAmazonECSClient(credentialsId);
 
         LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
         client.stopTask(new StopTaskRequest().withTask(taskArn));
@@ -194,20 +213,8 @@ public class ECSCloud extends Cloud {
             Collection<String> command = getDockerRunCommand(slave);
             final RegisterTaskDefinitionRequest req = template.asRegisterTaskDefinitionRequest(command);
 
-            final AmazonECSClient client;
-            AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
-            if (credentials == null) {
-                // no credentials provided, rely on com.amazonaws.auth.DefaultAWSCredentialsProviderChain
-                // to use IAM Role define at the EC2 instance level ...
-                client = new AmazonECSClient();
-            } else {
-                String awsAccessKeyId = credentials.getCredentials().getAWSAccessKeyId();
-                if (LOGGER.isLoggable(Level.FINE)) {
-                    String obfuscatedAccessKeyId = StringUtils.left(awsAccessKeyId, 4) + StringUtils.repeat("*", awsAccessKeyId.length() - (2 * 4)) + StringUtils.right(awsAccessKeyId, 4);
-                    LOGGER.log(Level.FINE, "Slave {0} - Connect to Amazon ECS with IAM Access Key {1}", new Object[]{slave.getNodeName(), obfuscatedAccessKeyId});
-                }
-                client = new AmazonECSClient(credentials);
-            }
+            final AmazonECSClient client = getAmazonECSClient(credentialsId);
+
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
             String definitionArn = result.getTaskDefinition().getTaskDefinitionArn();
             LOGGER.log(Level.FINE, "Slave {0} - Created Task Definition {1}: {2}", new Object[]{slave.getNodeName(), definitionArn, req});
@@ -289,14 +296,7 @@ public class ECSCloud extends Cloud {
 
         public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId) {
             try {
-                AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
-                final AmazonECSClient client;
-                if (credentials == null) {
-                    // implicit authentication (IAM role defined as the ec2 instance level ...)
-                    client = new AmazonECSClient();
-                } else {
-                    client = new AmazonECSClient(credentials);
-                }
+                final AmazonECSClient client = getAmazonECSClient(credentialsId);
 
                 final ListBoxModel options = new ListBoxModel();
                 for (String arn : client.listClusters().getClusterArns()) {
