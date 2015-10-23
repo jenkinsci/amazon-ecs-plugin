@@ -33,6 +33,10 @@
     <c:select />
   </f:entry>
 
+  <f:entry field="awsRegion" title="${%Amazon ECS Region}" description="AWS Region used to connect to ECS">
+    <f:select />
+  </f:entry>
+
   <f:entry field="cluster" title="${%ECS Cluster}">
     <f:select />
   </f:entry>

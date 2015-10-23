@@ -25,15 +25,10 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECSClient;
-import com.amazonaws.services.ecs.model.DeregisterTaskDefinitionRequest;
-import com.amazonaws.services.ecs.model.Failure;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
-import com.amazonaws.services.ecs.model.RunTaskRequest;
-import com.amazonaws.services.ecs.model.RunTaskResult;
-import com.amazonaws.services.ecs.model.StopTaskRequest;
-import com.amazonaws.services.lambda.model.Runtime;
+import com.amazonaws.services.ecs.model.*;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -59,7 +54,6 @@ import org.kohsuke.stapler.QueryParameter;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -76,6 +70,10 @@ public class ECSCloud extends Cloud {
 
     private final List<ECSTaskTemplate> templates;
 
+
+    @Nonnull
+    private final String awsRegion;
+
     /**
      * Id of the {@link AmazonWebServicesCredentials} used to connect to Amazon ECS
      */
@@ -91,15 +89,20 @@ public class ECSCloud extends Cloud {
     private String tunnel;
 
     @DataBoundConstructor
-    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, String cluster) {
+    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, @Nonnull String awsRegion, String cluster) {
         super(name);
         this.templates = templates;
         this.credentialsId = credentialsId;
+        this.awsRegion = awsRegion;
         this.cluster = cluster;
     }
 
     public List<ECSTaskTemplate> getTemplates() {
         return templates;
+    }
+
+    public String getAwsRegion() {
+        return awsRegion;
     }
 
     public String getCredentialsId() {
@@ -164,7 +167,7 @@ public class ECSCloud extends Cloud {
         }
     }
 
-    private static AmazonECSClient getAmazonECSClient(String credentialsId){
+    private static AmazonECSClient getAmazonECSClient(String credentialsId, String awsRegion){
         final AmazonECSClient client;
         AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
         if (credentials == null) {
@@ -179,15 +182,24 @@ public class ECSCloud extends Cloud {
             }
             client = new AmazonECSClient(credentials);
         }
+        LOGGER.log(Level.INFO,"awsRegion={0}",awsRegion);
+        // awsRegion can be null when called from method doFillClusterItems
+        if (awsRegion != null && !awsRegion.isEmpty()) {
+            client.setRegion(Region.getRegion(Regions.fromName(awsRegion)));
+        }
         return client;
 
     }
 
     void deleteTask(String taskArn, String taskDefinitonArn) {
-        final AmazonECSClient client = getAmazonECSClient(credentialsId);
+        final AmazonECSClient client = getAmazonECSClient(credentialsId, awsRegion);
 
         LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
-        client.stopTask(new StopTaskRequest().withTask(taskArn));
+        try {
+            client.stopTask(new StopTaskRequest().withTask(taskArn));
+        } catch (ClientException clientException){
+            LOGGER.log(Level.INFO, "Failed to delete ECS task definition: {0}", clientException.getLocalizedMessage());
+        }
 
         LOGGER.log(Level.INFO, "Delete ECS task definition: {0}", taskDefinitonArn);
         client.deregisterTaskDefinition(new DeregisterTaskDefinitionRequest().withTaskDefinition(taskDefinitonArn));
@@ -213,7 +225,7 @@ public class ECSCloud extends Cloud {
             Collection<String> command = getDockerRunCommand(slave);
             final RegisterTaskDefinitionRequest req = template.asRegisterTaskDefinitionRequest(command);
 
-            final AmazonECSClient client = getAmazonECSClient(credentialsId);
+            final AmazonECSClient client = getAmazonECSClient(credentialsId, awsRegion);
 
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
             String definitionArn = result.getTaskDefinition().getTaskDefinitionArn();
@@ -283,6 +295,17 @@ public class ECSCloud extends Cloud {
             return Messages.DisplayName();
         }
 
+        public ListBoxModel doFillAwsRegionItems() {
+            //please refer following link to get list of available regions  http://docs.aws.amazon.com/general/latest/gr/rande.html#ecs_region
+            final String[] ecsEnabledRegions = {"us-east-1", "us-west-2", "us-west-1", "eu-west-1", "ap-northeast-1", "ap-southeast-2"};
+            final ListBoxModel options = new ListBoxModel();
+
+            for (String reg : ecsEnabledRegions) {
+                options.add(reg);
+            }
+            return options;
+        }
+
         public ListBoxModel doFillCredentialsIdItems() {
             return new StandardListBoxModel()
                     .withEmptySelection()
@@ -294,9 +317,9 @@ public class ECSCloud extends Cloud {
                                     Collections.EMPTY_LIST));
         }
 
-        public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId) {
+        public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId, @QueryParameter String awsRegion) {
             try {
-                final AmazonECSClient client = getAmazonECSClient(credentialsId);
+                final AmazonECSClient client = getAmazonECSClient(credentialsId, awsRegion);
 
                 final ListBoxModel options = new ListBoxModel();
                 for (String arn : client.listClusters().getClusterArns()) {
