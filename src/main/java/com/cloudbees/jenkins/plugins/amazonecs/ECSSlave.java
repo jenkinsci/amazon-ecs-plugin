@@ -87,7 +87,7 @@ public class ECSSlave extends AbstractCloudSlave {
     @Override
     protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
         if (taskArn != null) {
-            cloud.deleteTask(taskArn, taskDefinitonArn);
+            cloud.deleteTask(taskArn);
         }
     }
 

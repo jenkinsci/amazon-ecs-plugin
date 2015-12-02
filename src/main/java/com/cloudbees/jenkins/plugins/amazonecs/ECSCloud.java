@@ -26,14 +26,12 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
 import com.amazonaws.services.ecs.AmazonECSClient;
-import com.amazonaws.services.ecs.model.DeregisterTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.ContainerOverride;
 import com.amazonaws.services.ecs.model.Failure;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
-import com.amazonaws.services.lambda.model.Runtime;
+import com.amazonaws.services.ecs.model.TaskOverride;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -59,12 +57,10 @@ import org.kohsuke.stapler.QueryParameter;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -93,9 +89,12 @@ public class ECSCloud extends Cloud {
     @DataBoundConstructor
     public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, String cluster) {
         super(name);
-        this.templates = templates;
         this.credentialsId = credentialsId;
         this.cluster = cluster;
+        this.templates = templates;
+        for (ECSTaskTemplate template : templates) {
+            template.setOwer(this);
+        }
     }
 
     public List<ECSTaskTemplate> getTemplates() {
@@ -120,7 +119,7 @@ public class ECSCloud extends Cloud {
     }
 
     @CheckForNull
-    private static AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
+    static AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
         if (StringUtils.isBlank(credentialsId)) {
             return null;
         }
@@ -183,14 +182,11 @@ public class ECSCloud extends Cloud {
 
     }
 
-    void deleteTask(String taskArn, String taskDefinitonArn) {
+    void deleteTask(String taskArn) {
         final AmazonECSClient client = getAmazonECSClient(credentialsId);
 
         LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
         client.stopTask(new StopTaskRequest().withTask(taskArn));
-
-        LOGGER.log(Level.INFO, "Delete ECS task definition: {0}", taskDefinitonArn);
-        client.deregisterTaskDefinition(new DeregisterTaskDefinitionRequest().withTaskDefinition(taskDefinitonArn));
     }
 
     private class ProvisioningCallback implements Callable<Node> {
@@ -206,23 +202,22 @@ public class ECSCloud extends Cloud {
 
         public Node call() throws Exception {
 
-            ECSSlave slave = new ECSSlave(ECSCloud.this, name + "-" + UUID.randomUUID().toString(), template.getRemoteFSRoot(), label == null ? null : label.toString(), new JNLPLauncher());
+            String uniq = Long.toHexString(System.nanoTime());
+            ECSSlave slave = new ECSSlave(ECSCloud.this, name + "-" + uniq, template.getRemoteFSRoot(), label == null ? null : label.toString(), new JNLPLauncher());
             Jenkins.getInstance().addNode(slave);
             LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
+            final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
             Collection<String> command = getDockerRunCommand(slave);
-            final RegisterTaskDefinitionRequest req = template.asRegisterTaskDefinitionRequest(command);
-
-            final AmazonECSClient client = getAmazonECSClient(credentialsId);
-
-            final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
-            String definitionArn = result.getTaskDefinition().getTaskDefinitionArn();
-            LOGGER.log(Level.FINE, "Slave {0} - Created Task Definition {1}: {2}", new Object[]{slave.getNodeName(), definitionArn, req});
-            LOGGER.log(Level.INFO, "Slave {0} - Created Task Definition: {1}", new Object[]{slave.getNodeName(), definitionArn});
+            String definitionArn = template.getTaskDefinitionArn();
             slave.setTaskDefinitonArn(definitionArn);
 
             final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
                     .withTaskDefinition(definitionArn)
+                    .withOverrides(new TaskOverride()
+                        .withContainerOverrides(new ContainerOverride()
+                            .withName("jenkins-slave")
+                            .withCommand(command)))
                     .withCluster(cluster)
             );
 

@@ -25,9 +25,11 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
+import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -43,6 +45,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -99,6 +103,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     @CheckForNull
     private String jvmArgs;
 
+    private String taskDefinitionArn;
+
     @DataBoundConstructor
     public ECSTaskTemplate(@Nullable String label, @Nonnull String image, @Nullable String remoteFSRoot, int memory, int cpu) {
         this.label = label;
@@ -146,6 +152,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return jvmArgs;
     }
 
+    public String getTaskDefinitionArn() {
+        return taskDefinitionArn;
+    }
+
     public Set<LabelAtom> getLabelSet() {
         return Label.parse(label);
     }
@@ -154,13 +164,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return "ECS Slave " + label;
     }
 
-    public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest(Collection<String> command) {
+    public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest() {
         final ContainerDefinition def = new ContainerDefinition()
                 .withName("jenkins-slave")
                 .withImage(image)
                 .withMemory(memory)
-                .withCpu(cpu)
-                .withCommand(command);
+                .withCpu(cpu);
         if (entrypoint != null)
             def.withEntryPoint(StringUtils.split(entrypoint));
 
@@ -173,6 +182,20 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             .withFamily("jenkins-slave")
             .withContainerDefinitions(def);
     }
+
+    public void setOwer(ECSCloud owner) {
+        final AmazonECSClient client = new AmazonECSClient(ECSCloud.getCredentials(owner.getCredentialsId()));
+        if (taskDefinitionArn == null) {
+            final RegisterTaskDefinitionRequest req = asRegisterTaskDefinitionRequest();
+            final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
+            taskDefinitionArn = result.getTaskDefinition().getTaskDefinitionArn();
+            LOGGER.log(Level.FINE, "Slave {0} - Created Task Definition {1}: {2}", new Object[]{label, taskDefinitionArn, req});
+            LOGGER.log(Level.INFO, "Slave {0} - Created Task Definition: {1}", new Object[] { label, taskDefinitionArn });
+            getDescriptor().save();
+        }
+    }
+
+    private static final Logger LOGGER = Logger.getLogger(ECSTaskTemplate.class.getName());
 
     @Extension
     public static class DescriptorImpl extends Descriptor<ECSTaskTemplate> {
