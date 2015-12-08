@@ -25,6 +25,9 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.RegionUtils;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.ContainerOverride;
 import com.amazonaws.services.ecs.model.Failure;
@@ -80,6 +83,8 @@ public class ECSCloud extends Cloud {
 
     private final String cluster;
 
+    private String regionName;
+
     /**
      * Tunnel connection through
      */
@@ -87,11 +92,12 @@ public class ECSCloud extends Cloud {
     private String tunnel;
 
     @DataBoundConstructor
-    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, String cluster) {
+    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, String cluster, String regionName) {
         super(name);
         this.credentialsId = credentialsId;
         this.cluster = cluster;
         this.templates = templates;
+        this.regionName = regionName;
         for (ECSTaskTemplate template : templates) {
             template.setOwer(this);
         }
@@ -107,6 +113,14 @@ public class ECSCloud extends Cloud {
 
     public String getCluster() {
         return cluster;
+    }
+
+    public String getRegionName() {
+        return regionName;
+    }
+
+    public void setRegionName(String regionName) {
+        this.regionName = regionName;
     }
 
     public String getTunnel() {
@@ -163,7 +177,7 @@ public class ECSCloud extends Cloud {
         }
     }
 
-    private static AmazonECSClient getAmazonECSClient(String credentialsId){
+    private static AmazonECSClient getAmazonECSClient(String credentialsId, String regionName){
         final AmazonECSClient client;
         AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
         if (credentials == null) {
@@ -178,12 +192,12 @@ public class ECSCloud extends Cloud {
             }
             client = new AmazonECSClient(credentials);
         }
+        client.setRegion(getRegion(regionName));
         return client;
-
     }
 
     void deleteTask(String taskArn) {
-        final AmazonECSClient client = getAmazonECSClient(credentialsId);
+        final AmazonECSClient client = getAmazonECSClient(credentialsId, getRegionName());
 
         LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
         client.stopTask(new StopTaskRequest().withTask(taskArn));
@@ -208,6 +222,9 @@ public class ECSCloud extends Cloud {
             LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
             final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
+            LOGGER.log(Level.INFO, "Selected Region: {0}", getRegionName());
+            client.setRegion(getRegion(getRegionName()));
+
             Collection<String> command = getDockerRunCommand(slave);
             String definitionArn = template.getTaskDefinitionArn();
             slave.setTaskDefinitonArn(definitionArn);
@@ -289,10 +306,9 @@ public class ECSCloud extends Cloud {
                                     Collections.EMPTY_LIST));
         }
 
-        public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId) {
+        public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId, @QueryParameter String regionName) {
             try {
-                final AmazonECSClient client = getAmazonECSClient(credentialsId);
-
+                final AmazonECSClient client = getAmazonECSClient(credentialsId, regionName);
                 final ListBoxModel options = new ListBoxModel();
                 for (String arn : client.listClusters().getClusterArns()) {
                     options.add(arn);
@@ -300,7 +316,7 @@ public class ECSCloud extends Cloud {
                 return options;
             } catch (RuntimeException e) {
                 // missing credentials will throw an "AmazonClientException: Unable to load AWS credentials from any provider in the chain"
-                LOGGER.log(Level.INFO, "Exception searching clusters for credentials=" + credentialsId, e);
+                LOGGER.log(Level.INFO, "Exception searching clusters for credentials=" + credentialsId + ", regionName=" + regionName, e);
                 return new ListBoxModel();
             }
         }
@@ -308,4 +324,12 @@ public class ECSCloud extends Cloud {
     }
 
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
+
+    public static Region getRegion(String regionName) {
+        if (StringUtils.isNotEmpty(regionName)) {
+            return RegionUtils.getRegion(regionName);
+        } else{
+            return Region.getRegion(Regions.US_EAST_1);
+        }
+    }
 }
