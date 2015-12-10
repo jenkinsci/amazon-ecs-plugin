@@ -92,8 +92,10 @@ public class ECSCloud extends Cloud {
         this.credentialsId = credentialsId;
         this.cluster = cluster;
         this.templates = templates;
-        for (ECSTaskTemplate template : templates) {
-            template.setOwer(this);
+        if (templates != null) {
+            for (ECSTaskTemplate template : templates) {
+                template.setOwer(this);
+            }
         }
     }
 
