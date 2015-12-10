@@ -58,7 +58,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -91,10 +90,15 @@ public class ECSCloud extends Cloud {
     @DataBoundConstructor
     public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, @Nonnull String awsRegion, String cluster) {
         super(name);
-        this.templates = templates;
         this.credentialsId = credentialsId;
         this.awsRegion = awsRegion;
         this.cluster = cluster;
+        this.templates = templates;
+        if (templates != null) {
+            for (ECSTaskTemplate template : templates) {
+                template.setOwer(this);
+            }
+        }
     }
 
     public List<ECSTaskTemplate> getTemplates() {
@@ -123,7 +127,7 @@ public class ECSCloud extends Cloud {
     }
 
     @CheckForNull
-    private static AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
+    static AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
         if (StringUtils.isBlank(credentialsId)) {
             return null;
         }
@@ -191,7 +195,7 @@ public class ECSCloud extends Cloud {
 
     }
 
-    void deleteTask(String taskArn, String taskDefinitonArn) {
+    void deleteTask(String taskArn) {
         final AmazonECSClient client = getAmazonECSClient(credentialsId, awsRegion);
 
         LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
@@ -200,9 +204,6 @@ public class ECSCloud extends Cloud {
         } catch (ClientException clientException){
             LOGGER.log(Level.INFO, "Failed to delete ECS task definition: {0}", clientException.getLocalizedMessage());
         }
-
-        LOGGER.log(Level.INFO, "Delete ECS task definition: {0}", taskDefinitonArn);
-        client.deregisterTaskDefinition(new DeregisterTaskDefinitionRequest().withTaskDefinition(taskDefinitonArn));
     }
 
     private class ProvisioningCallback implements Callable<Node> {
@@ -218,23 +219,22 @@ public class ECSCloud extends Cloud {
 
         public Node call() throws Exception {
 
-            ECSSlave slave = new ECSSlave(ECSCloud.this, name + "-" + UUID.randomUUID().toString(), template.getRemoteFSRoot(), label == null ? null : label.toString(), new JNLPLauncher());
+            String uniq = Long.toHexString(System.nanoTime());
+            ECSSlave slave = new ECSSlave(ECSCloud.this, name + "-" + uniq, template.getRemoteFSRoot(), label == null ? null : label.toString(), new JNLPLauncher());
             Jenkins.getInstance().addNode(slave);
             LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
-            Collection<String> command = getDockerRunCommand(slave);
-            final RegisterTaskDefinitionRequest req = template.asRegisterTaskDefinitionRequest(command);
-
             final AmazonECSClient client = getAmazonECSClient(credentialsId, awsRegion);
-
-            final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
-            String definitionArn = result.getTaskDefinition().getTaskDefinitionArn();
-            LOGGER.log(Level.FINE, "Slave {0} - Created Task Definition {1}: {2}", new Object[]{slave.getNodeName(), definitionArn, req});
-            LOGGER.log(Level.INFO, "Slave {0} - Created Task Definition: {1}", new Object[]{slave.getNodeName(), definitionArn});
+            Collection<String> command = getDockerRunCommand(slave);
+            String definitionArn = template.getTaskDefinitionArn();
             slave.setTaskDefinitonArn(definitionArn);
 
             final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
                     .withTaskDefinition(definitionArn)
+                    .withOverrides(new TaskOverride()
+                        .withContainerOverrides(new ContainerOverride()
+                            .withName("jenkins-slave")
+                            .withCommand(command)))
                     .withCluster(cluster)
             );
 
