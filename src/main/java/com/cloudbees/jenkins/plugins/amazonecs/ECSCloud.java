@@ -297,7 +297,7 @@ public class ECSCloud extends Cloud {
 
         public ListBoxModel doFillAwsRegionItems() {
             //please refer following link to get list of available regions  http://docs.aws.amazon.com/general/latest/gr/rande.html#ecs_region
-            final String[] ecsEnabledRegions = {"us-east-1", "us-west-2", "us-west-1", "eu-west-1", "ap-northeast-1", "ap-southeast-2"};
+            final String[] ecsEnabledRegions = {"us-east-1", "us-west-2", "us-west-1", "eu-west-1", "ap-northeast-1", "ap-southeast-2", "ap-southeast-1"};
             final ListBoxModel options = new ListBoxModel();
 
             for (String reg : ecsEnabledRegions) {
