@@ -98,8 +98,10 @@ public class ECSCloud extends Cloud {
         this.cluster = cluster;
         this.templates = templates;
         this.regionName = regionName;
-        for (ECSTaskTemplate template : templates) {
-            template.setOwer(this);
+        if (templates != null) {
+            for (ECSTaskTemplate template : templates) {
+                template.setOwer(this);
+            }
         }
     }
 
