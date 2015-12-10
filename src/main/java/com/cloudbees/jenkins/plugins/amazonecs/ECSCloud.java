@@ -171,7 +171,7 @@ public class ECSCloud extends Cloud {
         }
     }
 
-    private static AmazonECSClient getAmazonECSClient(String credentialsId, String awsRegion){
+    protected static AmazonECSClient getAmazonECSClient(String credentialsId, String awsRegion){
         final AmazonECSClient client;
         AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
         if (credentials == null) {
