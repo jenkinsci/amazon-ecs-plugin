@@ -185,6 +185,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     public void setOwer(ECSCloud owner) {
         final AmazonECSClient client = new AmazonECSClient(ECSCloud.getCredentials(owner.getCredentialsId()));
+        client.setRegion(ECSCloud.getRegion(owner.getRegionName()));
         if (taskDefinitionArn == null) {
             final RegisterTaskDefinitionRequest req = asRegisterTaskDefinitionRequest();
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
