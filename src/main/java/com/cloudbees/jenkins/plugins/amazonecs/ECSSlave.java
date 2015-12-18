@@ -91,5 +91,5 @@ public class ECSSlave extends AbstractCloudSlave {
         }
     }
 
-    private final static RetentionStrategy  ONCE = new CloudRetentionStrategy(1);
+    private final static RetentionStrategy  ONCE = new CloudRetentionStrategy(0);
 }
