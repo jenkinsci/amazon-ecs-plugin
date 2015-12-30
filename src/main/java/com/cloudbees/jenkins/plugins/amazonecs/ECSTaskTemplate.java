@@ -102,16 +102,21 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      */
     @CheckForNull
     private String jvmArgs;
+    /**
+     * Indicates whether the container should run in privileged mode
+     */
+    private final boolean privileged;
 
     private String taskDefinitionArn;
 
     @DataBoundConstructor
-    public ECSTaskTemplate(@Nullable String label, @Nonnull String image, @Nullable String remoteFSRoot, int memory, int cpu) {
+    public ECSTaskTemplate(@Nullable String label, @Nonnull String image, @Nullable String remoteFSRoot, int memory, int cpu, boolean privileged) {
         this.label = label;
         this.image = image;
         this.remoteFSRoot = remoteFSRoot;
         this.memory = memory;
         this.cpu = cpu;
+        this.privileged = privileged;
     }
 
     @DataBoundSetter
@@ -169,7 +174,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                 .withName("jenkins-slave")
                 .withImage(image)
                 .withMemory(memory)
-                .withCpu(cpu);
+                .withCpu(cpu)
+                .withPrivileged(privileged);
         if (entrypoint != null)
             def.withEntryPoint(StringUtils.split(entrypoint));
 
