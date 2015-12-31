@@ -27,6 +27,7 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 
 import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
+import com.amazonaws.services.ecs.model.HostEntry;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
@@ -35,7 +36,6 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
-import jenkins.model.JenkinsLocationConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -43,7 +43,9 @@ import org.kohsuke.stapler.DataBoundSetter;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -103,15 +105,26 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     @CheckForNull
     private String jvmArgs;
 
+    private List<EnvironmentEntry> environments;
+    private List<ExtraHostEntry> extraHosts;
+
     private String taskDefinitionArn;
 
     @DataBoundConstructor
-    public ECSTaskTemplate(@Nullable String label, @Nonnull String image, @Nullable String remoteFSRoot, int memory, int cpu) {
+    public ECSTaskTemplate(@Nullable String label,
+                           @Nonnull String image,
+                           @Nullable String remoteFSRoot,
+                           int memory,
+                           int cpu,
+                           @Nullable List<EnvironmentEntry> environments,
+                           @Nullable List<ExtraHostEntry> extraHosts) {
         this.label = label;
         this.image = image;
         this.remoteFSRoot = remoteFSRoot;
         this.memory = memory;
         this.cpu = cpu;
+        this.environments = environments;
+        this.extraHosts = extraHosts;
     }
 
     @DataBoundSetter
@@ -156,6 +169,76 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return taskDefinitionArn;
     }
 
+    public List<EnvironmentEntry> getEnvironments() {
+        return environments;
+    }
+
+    public List<ExtraHostEntry> getExtraHosts() {
+        return extraHosts;
+    }
+
+    private Collection<KeyValuePair> getEnvironmentKeyValuePairs() {
+        if (null == environments || environments.isEmpty()) {
+            return null;
+        }
+        Collection<KeyValuePair> items = new ArrayList<KeyValuePair>();
+        for (EnvironmentEntry environment : environments) {
+            String name = environment.name;
+            String value = environment.value;
+            if (StringUtils.isEmpty(name) || StringUtils.isEmpty(value)) {
+                continue;
+            }
+            items.add(new KeyValuePair().withName(name).withValue(value));
+        }
+        return items;
+    }
+
+    private Collection<HostEntry> getExtraHostEntries() {
+        if (null == extraHosts || extraHosts.isEmpty()) {
+            return null;
+        }
+        Collection<HostEntry> items = new ArrayList<HostEntry>();
+        for (ExtraHostEntry extrahost : extraHosts) {
+            String ipAddress = extrahost.ipAddress;
+            String hostname = extrahost.hostname;
+            if (StringUtils.isEmpty(ipAddress) || StringUtils.isEmpty(hostname)) {
+                continue;
+            }
+            items.add(new HostEntry().withIpAddress(ipAddress).withHostname(hostname));
+        }
+        return items;
+    }
+
+    public static class EnvironmentEntry {
+        public String name, value;
+
+        @DataBoundConstructor
+        public EnvironmentEntry(String name, String value) {
+            this.name = name;
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return "EnvironmentEntry{" + name + ": " + value + "}";
+        }
+    }
+
+    public static class ExtraHostEntry {
+        public String ipAddress, hostname;
+
+        @DataBoundConstructor
+        public ExtraHostEntry(String ipAddress, String hostname) {
+            this.ipAddress = ipAddress;
+            this.hostname = hostname;
+        }
+
+        @Override
+        public String toString() {
+            return "ExtraHostEntry{" + ipAddress + ": " + hostname + "}";
+        }
+    }
+
     public Set<LabelAtom> getLabelSet() {
         return Label.parse(label);
     }
@@ -168,6 +251,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         final ContainerDefinition def = new ContainerDefinition()
                 .withName("jenkins-slave")
                 .withImage(image)
+                .withEnvironment(getEnvironmentKeyValuePairs())
+                .withExtraHosts(getExtraHostEntries())
                 .withMemory(memory)
                 .withCpu(cpu);
         if (entrypoint != null)
