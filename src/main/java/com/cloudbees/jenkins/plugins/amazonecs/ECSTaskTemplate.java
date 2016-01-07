@@ -156,6 +156,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     public String getJvmArgs() {
         return jvmArgs;
     }
+    
+    public boolean getPrivileged() {
+        return privileged;
+    }
 
     public String getTaskDefinitionArn() {
         return taskDefinitionArn;
