@@ -47,5 +47,8 @@
     <f:entry title="${%JVM arguments}" field="jvmArgs">
       <f:textbox />
     </f:entry>
+    <f:entry title="${%Privileged}" field="privileged">
+      <f:checkbox />
+    </f:entry>
   </f:advanced>
 </j:jelly>
