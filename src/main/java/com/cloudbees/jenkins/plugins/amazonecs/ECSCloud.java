@@ -135,7 +135,7 @@ public class ECSCloud extends Cloud {
     }
 
     @CheckForNull
-    static AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
+    private static AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
         if (StringUtils.isBlank(credentialsId)) {
             return null;
         }
@@ -179,6 +179,10 @@ public class ECSCloud extends Cloud {
         }
     }
 
+    /* package */ AmazonECSClient getAmazonECSClient() {
+        return getAmazonECSClient(credentialsId, regionName);
+    }
+
     private static AmazonECSClient getAmazonECSClient(String credentialsId, String regionName) {
         final AmazonECSClient client;
         AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
@@ -199,7 +203,7 @@ public class ECSCloud extends Cloud {
     }
 
     void deleteTask(String taskArn) {
-        final AmazonECSClient client = getAmazonECSClient(credentialsId, getRegionName());
+        final AmazonECSClient client = getAmazonECSClient();
 
         LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
         client.stopTask(new StopTaskRequest().withTask(taskArn));
