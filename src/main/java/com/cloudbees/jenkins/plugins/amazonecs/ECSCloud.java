@@ -35,6 +35,7 @@ import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
 import com.amazonaws.services.ecs.model.TaskOverride;
+import com.amazonaws.services.ecs.model.ClientException;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -206,7 +207,11 @@ public class ECSCloud extends Cloud {
         final AmazonECSClient client = getAmazonECSClient();
 
         LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
-        client.stopTask(new StopTaskRequest().withTask(taskArn));
+        try {
+            client.stopTask(new StopTaskRequest().withTask(taskArn));
+        } catch (ClientException e) {
+            LOGGER.log(Level.SEVERE, "Couldn't stop task arn " + taskArn + " caught exception: " + e.getMessage(), e);
+        }
     }
 
     private class ProvisioningCallback implements Callable<Node> {
