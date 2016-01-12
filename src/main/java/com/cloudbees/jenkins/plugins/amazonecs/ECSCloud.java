@@ -227,7 +227,7 @@ public class ECSCloud extends Cloud {
             Jenkins.getInstance().addNode(slave);
             LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
-            final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
+            final AmazonECSClient client = getAmazonECSClient();
             LOGGER.log(Level.INFO, "Selected Region: {0}", getRegionName());
             client.setRegion(getRegion(getRegionName()));
 
