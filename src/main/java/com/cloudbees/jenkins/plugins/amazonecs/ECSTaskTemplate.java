@@ -30,6 +30,7 @@ import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
+import com.amazonaws.services.ecs.model.LogConfiguration;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -45,6 +46,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -110,14 +114,44 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     private String taskDefinitionArn;
 
+    /**
+     * The log configuration specification for the container.
+     * This parameter maps to LogConfig in the Create a container section of
+     * the Docker Remote API and the --log-driver option to docker run.
+     * Valid log drivers are displayed in the LogConfiguration data type.
+     * This parameter requires version 1.18 of the Docker Remote API or greater
+     * on your container instance. To check the Docker Remote API version on
+     * your container instance, log into your container instance and run the
+     * following command: sudo docker version | grep "Server API version"
+     * The Amazon ECS container agent running on a container instance must
+     * register the logging drivers available on that instance with the
+     * ECS_AVAILABLE_LOGGING_DRIVERS environment variable before containers
+     * placed on that instance can use these log configuration options.
+     * For more information, see Amazon ECS Container Agent Configuration
+     * in the Amazon EC2 Container Service Developer Guide.
+     */
+    @CheckForNull
+    private String logDriver;
+    private List<LogDriverOption> logDriverOptions;
+
     @DataBoundConstructor
-    public ECSTaskTemplate(@Nullable String label, @Nonnull String image, @Nullable String remoteFSRoot, int memory, int cpu, boolean privileged) {
+    public ECSTaskTemplate(@Nullable String label,
+                           @Nonnull String image,
+                           @Nullable String remoteFSRoot,
+                           int memory,
+                           int cpu,
+                           boolean privileged,
+                           @Nullable String logDriver,
+                           @Nullable List<LogDriverOption> logDriverOptions
+                           ) {
         this.label = label;
         this.image = image;
         this.remoteFSRoot = remoteFSRoot;
         this.memory = memory;
         this.cpu = cpu;
         this.privileged = privileged;
+        this.logDriver = logDriver;
+        this.logDriverOptions = logDriverOptions;
     }
 
     @DataBoundSetter
@@ -174,6 +208,45 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return privileged;
     }
 
+    public String getLogDriver() {
+        return logDriver;
+    }
+
+    public static class LogDriverOption {
+        public String name, value;
+
+        @DataBoundConstructor
+        public LogDriverOption(String name, String value) {
+            this.name = name;
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return "LogDriverOption{" + name + ": " + value + "}";
+        }
+    }
+
+    public List<LogDriverOption> getLogDriverOptions() {
+        return logDriverOptions;
+    }
+
+    private Map<String,String> getLogDriverOptionsMap() {
+        if (null == logDriverOptions || logDriverOptions.isEmpty()) {
+            return null;
+        }
+        Map<String,String> options = new HashMap<String,String>();
+        for (LogDriverOption logDriverOption : logDriverOptions) {
+            String name = logDriverOption.name;
+            String value = logDriverOption.value;
+            if (StringUtils.isEmpty(name) || StringUtils.isEmpty(value)) {
+                continue;
+            }
+            options.put(name, value);
+        }
+        return options;
+    }
+
     public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest() {
         final ContainerDefinition def = new ContainerDefinition()
                 .withName("jenkins-slave")
@@ -188,6 +261,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             def.withEnvironment(new KeyValuePair()
                 .withName("JAVA_OPTS").withValue(jvmArgs))
                 .withEssential(true);
+
+        if (logDriver != null) {
+            LogConfiguration logConfig = new LogConfiguration();
+            logConfig.setLogDriver(logDriver);
+            logConfig.setOptions(getLogDriverOptionsMap());
+            def.withLogConfiguration(logConfig);
+        }
 
         return new RegisterTaskDefinitionRequest()
             .withFamily("jenkins-slave")
