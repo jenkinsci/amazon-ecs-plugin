@@ -54,7 +54,7 @@
       <f:textbox />
     </f:entry>
     <f:entry title="${%Logging Configuration}">
-      <f:repeatable field="logConfigs">
+      <f:repeatable field="logDriverOptions">
         <table width="100%">
           <f:entry title="${%Name}" field="name">
             <f:textbox />
