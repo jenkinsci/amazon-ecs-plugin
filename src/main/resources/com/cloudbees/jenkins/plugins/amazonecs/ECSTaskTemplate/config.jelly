@@ -50,5 +50,25 @@
     <f:entry title="${%Privileged}" field="privileged">
       <f:checkbox />
     </f:entry>
+    <f:entry title="${%Logging Driver}" field="logDriver">
+      <f:textbox />
+    </f:entry>
+    <f:entry title="${%Logging Configuration}">
+      <f:repeatable field="logConfigs">
+        <table width="100%">
+          <f:entry title="${%Name}" field="name">
+            <f:textbox />
+          </f:entry>
+          <f:entry title="${%Value}" field="value">
+            <f:textbox />
+          </f:entry>
+          <f:entry>
+            <div align="right">
+              <f:repeatableDeleteButton />
+            </div>
+          </f:entry>
+        </table>
+      </f:repeatable>
+    </f:entry>
   </f:advanced>
 </j:jelly>
