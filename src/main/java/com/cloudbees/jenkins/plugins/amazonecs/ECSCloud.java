@@ -200,6 +200,7 @@ public class ECSCloud extends Cloud {
             client = new AmazonECSClient(credentials);
         }
         client.setRegion(getRegion(regionName));
+        LOGGER.log(Level.FINE, "Selected Region: {0}", regionName);
         return client;
     }
 
@@ -233,8 +234,6 @@ public class ECSCloud extends Cloud {
             LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
             final AmazonECSClient client = getAmazonECSClient();
-            LOGGER.log(Level.INFO, "Selected Region: {0}", getRegionName());
-            client.setRegion(getRegion(getRegionName()));
 
             Collection<String> command = getDockerRunCommand(slave);
             String definitionArn = template.getTaskDefinitionArn();
