@@ -245,7 +245,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return volumes;
     }
 
-    private Collection<Volume> getVolumeVolumes() {
+    private Collection<Volume> getVolumeEntries() {
         if (null == volumes || volumes.isEmpty())
             return null;
         Collection<Volume> vols = new ArrayList<Volume>();
@@ -263,7 +263,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return vols;
     }
 
-    private Collection<MountPoint> getMountPointMounts() {
+    private Collection<MountPoint> getMountPointEntries() {
         if (null == mountPoints || mountPoints.isEmpty())
             return null;
         Collection<MountPoint> mounts = new ArrayList<MountPoint>();
@@ -389,7 +389,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                 .withEnvironment(getEnvironmentKeyValuePairs())
                 .withExtraHosts(getExtraHostEntries())
                 .withMemory(memory)
-                .withMountPoints(getMountPointMounts())
+                .withMountPoints(getMountPointEntries())
                 .withCpu(cpu)
                 .withPrivileged(privileged);
         if (entrypoint != null)
@@ -402,7 +402,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
         return new RegisterTaskDefinitionRequest()
             .withFamily("jenkins-slave")
-            .withVolumes(getVolumeVolumes())
+            .withVolumes(getVolumeEntries())
             .withContainerDefinitions(def);
     }
 
