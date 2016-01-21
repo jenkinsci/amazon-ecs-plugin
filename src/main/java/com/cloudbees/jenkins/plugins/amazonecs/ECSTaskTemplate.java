@@ -109,11 +109,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private String jvmArgs;
 
     /**
-      Instance volumes, exportable to containers
-     */
-    private List<VolumeEntry> volumes;
-
-    /**
       Container mount points, imported from volumes
      */
     private List<MountPointEntry> mountPoints;
@@ -137,7 +132,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            boolean privileged,
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
-                           @Nullable List<VolumeEntry> volumes,
                            @Nullable List<MountPointEntry> mountPoints) {
         this.label = label;
         this.image = image;
@@ -147,7 +141,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.privileged = privileged;
         this.environments = environments;
         this.extraHosts = extraHosts;
-        this.volumes = volumes;
         this.mountPoints = mountPoints;
     }
 
@@ -241,17 +234,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return mountPoints;
     }
 
-    public List<VolumeEntry> getVolumes() {
-        return volumes;
-    }
-
     private Collection<Volume> getVolumeEntries() {
-        if (null == volumes || volumes.isEmpty())
+        if (null == mountPoints || mountPoints.isEmpty())
             return null;
         Collection<Volume> vols = new ArrayList<Volume>();
-        for (VolumeEntry volume : volumes) {
-            String name = volume.name;
-            String sourcePath = volume.sourcePath;
+        for (MountPointEntry mount : mountPoints) {
+            String name = mount.name;
+            String sourcePath = mount.sourcePath;
             HostVolumeProperties hostVolume = new HostVolumeProperties();
             if (StringUtils.isEmpty(name))
                 continue;
@@ -268,7 +257,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             return null;
         Collection<MountPoint> mounts = new ArrayList<MountPoint>();
         for (MountPointEntry mount : mountPoints) {
-            String src = mount.sourceVolume;
+            String src = mount.name;
             String path = mount.containerPath;
             Boolean ro = mount.readOnly;
             if (StringUtils.isEmpty(src) || StringUtils.isEmpty(path))
@@ -327,19 +316,26 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     public static class MountPointEntry extends AbstractDescribableImpl<MountPointEntry> {
-        public String sourceVolume, containerPath;
+        public String name, sourcePath, containerPath;
         public Boolean readOnly;
 
         @DataBoundConstructor
-        public MountPointEntry(String sourceVolume, String containerPath, Boolean readOnly) {
-            this.sourceVolume = sourceVolume;
+        public MountPointEntry(String name,
+                               String sourcePath,
+                               String containerPath,
+                               Boolean readOnly) {
+            this.name = name;
+            this.sourcePath = sourcePath;
             this.containerPath = containerPath;
             this.readOnly = readOnly;
         }
 
         @Override
         public String toString() {
-            return "MountPointEntry{host:" + sourceVolume + ", container:" + containerPath + ", readOnly:" +readOnly + "}";
+            return "MountPointEntry{name:" + name +
+                   ", sourcePath:" + sourcePath +
+                   ", containerPath:" + containerPath +
+                   ", readOnly:" + readOnly + "}";
         }
 
         @Extension
@@ -347,29 +343,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             @Override
             public String getDisplayName() {
                 return "MountPointEntry";
-            }
-        }
-    }
-
-    public static class VolumeEntry extends AbstractDescribableImpl<VolumeEntry> {
-        public String name, sourcePath;
-
-        @DataBoundConstructor
-        public VolumeEntry(String name, String sourcePath) {
-            this.name = name;
-            this.sourcePath = sourcePath;
-        }
-
-        @Override
-        public String toString() {
-            return "VolumeEntry{" + name + ":" + sourcePath + "}";
-        }
-
-        @Extension
-        public static class DescriptorImpl extends Descriptor<VolumeEntry> {
-            @Override
-            public String getDisplayName() {
-                return "VolumeEntry";
             }
         }
     }
