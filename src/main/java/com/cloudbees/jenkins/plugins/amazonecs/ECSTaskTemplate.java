@@ -280,7 +280,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return mounts;
     }
 
-    public static class EnvironmentEntry {
+    public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> {
         public String name, value;
 
         @DataBoundConstructor
@@ -293,9 +293,17 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         public String toString() {
             return "EnvironmentEntry{" + name + ": " + value + "}";
         }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<MountPointEntry> {
+            @Override
+            public String getDisplayName() {
+                return "EnvironmentEntry";
+            }
+        }
     }
 
-    public static class ExtraHostEntry {
+    public static class ExtraHostEntry extends AbstractDescribableImpl<ExtraHostEntry> {
         public String ipAddress, hostname;
 
         @DataBoundConstructor
@@ -307,6 +315,14 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         @Override
         public String toString() {
             return "ExtraHostEntry{" + ipAddress + ": " + hostname + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<MountPointEntry> {
+            @Override
+            public String getDisplayName() {
+                return "ExtraHostEntry";
+            }
         }
     }
 
