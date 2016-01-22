@@ -28,6 +28,9 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.HostEntry;
+import com.amazonaws.services.ecs.model.Volume;
+import com.amazonaws.services.ecs.model.HostVolumeProperties;
+import com.amazonaws.services.ecs.model.MountPoint;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
@@ -104,6 +107,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      */
     @CheckForNull
     private String jvmArgs;
+
+    /**
+      Container mount points, imported from volumes
+     */
+    private List<MountPointEntry> mountPoints;
+
     /**
      * Indicates whether the container should run in privileged mode
      */
@@ -122,7 +131,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            int cpu,
                            boolean privileged,
                            @Nullable List<EnvironmentEntry> environments,
-                           @Nullable List<ExtraHostEntry> extraHosts) {
+                           @Nullable List<ExtraHostEntry> extraHosts,
+                           @Nullable List<MountPointEntry> mountPoints) {
         this.label = label;
         this.image = image;
         this.remoteFSRoot = remoteFSRoot;
@@ -131,6 +141,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.privileged = privileged;
         this.environments = environments;
         this.extraHosts = extraHosts;
+        this.mountPoints = mountPoints;
     }
 
     @DataBoundSetter
@@ -219,7 +230,46 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return items;
     }
 
-    public static class EnvironmentEntry {
+    public List<MountPointEntry> getMountPoints() {
+        return mountPoints;
+    }
+
+    private Collection<Volume> getVolumeEntries() {
+        if (null == mountPoints || mountPoints.isEmpty())
+            return null;
+        Collection<Volume> vols = new ArrayList<Volume>();
+        for (MountPointEntry mount : mountPoints) {
+            String name = mount.name;
+            String sourcePath = mount.sourcePath;
+            HostVolumeProperties hostVolume = new HostVolumeProperties();
+            if (StringUtils.isEmpty(name))
+                continue;
+            if (! StringUtils.isEmpty(sourcePath))
+                hostVolume.setSourcePath(sourcePath);
+            vols.add(new Volume().withName(name)
+                                 .withHost(hostVolume));
+        }
+        return vols;
+    }
+
+    private Collection<MountPoint> getMountPointEntries() {
+        if (null == mountPoints || mountPoints.isEmpty())
+            return null;
+        Collection<MountPoint> mounts = new ArrayList<MountPoint>();
+        for (MountPointEntry mount : mountPoints) {
+            String src = mount.name;
+            String path = mount.containerPath;
+            Boolean ro = mount.readOnly;
+            if (StringUtils.isEmpty(src) || StringUtils.isEmpty(path))
+                continue;
+            mounts.add(new MountPoint().withSourceVolume(src)
+                                       .withContainerPath(path)
+                                       .withReadOnly(ro));
+        }
+        return mounts;
+    }
+
+    public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> {
         public String name, value;
 
         @DataBoundConstructor
@@ -232,9 +282,17 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         public String toString() {
             return "EnvironmentEntry{" + name + ": " + value + "}";
         }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<MountPointEntry> {
+            @Override
+            public String getDisplayName() {
+                return "EnvironmentEntry";
+            }
+        }
     }
 
-    public static class ExtraHostEntry {
+    public static class ExtraHostEntry extends AbstractDescribableImpl<ExtraHostEntry> {
         public String ipAddress, hostname;
 
         @DataBoundConstructor
@@ -246,6 +304,46 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         @Override
         public String toString() {
             return "ExtraHostEntry{" + ipAddress + ": " + hostname + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<MountPointEntry> {
+            @Override
+            public String getDisplayName() {
+                return "ExtraHostEntry";
+            }
+        }
+    }
+
+    public static class MountPointEntry extends AbstractDescribableImpl<MountPointEntry> {
+        public String name, sourcePath, containerPath;
+        public Boolean readOnly;
+
+        @DataBoundConstructor
+        public MountPointEntry(String name,
+                               String sourcePath,
+                               String containerPath,
+                               Boolean readOnly) {
+            this.name = name;
+            this.sourcePath = sourcePath;
+            this.containerPath = containerPath;
+            this.readOnly = readOnly;
+        }
+
+        @Override
+        public String toString() {
+            return "MountPointEntry{name:" + name +
+                   ", sourcePath:" + sourcePath +
+                   ", containerPath:" + containerPath +
+                   ", readOnly:" + readOnly + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<MountPointEntry> {
+            @Override
+            public String getDisplayName() {
+                return "MountPointEntry";
+            }
         }
     }
 
@@ -264,6 +362,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                 .withEnvironment(getEnvironmentKeyValuePairs())
                 .withExtraHosts(getExtraHostEntries())
                 .withMemory(memory)
+                .withMountPoints(getMountPointEntries())
                 .withCpu(cpu)
                 .withPrivileged(privileged);
         if (entrypoint != null)
@@ -276,6 +375,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
         return new RegisterTaskDefinitionRequest()
             .withFamily("jenkins-slave")
+            .withVolumes(getVolumeEntries())
             .withContainerDefinitions(def);
     }
 
