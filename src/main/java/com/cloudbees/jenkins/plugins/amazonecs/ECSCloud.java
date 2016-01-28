@@ -29,13 +29,13 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECSClient;
+import com.amazonaws.services.ecs.model.ClientException;
 import com.amazonaws.services.ecs.model.ContainerOverride;
 import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
 import com.amazonaws.services.ecs.model.TaskOverride;
-import com.amazonaws.services.ecs.model.ClientException;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -314,6 +314,14 @@ public class ECSCloud extends Cloud {
                   Jenkins.getInstance(),
                   ACL.SYSTEM,
                   Collections.EMPTY_LIST));
+        }
+
+        public ListBoxModel doFillRegionNameItems() {
+            final ListBoxModel options = new ListBoxModel();
+            for (Region region : RegionUtils.getRegions()) {
+                options.add(region.getName());
+            }
+            return options;
         }
 
         public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId, @QueryParameter String regionName) {

@@ -34,7 +34,7 @@
   </f:entry>
 
   <f:entry field="regionName" title="${%Amazon ECS Region Name}" description="AWS regionName for ECS. If not specified, use us-east-1.">
-    <f:textbox/>
+    <f:select />
   </f:entry>
 
   <f:entry field="cluster" title="${%ECS Cluster}">
