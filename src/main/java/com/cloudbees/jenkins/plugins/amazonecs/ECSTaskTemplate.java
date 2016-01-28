@@ -284,7 +284,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         }
 
         @Extension
-        public static class DescriptorImpl extends Descriptor<MountPointEntry> {
+        public static class DescriptorImpl extends Descriptor<EnvironmentEntry> {
             @Override
             public String getDisplayName() {
                 return "EnvironmentEntry";
@@ -307,7 +307,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         }
 
         @Extension
-        public static class DescriptorImpl extends Descriptor<MountPointEntry> {
+        public static class DescriptorImpl extends Descriptor<ExtraHostEntry> {
             @Override
             public String getDisplayName() {
                 return "ExtraHostEntry";
