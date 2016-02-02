@@ -70,5 +70,62 @@
         </table>
       </f:repeatable>
     </f:entry>
+    <f:entry title="${%Environments}">
+      <f:repeatable field="environments">
+        <table width="100%">
+          <f:entry title="${%Name}" field="name">
+            <f:textbox />
+          </f:entry>
+          <f:entry title="${%Value}" field="value">
+            <f:textbox />
+          </f:entry>
+          <f:entry>
+            <div align="right">
+              <f:repeatableDeleteButton />
+            </div>
+          </f:entry>
+        </table>
+      </f:repeatable>
+    </f:entry>
+    <f:entry title="${%Extra Hosts}">
+      <f:repeatable field="extraHosts">
+        <table width="100%">
+          <f:entry title="${%IP Address}" field="ipAddress">
+            <f:textbox value="${instance.ipAddress}" />
+          </f:entry>
+          <f:entry title="${%Hostname}" field="hostname">
+            <f:textbox value="${instance.hostname}" />
+          </f:entry>
+          <f:entry>
+            <div align="right">
+              <f:repeatableDeleteButton />
+            </div>
+          </f:entry>
+        </table>
+      </f:repeatable>
+    </f:entry>
+    <f:entry title="${%Container Mount Points}">
+      <f:repeatable field="mountPoints">
+        <table width="100%">
+          <f:entry title="${%Name}" field="name">
+            <f:textbox value="${instance.name}" />
+          </f:entry>
+          <f:entry title="${%Source Path}" field="sourcePath">
+            <f:textbox value="${instance.sourcePath}" />
+          </f:entry>
+          <f:entry title="${%Container Path}" field="containerPath">
+            <f:textbox value="${instance.containerPath}" />
+          </f:entry>
+          <f:entry title="${%Read Only}" field="readOnly">
+            <f:checkbox />
+          </f:entry>
+          <f:entry title="">
+            <div align="right">
+              <f:repeatableDeleteButton />
+            </div>
+          </f:entry>
+        </table>
+      </f:repeatable>
+    </f:entry>
   </f:advanced>
 </j:jelly>

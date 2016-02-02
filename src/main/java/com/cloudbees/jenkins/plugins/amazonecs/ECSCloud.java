@@ -29,13 +29,13 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECSClient;
+import com.amazonaws.services.ecs.model.ClientException;
 import com.amazonaws.services.ecs.model.ContainerOverride;
 import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
 import com.amazonaws.services.ecs.model.TaskOverride;
-import com.amazonaws.services.ecs.model.ClientException;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -136,7 +136,7 @@ public class ECSCloud extends Cloud {
     }
 
     @CheckForNull
-    static AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
+    private static AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
         if (StringUtils.isBlank(credentialsId)) {
             return null;
         }
@@ -180,6 +180,10 @@ public class ECSCloud extends Cloud {
         }
     }
 
+    /* package */ AmazonECSClient getAmazonECSClient() {
+        return getAmazonECSClient(credentialsId, regionName);
+    }
+
     private static AmazonECSClient getAmazonECSClient(String credentialsId, String regionName) {
         final AmazonECSClient client;
         AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
@@ -196,11 +200,12 @@ public class ECSCloud extends Cloud {
             client = new AmazonECSClient(credentials);
         }
         client.setRegion(getRegion(regionName));
+        LOGGER.log(Level.FINE, "Selected Region: {0}", regionName);
         return client;
     }
 
     void deleteTask(String taskArn) {
-        final AmazonECSClient client = getAmazonECSClient(credentialsId, getRegionName());
+        final AmazonECSClient client = getAmazonECSClient();
 
         LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
         try {
@@ -228,9 +233,7 @@ public class ECSCloud extends Cloud {
             Jenkins.getInstance().addNode(slave);
             LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
-            final AmazonECSClient client = new AmazonECSClient(getCredentials(credentialsId));
-            LOGGER.log(Level.INFO, "Selected Region: {0}", getRegionName());
-            client.setRegion(getRegion(getRegionName()));
+            final AmazonECSClient client = getAmazonECSClient();
 
             Collection<String> command = getDockerRunCommand(slave);
             String definitionArn = template.getTaskDefinitionArn();
@@ -311,6 +314,14 @@ public class ECSCloud extends Cloud {
                   Jenkins.getInstance(),
                   ACL.SYSTEM,
                   Collections.EMPTY_LIST));
+        }
+
+        public ListBoxModel doFillRegionNameItems() {
+            final ListBoxModel options = new ListBoxModel();
+            for (Region region : RegionUtils.getRegions()) {
+                options.add(region.getName());
+            }
+            return options;
         }
 
         public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId, @QueryParameter String regionName) {

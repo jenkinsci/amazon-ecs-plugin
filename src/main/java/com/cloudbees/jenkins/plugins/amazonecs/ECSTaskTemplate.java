@@ -27,6 +27,10 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 
 import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
+import com.amazonaws.services.ecs.model.HostEntry;
+import com.amazonaws.services.ecs.model.Volume;
+import com.amazonaws.services.ecs.model.HostVolumeProperties;
+import com.amazonaws.services.ecs.model.MountPoint;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
@@ -36,7 +40,6 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
-import jenkins.model.JenkinsLocationConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -44,11 +47,12 @@ import org.kohsuke.stapler.DataBoundSetter;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -108,28 +112,36 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private String jvmArgs;
 
     /**
+      Container mount points, imported from volumes
+     */
+    private List<MountPointEntry> mountPoints;
+
+    /**
      * Indicates whether the container should run in privileged mode
      */
     private final boolean privileged;
 
+    private List<EnvironmentEntry> environments;
+    private List<ExtraHostEntry> extraHosts;
+
     private String taskDefinitionArn;
 
     /**
-     * The log configuration specification for the container.
-     * This parameter maps to LogConfig in the Create a container section of
-     * the Docker Remote API and the --log-driver option to docker run.
-     * Valid log drivers are displayed in the LogConfiguration data type.
-     * This parameter requires version 1.18 of the Docker Remote API or greater
-     * on your container instance. To check the Docker Remote API version on
-     * your container instance, log into your container instance and run the
-     * following command: sudo docker version | grep "Server API version"
-     * The Amazon ECS container agent running on a container instance must
-     * register the logging drivers available on that instance with the
-     * ECS_AVAILABLE_LOGGING_DRIVERS environment variable before containers
-     * placed on that instance can use these log configuration options.
-     * For more information, see Amazon ECS Container Agent Configuration
-     * in the Amazon EC2 Container Service Developer Guide.
-     */
+    * The log configuration specification for the container.
+    * This parameter maps to LogConfig in the Create a container section of
+    * the Docker Remote API and the --log-driver option to docker run.
+    * Valid log drivers are displayed in the LogConfiguration data type.
+    * This parameter requires version 1.18 of the Docker Remote API or greater
+    * on your container instance. To check the Docker Remote API version on
+    * your container instance, log into your container instance and run the
+    * following command: sudo docker version | grep "Server API version"
+    * The Amazon ECS container agent running on a container instance must
+    * register the logging drivers available on that instance with the
+    * ECS_AVAILABLE_LOGGING_DRIVERS environment variable before containers
+    * placed on that instance can use these log configuration options.
+    * For more information, see Amazon ECS Container Agent Configuration
+    * in the Amazon EC2 Container Service Developer Guide.
+    */
     @CheckForNull
     private String logDriver;
     private List<LogDriverOption> logDriverOptions;
@@ -142,8 +154,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            int cpu,
                            boolean privileged,
                            @Nullable String logDriver,
-                           @Nullable List<LogDriverOption> logDriverOptions
-                           ) {
+                           @Nullable List<LogDriverOption> logDriverOptions,
+                           @Nullable List<EnvironmentEntry> environments,
+                           @Nullable List<ExtraHostEntry> extraHosts,
+                           @Nullable List<MountPointEntry> mountPoints) {
         this.label = label;
         this.image = image;
         this.remoteFSRoot = remoteFSRoot;
@@ -152,6 +166,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.privileged = privileged;
         this.logDriver = logDriver;
         this.logDriverOptions = logDriverOptions;
+        this.environments = environments;
+        this.extraHosts = extraHosts;
+        this.mountPoints = mountPoints;
     }
 
     @DataBoundSetter
@@ -192,18 +209,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return jvmArgs;
     }
 
-    public String getTaskDefinitionArn() {
-        return taskDefinitionArn;
-    }
-
-    public Set<LabelAtom> getLabelSet() {
-        return Label.parse(label);
-    }
-
-    public String getDisplayName() {
-        return "ECS Slave " + label;
-    }
-
     public boolean getPrivileged() {
         return privileged;
     }
@@ -212,7 +217,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return logDriver;
     }
 
-    public static class LogDriverOption {
+    public static class LogDriverOption extends AbstractDescribableImpl<LogDriverOption>{
         public String name, value;
 
         @DataBoundConstructor
@@ -224,6 +229,14 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         @Override
         public String toString() {
             return "LogDriverOption{" + name + ": " + value + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<LogDriverOption> {
+            @Override
+            public String getDisplayName() {
+                return "logDriverOption";
+            }
         }
     }
 
@@ -247,11 +260,183 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return options;
     }
 
+    public String getTaskDefinitionArn() {
+        return taskDefinitionArn;
+    }
+
+    public List<EnvironmentEntry> getEnvironments() {
+        return environments;
+    }
+
+    public List<ExtraHostEntry> getExtraHosts() {
+        return extraHosts;
+    }
+
+    private Collection<KeyValuePair> getEnvironmentKeyValuePairs() {
+        if (null == environments || environments.isEmpty()) {
+            return null;
+        }
+        Collection<KeyValuePair> items = new ArrayList<KeyValuePair>();
+        for (EnvironmentEntry environment : environments) {
+            String name = environment.name;
+            String value = environment.value;
+            if (StringUtils.isEmpty(name) || StringUtils.isEmpty(value)) {
+                continue;
+            }
+            items.add(new KeyValuePair().withName(name).withValue(value));
+        }
+        return items;
+    }
+
+    private Collection<HostEntry> getExtraHostEntries() {
+        if (null == extraHosts || extraHosts.isEmpty()) {
+            return null;
+        }
+        Collection<HostEntry> items = new ArrayList<HostEntry>();
+        for (ExtraHostEntry extrahost : extraHosts) {
+            String ipAddress = extrahost.ipAddress;
+            String hostname = extrahost.hostname;
+            if (StringUtils.isEmpty(ipAddress) || StringUtils.isEmpty(hostname)) {
+                continue;
+            }
+            items.add(new HostEntry().withIpAddress(ipAddress).withHostname(hostname));
+        }
+        return items;
+    }
+
+    public List<MountPointEntry> getMountPoints() {
+        return mountPoints;
+    }
+
+    private Collection<Volume> getVolumeEntries() {
+        if (null == mountPoints || mountPoints.isEmpty())
+            return null;
+        Collection<Volume> vols = new ArrayList<Volume>();
+        for (MountPointEntry mount : mountPoints) {
+            String name = mount.name;
+            String sourcePath = mount.sourcePath;
+            HostVolumeProperties hostVolume = new HostVolumeProperties();
+            if (StringUtils.isEmpty(name))
+                continue;
+            if (! StringUtils.isEmpty(sourcePath))
+                hostVolume.setSourcePath(sourcePath);
+            vols.add(new Volume().withName(name)
+                                 .withHost(hostVolume));
+        }
+        return vols;
+    }
+
+    private Collection<MountPoint> getMountPointEntries() {
+        if (null == mountPoints || mountPoints.isEmpty())
+            return null;
+        Collection<MountPoint> mounts = new ArrayList<MountPoint>();
+        for (MountPointEntry mount : mountPoints) {
+            String src = mount.name;
+            String path = mount.containerPath;
+            Boolean ro = mount.readOnly;
+            if (StringUtils.isEmpty(src) || StringUtils.isEmpty(path))
+                continue;
+            mounts.add(new MountPoint().withSourceVolume(src)
+                                       .withContainerPath(path)
+                                       .withReadOnly(ro));
+        }
+        return mounts;
+    }
+
+    public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> {
+        public String name, value;
+
+        @DataBoundConstructor
+        public EnvironmentEntry(String name, String value) {
+            this.name = name;
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return "EnvironmentEntry{" + name + ": " + value + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<EnvironmentEntry> {
+            @Override
+            public String getDisplayName() {
+                return "EnvironmentEntry";
+            }
+        }
+    }
+
+    public static class ExtraHostEntry extends AbstractDescribableImpl<ExtraHostEntry> {
+        public String ipAddress, hostname;
+
+        @DataBoundConstructor
+        public ExtraHostEntry(String ipAddress, String hostname) {
+            this.ipAddress = ipAddress;
+            this.hostname = hostname;
+        }
+
+        @Override
+        public String toString() {
+            return "ExtraHostEntry{" + ipAddress + ": " + hostname + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<ExtraHostEntry> {
+            @Override
+            public String getDisplayName() {
+                return "ExtraHostEntry";
+            }
+        }
+    }
+
+    public static class MountPointEntry extends AbstractDescribableImpl<MountPointEntry> {
+        public String name, sourcePath, containerPath;
+        public Boolean readOnly;
+
+        @DataBoundConstructor
+        public MountPointEntry(String name,
+                               String sourcePath,
+                               String containerPath,
+                               Boolean readOnly) {
+            this.name = name;
+            this.sourcePath = sourcePath;
+            this.containerPath = containerPath;
+            this.readOnly = readOnly;
+        }
+
+        @Override
+        public String toString() {
+            return "MountPointEntry{name:" + name +
+                   ", sourcePath:" + sourcePath +
+                   ", containerPath:" + containerPath +
+                   ", readOnly:" + readOnly + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<MountPointEntry> {
+            @Override
+            public String getDisplayName() {
+                return "MountPointEntry";
+            }
+        }
+    }
+
+    public Set<LabelAtom> getLabelSet() {
+        return Label.parse(label);
+    }
+
+    public String getDisplayName() {
+        return "ECS Slave " + label;
+    }
+
     public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest() {
         final ContainerDefinition def = new ContainerDefinition()
                 .withName("jenkins-slave")
                 .withImage(image)
+                .withEnvironment(getEnvironmentKeyValuePairs())
+                .withExtraHosts(getExtraHostEntries())
                 .withMemory(memory)
+                .withMountPoints(getMountPointEntries())
                 .withCpu(cpu)
                 .withPrivileged(privileged);
         if (entrypoint != null)
@@ -271,12 +456,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
         return new RegisterTaskDefinitionRequest()
             .withFamily("jenkins-slave")
+            .withVolumes(getVolumeEntries())
             .withContainerDefinitions(def);
     }
 
     public void setOwer(ECSCloud owner) {
-        final AmazonECSClient client = new AmazonECSClient(ECSCloud.getCredentials(owner.getCredentialsId()));
-        client.setRegion(ECSCloud.getRegion(owner.getRegionName()));
+        final AmazonECSClient client = owner.getAmazonECSClient();
         if (taskDefinitionArn == null) {
             final RegisterTaskDefinitionRequest req = asRegisterTaskDefinitionRequest();
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);

@@ -25,7 +25,11 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
+import hudson.model.Executor;
+import hudson.model.Queue;
 import hudson.slaves.AbstractCloudComputer;
+
+import java.io.IOException;
 
 /**
  * Amazon EC2 Container Service implementation of {@link hudson.model.Computer}
@@ -35,5 +39,29 @@ import hudson.slaves.AbstractCloudComputer;
 public class ECSComputer extends AbstractCloudComputer {
     public ECSComputer(ECSSlave slave) {
         super(slave);
+    }
+
+    @Override
+    public void taskCompleted(Executor executor, Queue.Task task, long durationMS) {
+        super.taskCompleted(executor, task, durationMS);
+        terminate();
+    }
+
+    @Override
+    public void taskCompletedWithProblems(Executor executor, Queue.Task task, long durationMS, Throwable problems) {
+        super.taskCompletedWithProblems(executor, task, durationMS, problems);
+        terminate();
+    }
+
+    /**
+     * Computer is terminated after build completion so we enforce it will only be used once.
+     */
+    private void terminate() {
+        setAcceptingTasks(false);
+        try {
+            getNode().terminate();
+        } catch (InterruptedException e) {
+        } catch (IOException e) {
+        }
     }
 }
