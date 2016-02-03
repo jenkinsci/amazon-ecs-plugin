@@ -58,8 +58,8 @@ public class ECSSlave extends AbstractCloudSlave {
     @CheckForNull
     private String taskArn;
 
-    public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
-        super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, RetentionStrategy.NOOP, Collections.EMPTY_LIST);
+    public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher, @Nonnull RetentionStrategy retentionStrategy) throws Descriptor.FormException, IOException {
+        super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, retentionStrategy, Collections.EMPTY_LIST);
         this.cloud = cloud;
     }
 
