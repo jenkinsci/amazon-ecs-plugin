@@ -49,6 +49,10 @@ public class ECSSlave extends AbstractCloudSlave {
     private final ECSCloud cloud;
 
     /**
+     * AWS Resource Name (ARN) of the ECS Cluster.
+     */
+    private String clusterArn;
+    /**
      * AWS Resource Name (ARN) of the ECS Task Definition.
      */
     private String taskDefinitonArn;
@@ -63,12 +67,20 @@ public class ECSSlave extends AbstractCloudSlave {
         this.cloud = cloud;
     }
 
+    public String getClusterArn() {
+        return clusterArn;
+    }
+
     public String getTaskDefinitonArn() {
         return taskDefinitonArn;
     }
 
     public String getTaskArn() {
         return taskArn;
+    }
+
+    void setClusterArn(String clusterArn) {
+        this.clusterArn = clusterArn;
     }
 
     void setTaskArn(String taskArn) {
@@ -87,7 +99,7 @@ public class ECSSlave extends AbstractCloudSlave {
     @Override
     protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
         if (taskArn != null) {
-            cloud.deleteTask(taskArn);
+            cloud.deleteTask(taskArn, clusterArn);
         }
     }
 
