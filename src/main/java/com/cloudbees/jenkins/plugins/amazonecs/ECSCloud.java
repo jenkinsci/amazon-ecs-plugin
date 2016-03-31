@@ -25,6 +25,7 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
@@ -42,6 +43,7 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import hudson.AbortException;
 import hudson.Extension;
+import hudson.ProxyConfiguration;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Label;
@@ -186,18 +188,28 @@ public class ECSCloud extends Cloud {
 
     private static AmazonECSClient getAmazonECSClient(String credentialsId, String regionName) {
         final AmazonECSClient client;
+        
+        ProxyConfiguration proxy = Jenkins.getInstance().proxy;
+        ClientConfiguration clientConfiguration = new ClientConfiguration();            
+        if(proxy != null) {
+        	clientConfiguration.setProxyHost(proxy.name);
+        	clientConfiguration.setProxyPort(proxy.port);
+        	clientConfiguration.setProxyUsername(proxy.getUserName());
+        	clientConfiguration.setProxyPassword(proxy.getPassword());
+        }
+        
         AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
         if (credentials == null) {
             // no credentials provided, rely on com.amazonaws.auth.DefaultAWSCredentialsProviderChain
             // to use IAM Role define at the EC2 instance level ...
-            client = new AmazonECSClient();
+            client = new AmazonECSClient(clientConfiguration);
         } else {
             if (LOGGER.isLoggable(Level.FINE)) {
                 String awsAccessKeyId = credentials.getCredentials().getAWSAccessKeyId();
                 String obfuscatedAccessKeyId = StringUtils.left(awsAccessKeyId, 4) + StringUtils.repeat("*", awsAccessKeyId.length() - (2 * 4)) + StringUtils.right(awsAccessKeyId, 4);
                 LOGGER.log(Level.FINE, "Connect to Amazon ECS with IAM Access Key {1}", new Object[]{obfuscatedAccessKeyId});
             }
-            client = new AmazonECSClient(credentials);
+            client = new AmazonECSClient(credentials, clientConfiguration);
         }
         client.setRegion(getRegion(regionName));
         LOGGER.log(Level.FINE, "Selected Region: {0}", regionName);
