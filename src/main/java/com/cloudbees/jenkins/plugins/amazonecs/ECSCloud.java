@@ -204,12 +204,12 @@ public class ECSCloud extends Cloud {
         return client;
     }
 
-    void deleteTask(String taskArn) {
+    void deleteTask(String taskArn, String clusterArn) {
         final AmazonECSClient client = getAmazonECSClient();
 
         LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
         try {
-            client.stopTask(new StopTaskRequest().withTask(taskArn));
+            client.stopTask(new StopTaskRequest().withTask(taskArn).withCluster(clusterArn));
         } catch (ClientException e) {
             LOGGER.log(Level.SEVERE, "Couldn't stop task arn " + taskArn + " caught exception: " + e.getMessage(), e);
         }
@@ -234,6 +234,8 @@ public class ECSCloud extends Cloud {
             LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
             final AmazonECSClient client = getAmazonECSClient();
+
+            slave.setClusterArn(cluster);
 
             Collection<String> command = getDockerRunCommand(slave);
             String definitionArn = template.getTaskDefinitionArn();
