@@ -93,9 +93,12 @@ public class ECSCloud extends Cloud {
      */
     @CheckForNull
     private String tunnel;
+    
+    private String jenkinsUrl;
 
     @DataBoundConstructor
-    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, String cluster, String regionName) {
+    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, 
+    		String cluster, String regionName, String jenkinsUrl) {
         super(name);
         this.credentialsId = credentialsId;
         this.cluster = cluster;
@@ -105,6 +108,11 @@ public class ECSCloud extends Cloud {
             for (ECSTaskTemplate template : templates) {
                 template.setOwer(this);
             }
+        }
+        if(StringUtils.isNotBlank(jenkinsUrl)) {
+        	this.jenkinsUrl = jenkinsUrl;
+        } else {
+        	this.jenkinsUrl = JenkinsLocationConfiguration.get().getUrl();
         }
     }
 
@@ -300,7 +308,7 @@ public class ECSCloud extends Cloud {
     private Collection<String> getDockerRunCommand(ECSSlave slave) {
         Collection<String> command = new ArrayList<String>();
         command.add("-url");
-        command.add(JenkinsLocationConfiguration.get().getUrl());
+        command.add(jenkinsUrl);
         if (StringUtils.isNotBlank(tunnel)) {
             command.add("-tunnel");
             command.add(tunnel);
