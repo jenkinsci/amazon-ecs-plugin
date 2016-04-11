@@ -154,7 +154,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            int cpu,
                            boolean privileged,
                            @Nullable List<LogDriverOption> logDriverOptions,
-                           @Nullable String logDriver,
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
                            @Nullable List<MountPointEntry> mountPoints) {
@@ -164,7 +163,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.memory = memory;
         this.cpu = cpu;
         this.privileged = privileged;
-        this.logDriver = logDriver;
         this.logDriverOptions = logDriverOptions;
         this.environments = environments;
         this.extraHosts = extraHosts;
@@ -179,6 +177,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     @DataBoundSetter
     public void setJvmArgs(String jvmArgs) {
         this.jvmArgs = StringUtils.trimToNull(jvmArgs);
+    }
+
+    @DataBoundSetter
+    public void setLogDriver(String logDriver) {
+        this.logDriver = StringUtils.trimToNull(logDriver);
     }
 
     public String getLabel() {
