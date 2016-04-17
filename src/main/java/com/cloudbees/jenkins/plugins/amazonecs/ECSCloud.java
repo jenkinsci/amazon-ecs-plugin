@@ -96,7 +96,7 @@ public class ECSCloud extends Cloud {
     
     private String jenkinsUrl;
 
-    @DataBoundConstructor
+	@DataBoundConstructor
     public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, 
     		String cluster, String regionName, String jenkinsUrl) {
         super(name);
@@ -373,5 +373,12 @@ public class ECSCloud extends Cloud {
             return Region.getRegion(Regions.US_EAST_1);
         }
     }
+    
+    public String getJenkinsUrl() {
+		return jenkinsUrl;
+	}
 
+	public void setJenkinsUrl(String jenkinsUrl) {
+		this.jenkinsUrl = jenkinsUrl;
+	}
 }
