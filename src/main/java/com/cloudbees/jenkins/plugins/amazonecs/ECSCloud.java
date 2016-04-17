@@ -96,7 +96,7 @@ public class ECSCloud extends Cloud {
     
     private String jenkinsUrl;
 
-    @DataBoundConstructor
+	@DataBoundConstructor
     public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, 
     		String cluster, String regionName, String jenkinsUrl) {
         super(name);
@@ -229,7 +229,7 @@ public class ECSCloud extends Cloud {
 
         LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
         try {
-            client.stopTask(new StopTaskRequest().withTask(taskArn));
+            client.stopTask(new StopTaskRequest().withTask(taskArn).withCluster(cluster));
         } catch (ClientException e) {
             LOGGER.log(Level.SEVERE, "Couldn't stop task arn " + taskArn + " caught exception: " + e.getMessage(), e);
         }
@@ -371,5 +371,12 @@ public class ECSCloud extends Cloud {
             return Region.getRegion(Regions.US_EAST_1);
         }
     }
+    
+    public String getJenkinsUrl() {
+		return jenkinsUrl;
+	}
 
+	public void setJenkinsUrl(String jenkinsUrl) {
+		this.jenkinsUrl = jenkinsUrl;
+	}
 }
