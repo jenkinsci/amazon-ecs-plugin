@@ -6,3 +6,10 @@
 # MAVEN
 target/
 work/
+
+
+# Eclipse
+bin/
+.classpath
+.project
+.settings/
