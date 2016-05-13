@@ -37,6 +37,7 @@ import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
 import com.amazonaws.services.ecs.model.TaskOverride;
+import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -139,13 +140,7 @@ public class ECSCloud extends Cloud {
 
     @CheckForNull
     private static AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
-        if (StringUtils.isBlank(credentialsId)) {
-            return null;
-        }
-        return (AmazonWebServicesCredentials) CredentialsMatchers.firstOrNull(
-          CredentialsProvider.lookupCredentials(AmazonWebServicesCredentials.class, Jenkins.getInstance(),
-            ACL.SYSTEM, Collections.EMPTY_LIST),
-          CredentialsMatchers.withId(credentialsId));
+        return AWSCredentialsHelper.getCredentials(credentialsId, Jenkins.getActiveInstance());
     }
 
     @Override
@@ -320,14 +315,7 @@ public class ECSCloud extends Cloud {
         }
 
         public ListBoxModel doFillCredentialsIdItems() {
-            return new StandardListBoxModel()
-              .withEmptySelection()
-              .withMatching(
-                CredentialsMatchers.always(),
-                CredentialsProvider.lookupCredentials(AmazonWebServicesCredentials.class,
-                  Jenkins.getInstance(),
-                  ACL.SYSTEM,
-                  Collections.EMPTY_LIST));
+            return AWSCredentialsHelper.doFillCredentialsIdItems(Jenkins.getActiveInstance());
         }
 
         public ListBoxModel doFillRegionNameItems() {
