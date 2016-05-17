@@ -53,6 +53,8 @@ import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProvisioner;
+import hudson.slaves.CloudRetentionStrategy;
+import hudson.slaves.RetentionStrategy;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import jenkins.model.JenkinsLocationConfiguration;
@@ -95,13 +97,22 @@ public class ECSCloud extends Cloud {
     @CheckForNull
     private String tunnel;
 
+    /** Default timeout for idle workers that don't correctly indicate exit. */
+    private static final int DEFAULT_RETENTION_TIMEOUT_MINUTES = 5;
+    private final int retentionTimeout;
+
     @DataBoundConstructor
-    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, String cluster, String regionName) {
+    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, String cluster, String regionName, int retentionTimeout) {
         super(name);
         this.credentialsId = credentialsId;
         this.cluster = cluster;
         this.templates = templates;
         this.regionName = regionName;
+        if (retentionTimeout > 0) {
+            this.retentionTimeout = retentionTimeout;
+        } else {
+            this.retentionTimeout = DEFAULT_RETENTION_TIMEOUT_MINUTES;
+        }
         if (templates != null) {
             for (ECSTaskTemplate template : templates) {
                 template.setOwer(this);
@@ -136,6 +147,10 @@ public class ECSCloud extends Cloud {
     @DataBoundSetter
     public void setTunnel(String tunnel) {
         this.tunnel = tunnel;
+    }
+
+    public int getRetentionTimeout() {
+        return retentionTimeout;
     }
 
     @CheckForNull
@@ -236,7 +251,8 @@ public class ECSCloud extends Cloud {
         public Node call() throws Exception {
 
             String uniq = Long.toHexString(System.nanoTime());
-            ECSSlave slave = new ECSSlave(ECSCloud.this, name + "-" + uniq, template.getRemoteFSRoot(), label == null ? null : label.toString(), new JNLPLauncher());
+            RetentionStrategy retentionStrategy = new CloudRetentionStrategy(getRetentionTimeout());
+            ECSSlave slave = new ECSSlave(ECSCloud.this, name + "-" + uniq, template.getRemoteFSRoot(), label == null ? null : label.toString(), new JNLPLauncher(), retentionStrategy);
             Jenkins.getInstance().addNode(slave);
             LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 

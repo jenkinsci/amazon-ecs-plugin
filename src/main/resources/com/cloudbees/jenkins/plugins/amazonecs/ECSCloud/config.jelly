@@ -46,6 +46,9 @@
       <f:textbox />
     </f:entry>
 
+    <f:entry title="${%Container Cleanup Timeout (minutes)}" field="retentionTimeout" description="Timeout in mins for a Slave instance to live">
+      <f:textbox default="5"/>
+    </f:entry>
   </f:advanced>
 
   <f:entry title="${%ECS slave templates}">
