@@ -70,6 +70,25 @@
         </table>
       </f:repeatable>
     </f:entry>
+
+    <f:entry title="${%Linked Tasks}">
+      <f:repeatable field="linkedTasks">
+        <table width="100%">
+          <f:entry title="${%Name}" field="name">
+            <f:textbox value="${instance.name}" />
+          </f:entry>
+          <f:entry title="${%Revision}" field="revision">
+            <f:textbox value="${instance.revision}" />
+          </f:entry>
+          <f:entry>
+            <div align="right">
+              <f:repeatableDeleteButton />
+            </div>
+          </f:entry>
+        </table>
+      </f:repeatable>
+    </f:entry>
+
     <f:entry title="${%Environments}">
       <f:repeatable field="environments">
         <table width="100%">
