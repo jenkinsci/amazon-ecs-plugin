@@ -29,6 +29,7 @@ import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.HostEntry;
 import com.amazonaws.services.ecs.model.Volume;
+import com.amazonaws.services.ecs.model.VolumeFrom;
 import com.amazonaws.services.ecs.model.HostVolumeProperties;
 import com.amazonaws.services.ecs.model.MountPoint;
 import com.amazonaws.services.ecs.model.DescribeTaskDefinitionRequest;
@@ -118,6 +119,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
       Container mount points, imported from volumes
      */
     private List<MountPointEntry> mountPoints;
+    private List<VolumeFromEntry> volumesFrom;
 
     /**
       A list of tasks, linked to the current definition
@@ -173,6 +175,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
                            @Nullable List<MountPointEntry> mountPoints,
+                           @Nullable List<VolumeFromEntry> volumesFrom,
                            @Nullable List<LinkedTaskEntry> linkedTasks
                           ) {
         this.label = label;
@@ -185,6 +188,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.environments = environments;
         this.extraHosts = extraHosts;
         this.mountPoints = mountPoints;
+        this.volumesFrom = volumesFrom;
         this.linkedTasks = linkedTasks;
     }
 
@@ -303,7 +307,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             return new ArrayList<ECSLinkedTask>();
         }
         Collection<ECSLinkedTask> items = new ArrayList<ECSLinkedTask>();
-        for (LinkedTaskEntry linkedTask : getLinkedTasks()) {
+        for (LinkedTaskEntry linkedTask : linkedTasks) {
             ECSLinkedTask ecsLinked = new ECSLinkedTask(linkedTask.taskName, client);
             items.add(ecsLinked);
         }
@@ -425,6 +429,23 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return mounts;
     }
 
+    public List<VolumeFromEntry> getVolumesFrom() {
+        return volumesFrom;
+    }
+
+    public Collection<VolumeFrom> getVolumesFromEntries() {
+        if (null == volumesFrom || volumesFrom.isEmpty())
+            return null;
+        Collection<VolumeFrom> volumes = new ArrayList<VolumeFrom>();
+        for (VolumeFromEntry vol : volumesFrom) {
+            if (StringUtils.isEmpty(vol.sourceContainer))
+                continue;
+            volumes.add(new VolumeFrom().withSourceContainer(vol.sourceContainer)
+                                        .withReadOnly(vol.readOnly));
+        }
+        return volumes;
+    }
+
     public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> {
         public String name, value;
 
@@ -444,6 +465,30 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             @Override
             public String getDisplayName() {
                 return "EnvironmentEntry";
+            }
+        }
+    }
+
+    public static class VolumeFromEntry extends AbstractDescribableImpl<VolumeFromEntry> {
+        public String sourceContainer;
+        public Boolean readOnly;
+
+        @DataBoundConstructor
+        public VolumeFromEntry(String sourceContainer, Boolean readOnly) {
+            this.sourceContainer = sourceContainer;
+            this.readOnly = readOnly;
+        }
+
+        @Override
+        public String toString() {
+            return "VolumeFromEntry{sourceContainer:" + sourceContainer + ", readOnly:" + readOnly + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<VolumeFromEntry> {
+            @Override
+            public String getDisplayName() {
+                return "VolumeFromEntry";
             }
         }
     }
@@ -550,6 +595,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                 .withExtraHosts(getExtraHostEntries())
                 .withMemory(memory)
                 .withMountPoints(getMountPointEntries())
+                .withVolumesFrom(getVolumesFromEntries())
                 .withCpu(cpu)
                 .withPrivileged(privileged);
         if (entrypoint != null)
