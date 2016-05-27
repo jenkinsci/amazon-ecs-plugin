@@ -25,58 +25,54 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
-import com.amazonaws.ClientConfiguration;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECSClient;
-import com.amazonaws.services.ecs.model.ClientException;
-import com.amazonaws.services.ecs.model.ContainerOverride;
-import com.amazonaws.services.ecs.model.Failure;
-import com.amazonaws.services.ecs.model.RunTaskRequest;
-import com.amazonaws.services.ecs.model.RunTaskResult;
-import com.amazonaws.services.ecs.model.StopTaskRequest;
-import com.amazonaws.services.ecs.model.TaskOverride;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+
 import hudson.AbortException;
 import hudson.Extension;
-import hudson.ProxyConfiguration;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.Node;
-import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProvisioner;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import jenkins.model.JenkinsLocationConfiguration;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class ECSCloud extends Cloud {
-
+	
+	private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
+	
+	private static final int DEFAULT_SLAVE_TIMEOUT = 900;
+		
     private final List<ECSTaskTemplate> templates;
 
     /**
@@ -95,8 +91,15 @@ public class ECSCloud extends Cloud {
     @CheckForNull
     private String tunnel;
 
-    @DataBoundConstructor
-    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, String cluster, String regionName) {
+    private String jenkinsUrl;
+        
+    private int slaveTimoutInSeconds;
+        
+    private ECSService ecsService;
+    
+	@DataBoundConstructor
+    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, 
+    		String cluster, String regionName, String jenkinsUrl, int slaveTimoutInSeconds) {
         super(name);
         this.credentialsId = credentialsId;
         this.cluster = cluster;
@@ -107,7 +110,30 @@ public class ECSCloud extends Cloud {
                 template.setOwer(this);
             }
         }
+        
+        if(StringUtils.isNotBlank(jenkinsUrl)) {
+        	this.jenkinsUrl = jenkinsUrl;
+        } else {
+        	this.jenkinsUrl = JenkinsLocationConfiguration.get().getUrl();
+        }
+
+        if(slaveTimoutInSeconds > 0) {
+        	this.slaveTimoutInSeconds = slaveTimoutInSeconds;
+        } else {
+        	this.slaveTimoutInSeconds = DEFAULT_SLAVE_TIMEOUT;
+        }
     }
+
+	synchronized ECSService getEcsService() {
+		if (ecsService == null) {
+			ecsService = new ECSService(credentialsId, regionName);
+		}
+		return ecsService;
+	}
+
+	AmazonECSClient getAmazonECSClient() {
+		return getEcsService().getAmazonECSClient();
+	}
 
     public List<ECSTaskTemplate> getTemplates() {
         return templates;
@@ -140,7 +166,7 @@ public class ECSCloud extends Cloud {
 
     @CheckForNull
     private static AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
-        return AWSCredentialsHelper.getCredentials(credentialsId, Jenkins.getActiveInstance());
+    	return AWSCredentialsHelper.getCredentials(credentialsId, Jenkins.getActiveInstance());
     }
 
     @Override
@@ -177,50 +203,22 @@ public class ECSCloud extends Cloud {
         }
     }
 
-    /* package */ AmazonECSClient getAmazonECSClient() {
-        return getAmazonECSClient(credentialsId, regionName);
-    }
+ 	void deleteTask(String taskArn, String clusterArn) {
+		getEcsService().deleteTask(taskArn, clusterArn);
+	}
+	
+	public void setJenkinsUrl(String jenkinsUrl) {
+		this.jenkinsUrl = jenkinsUrl;
+	}
 
-    private static AmazonECSClient getAmazonECSClient(String credentialsId, String regionName) {
-        final AmazonECSClient client;
-        
-        ProxyConfiguration proxy = Jenkins.getInstance().proxy;
-        ClientConfiguration clientConfiguration = new ClientConfiguration();            
-        if(proxy != null) {
-        	clientConfiguration.setProxyHost(proxy.name);
-        	clientConfiguration.setProxyPort(proxy.port);
-        	clientConfiguration.setProxyUsername(proxy.getUserName());
-        	clientConfiguration.setProxyPassword(proxy.getPassword());
-        }
-        
-        AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
-        if (credentials == null) {
-            // no credentials provided, rely on com.amazonaws.auth.DefaultAWSCredentialsProviderChain
-            // to use IAM Role define at the EC2 instance level ...
-            client = new AmazonECSClient(clientConfiguration);
-        } else {
-            if (LOGGER.isLoggable(Level.FINE)) {
-                String awsAccessKeyId = credentials.getCredentials().getAWSAccessKeyId();
-                String obfuscatedAccessKeyId = StringUtils.left(awsAccessKeyId, 4) + StringUtils.repeat("*", awsAccessKeyId.length() - (2 * 4)) + StringUtils.right(awsAccessKeyId, 4);
-                LOGGER.log(Level.FINE, "Connect to Amazon ECS with IAM Access Key {1}", new Object[]{obfuscatedAccessKeyId});
-            }
-            client = new AmazonECSClient(credentials, clientConfiguration);
-        }
-        client.setRegion(getRegion(regionName));
-        LOGGER.log(Level.FINE, "Selected Region: {0}", regionName);
-        return client;
-    }
+	public int getSlaveTimoutInSeconds() {
+		return slaveTimoutInSeconds;
+	}
 
-    void deleteTask(String taskArn, String clusterArn) {
-        final AmazonECSClient client = getAmazonECSClient();
+	public void setSlaveTimoutInSeconds(int slaveTimoutInSeconds) {
+		this.slaveTimoutInSeconds = slaveTimoutInSeconds;
+	}
 
-        LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
-        try {
-            client.stopTask(new StopTaskRequest().withTask(taskArn).withCluster(clusterArn));
-        } catch (ClientException e) {
-            LOGGER.log(Level.SEVERE, "Couldn't stop task arn " + taskArn + " caught exception: " + e.getMessage(), e);
-        }
-    }
 
     private class ProvisioningCallback implements Callable<Node> {
 
@@ -234,68 +232,66 @@ public class ECSCloud extends Cloud {
         }
 
         public Node call() throws Exception {
+			final ECSSlave slave;
 
-            String uniq = Long.toHexString(System.nanoTime());
-            ECSSlave slave = new ECSSlave(ECSCloud.this, name + "-" + uniq, template.getRemoteFSRoot(), label == null ? null : label.toString(), new JNLPLauncher());
-            Jenkins.getInstance().addNode(slave);
-            LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
+			Date now = new Date();
+			Date timeout = new Date(now.getTime() + 1000 * slaveTimoutInSeconds);
 
-            final AmazonECSClient client = getAmazonECSClient();
+			synchronized (cluster) {
+				getEcsService().waitForSufficientClusterResources(timeout, template, cluster);
 
-            slave.setClusterArn(cluster);
+				String uniq = Long.toHexString(System.nanoTime());
+				slave = new ECSSlave(ECSCloud.this, name + "-" + uniq, template.getRemoteFSRoot(),
+						label == null ? null : label.toString(), new JNLPLauncher());
+				slave.setClusterArn(cluster);
+				Jenkins.getInstance().addNode(slave);
+				while (Jenkins.getInstance().getNode(slave.getNodeName()) == null) {
+					Thread.sleep(1000);
+				}
+				LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
-            Collection<String> command = getDockerRunCommand(slave);
-            String definitionArn = template.getTaskDefinitionArn();
-            slave.setTaskDefinitonArn(definitionArn);
+				try {
+					String taskArn = getEcsService().runEcsTask(slave, template, cluster, getDockerRunCommand(slave));
+					LOGGER.log(Level.INFO, "Slave {0} - Slave Task Started : {1}",
+							new Object[] { slave.getNodeName(), taskArn });
+					slave.setTaskArn(taskArn);
+				} catch (AbortException ex) {
+					Jenkins.getInstance().removeNode(slave);
+					throw ex;
+				}
+			}
 
-            final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
-              .withTaskDefinition(definitionArn)
-              .withOverrides(new TaskOverride()
-                .withContainerOverrides(new ContainerOverride()
-                  .withName("jenkins-slave")
-                  .withCommand(command)))
-              .withCluster(cluster)
-            );
+			// now wait for slave to be online
+			while (timeout.after(new Date())) {
+				if (slave.getComputer() == null) {
+					throw new IllegalStateException(
+							"Slave " + slave.getNodeName() + " - Node was deleted, computer is null");
+				}
+				if (slave.getComputer().isOnline()) {
+					break;
+				}
+				LOGGER.log(Level.FINE, "Waiting for slave {0} (ecs task {1}) to connect since {2}.",
+						new Object[] { slave.getNodeName(), slave.getTaskArn(), now });
+				Thread.sleep(1000);
+			}
+			if (!slave.getComputer().isOnline()) {
+				final String msg = MessageFormat.format("ECS Slave {0} (ecs task {1}) not connected since {2} seconds",
+						slave.getNodeName(), slave.getTaskArn(), now);
+				LOGGER.log(Level.WARNING, msg);
+				Jenkins.getInstance().removeNode(slave);
+				throw new IllegalStateException(msg);
+			}
 
-            if (!runTaskResult.getFailures().isEmpty()) {
-                LOGGER.log(Level.WARNING, "Slave {0} - Failure to run task with definition {1} on ECS cluster {2}", new Object[]{slave.getNodeName(), definitionArn, cluster});
-                for (Failure failure : runTaskResult.getFailures()) {
-                    LOGGER.log(Level.WARNING, "Slave {0} - Failure reason={1}, arn={2}", new Object[]{slave.getNodeName(), failure.getReason(), failure.getArn()});
-                }
-                throw new AbortException("Failed to run slave container " + slave.getNodeName());
-            }
-
-            String taskArn = runTaskResult.getTasks().get(0).getTaskArn();
-            LOGGER.log(Level.INFO, "Slave {0} - Slave Task Started : {1}", new Object[]{slave.getNodeName(), taskArn});
-            slave.setTaskArn(taskArn);
-
-            int i = 0;
-            int j = 100; // wait 100 seconds
-
-            // now wait for slave to be online
-            for (; i < j; i++) {
-                if (slave.getComputer() == null) {
-                    throw new IllegalStateException("Slave " + slave.getNodeName() + " - Node was deleted, computer is null");
-                }
-                if (slave.getComputer().isOnline()) {
-                    break;
-                }
-                LOGGER.log(Level.FINE, "Waiting for slave {0} (ecs task {1}) to connect ({2}/{3}).", new Object[]{slave.getNodeName(), taskArn, i, j});
-                Thread.sleep(1000);
-            }
-            if (!slave.getComputer().isOnline()) {
-                throw new IllegalStateException("ECS Slave " + slave.getNodeName() + " (ecs task " + taskArn + ") is not connected after " + j + " seconds");
-            }
-
-            LOGGER.log(Level.INFO, "ECS Slave " + slave.getNodeName() + " (ecs task {0}) connected", taskArn);
-            return slave;
-        }
-    }
+			LOGGER.log(Level.INFO, "ECS Slave " + slave.getNodeName() + " (ecs task {0}) connected",
+					slave.getTaskArn());
+			return slave;
+		}
+	}
 
     private Collection<String> getDockerRunCommand(ECSSlave slave) {
         Collection<String> command = new ArrayList<String>();
         command.add("-url");
-        command.add(JenkinsLocationConfiguration.get().getUrl());
+        command.add(jenkinsUrl);
         if (StringUtils.isNotBlank(tunnel)) {
             command.add("-tunnel");
             command.add(tunnel);
@@ -327,9 +323,9 @@ public class ECSCloud extends Cloud {
         }
 
         public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId, @QueryParameter String regionName) {
-            try {
-                final AmazonECSClient client = getAmazonECSClient(credentialsId, regionName);
-
+        	ECSService ecsService = new ECSService(credentialsId, regionName);
+        	try {
+        	    final AmazonECSClient client = ecsService.getAmazonECSClient();
                 final ListBoxModel options = new ListBoxModel();
                 for (String arn : client.listClusters().getClusterArns()) {
                     options.add(arn);
@@ -343,8 +339,6 @@ public class ECSCloud extends Cloud {
         }
 
     }
-
-    private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
 
     public static Region getRegion(String regionName) {
         if (StringUtils.isNotEmpty(regionName)) {
