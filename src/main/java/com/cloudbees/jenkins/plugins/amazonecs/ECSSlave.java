@@ -25,20 +25,19 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
-import hudson.model.Descriptor;
-import hudson.model.Node;
-import hudson.model.TaskListener;
-import hudson.slaves.AbstractCloudComputer;
-import hudson.slaves.AbstractCloudSlave;
-import hudson.slaves.CloudRetentionStrategy;
-import hudson.slaves.ComputerLauncher;
-import hudson.slaves.RetentionStrategy;
+import java.io.IOException;
+import java.util.Collections;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.Collections;
+
+import hudson.model.Descriptor;
+import hudson.model.TaskListener;
+import hudson.slaves.AbstractCloudComputer;
+import hudson.slaves.AbstractCloudSlave;
+import hudson.slaves.ComputerLauncher;
+import hudson.slaves.RetentionStrategy;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -57,6 +56,13 @@ public class ECSSlave extends AbstractCloudSlave {
      */
     @CheckForNull
     private String taskArn;
+    
+	/**
+	 * The ARN of the cluster in AWS. The first cluster ever created in AWS is
+	 * considered the default one by Amazon. This field is needed to always
+	 * choose the correct cluster.
+	 */
+	private String clusterArn;
 
     public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
         super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, RetentionStrategy.NOOP, Collections.EMPTY_LIST);
@@ -87,8 +93,16 @@ public class ECSSlave extends AbstractCloudSlave {
     @Override
     protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
         if (taskArn != null) {
-            cloud.deleteTask(taskArn);
+            cloud.deleteTask(taskArn, clusterArn);
         }
     }
+
+	public String getClusterArn() {
+		return clusterArn;
+	}
+
+	public void setClusterArn(String clusterArn) {
+		this.clusterArn = clusterArn;
+	}
 
 }
