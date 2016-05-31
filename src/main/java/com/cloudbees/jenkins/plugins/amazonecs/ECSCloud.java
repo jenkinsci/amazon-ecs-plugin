@@ -261,6 +261,19 @@ public class ECSCloud extends Cloud {
                 LOGGER.log(Level.WARNING, "Slave {0} - Failure to run task with definition {1} on ECS cluster {2}", new Object[]{slave.getNodeName(), definitionArn, cluster});
                 for (Failure failure : runTaskResult.getFailures()) {
                     LOGGER.log(Level.WARNING, "Slave {0} - Failure reason={1}, arn={2}", new Object[]{slave.getNodeName(), failure.getReason(), failure.getArn()});
+                    if (failure.getReason().equals("RESOURCE:CPU") || failure.getReason().equals("RESOURCE:MEMORY")) {
+                        if (null != slave.getComputer()) {
+                            LOGGER.log(Level.WARNING, "Slave resources unavailable, deleting slave={0} arn={1}", new Object[]{slave.getNodeName(), failure.getArn()});
+                            slave.getComputer().setTemporarilyOffline(true, null);
+                            slave.getComputer().doDoDelete();
+                        }
+                        try {
+                            Thread.sleep(60000);
+                            break;
+                        } catch (InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
                 }
                 throw new AbortException("Failed to run slave container " + slave.getNodeName());
             }
