@@ -348,4 +348,8 @@ public class ECSCloud extends Cloud {
         }
     }
 
+	public String getJenkinsUrl() {
+		return jenkinsUrl;
+	}
+
 }

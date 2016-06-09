@@ -44,8 +44,11 @@
   <f:advanced>
     <f:entry field="tunnel" title="${%Tunnel connection through}" help="/help/system-config/master-slave/jnlp-tunnel.html">
       <f:textbox />
-    </f:entry>
+    </f:entry>    
 
+	<f:entry field="jenkinsUrl" title="${%Alternative Jenkins URL}" description="If needed, the Jenkins URL can be overwritten with this property (e.g. to support other HTTP(S) endpoints due to reverse proxies or firewalling). By default the URL from the global Jenkins configuration is used.">
+		<f:textbox />
+	</f:entry>
   </f:advanced>
 
   <f:entry title="${%ECS slave templates}">
