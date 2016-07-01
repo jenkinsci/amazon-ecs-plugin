@@ -25,20 +25,19 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
-import hudson.model.Descriptor;
-import hudson.model.Node;
-import hudson.model.TaskListener;
-import hudson.slaves.AbstractCloudComputer;
-import hudson.slaves.AbstractCloudSlave;
-import hudson.slaves.CloudRetentionStrategy;
-import hudson.slaves.ComputerLauncher;
-import hudson.slaves.RetentionStrategy;
+import java.io.IOException;
+import java.util.Collections;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.Collections;
+
+import hudson.model.Descriptor;
+import hudson.model.TaskListener;
+import hudson.slaves.AbstractCloudComputer;
+import hudson.slaves.AbstractCloudSlave;
+import hudson.slaves.ComputerLauncher;
+import hudson.slaves.RetentionStrategy;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -61,7 +60,7 @@ public class ECSSlave extends AbstractCloudSlave {
      */
     @CheckForNull
     private String taskArn;
-
+    
     public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
         super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, RetentionStrategy.NOOP, Collections.EMPTY_LIST);
         this.cloud = cloud;
@@ -102,5 +101,4 @@ public class ECSSlave extends AbstractCloudSlave {
             cloud.deleteTask(taskArn, clusterArn);
         }
     }
-
 }
