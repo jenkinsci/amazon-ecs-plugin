@@ -29,6 +29,9 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchClient;
+import com.amazonaws.services.cloudwatch.model.SetAlarmStateRequest;
 import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.ClientException;
 import com.amazonaws.services.ecs.model.ContainerOverride;
@@ -87,6 +90,12 @@ public class ECSCloud extends Cloud {
 
     private final String cluster;
 
+    /**
+     * An optional CloudWatch alarm to trigger, when ECS returns RESOURCE:CPU or
+     * RESOURCE:MEMORY failures
+     */
+    private final String cloudWatchAlarmName;
+
     private String regionName;
 
     /**
@@ -96,12 +105,18 @@ public class ECSCloud extends Cloud {
     private String tunnel;
 
     @DataBoundConstructor
-    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, String cluster, String regionName) {
+    public ECSCloud(String name, 
+                    List<ECSTaskTemplate> templates,
+                    @Nonnull String credentialsId,
+                    String cluster, 
+                    String regionName,
+                    String cloudWatchAlarmName) {
         super(name);
         this.credentialsId = credentialsId;
         this.cluster = cluster;
         this.templates = templates;
         this.regionName = regionName;
+        this.cloudWatchAlarmName = cloudWatchAlarmName;
         if (templates != null) {
             for (ECSTaskTemplate template : templates) {
                 template.setOwer(this);
@@ -181,34 +196,81 @@ public class ECSCloud extends Cloud {
         return getAmazonECSClient(credentialsId, regionName);
     }
 
+    /* package */ AmazonCloudWatchClient getAmazonCloudWatchClient() {
+        return getAmazonCloudWatchClient(credentialsId, regionName);
+    }
+
+    private static AmazonCloudWatchClient getAmazonCloudWatchClient(String credentialsId, String regionName) {
+        final AmazonCloudWatchClient client;
+        ClientConfiguration clientConfiguration = getClientConfiguration();
+        AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
+        if (credentials == null) {
+            // no credentials provided, rely on com.amazonaws.auth.DefaultAWSCredentialsProviderChain
+            // to use IAM Role define at the EC2 instance level ...
+            client = new AmazonCloudWatchClient(clientConfiguration);
+        } else {
+            logAmazonCredentials(credentials);
+            client = new AmazonCloudWatchClient(credentials, clientConfiguration);
+        }
+        client.setRegion(getRegion(regionName));
+        LOGGER.log(Level.FINE, "Selected CloudWatch Region: {0}", regionName);
+        return client;
+    }
+
     private static AmazonECSClient getAmazonECSClient(String credentialsId, String regionName) {
         final AmazonECSClient client;
-        
-        ProxyConfiguration proxy = Jenkins.getInstance().proxy;
-        ClientConfiguration clientConfiguration = new ClientConfiguration();            
-        if(proxy != null) {
-        	clientConfiguration.setProxyHost(proxy.name);
-        	clientConfiguration.setProxyPort(proxy.port);
-        	clientConfiguration.setProxyUsername(proxy.getUserName());
-        	clientConfiguration.setProxyPassword(proxy.getPassword());
-        }
-        
+        ClientConfiguration clientConfiguration = getClientConfiguration();
         AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
         if (credentials == null) {
             // no credentials provided, rely on com.amazonaws.auth.DefaultAWSCredentialsProviderChain
             // to use IAM Role define at the EC2 instance level ...
             client = new AmazonECSClient(clientConfiguration);
         } else {
-            if (LOGGER.isLoggable(Level.FINE)) {
-                String awsAccessKeyId = credentials.getCredentials().getAWSAccessKeyId();
-                String obfuscatedAccessKeyId = StringUtils.left(awsAccessKeyId, 4) + StringUtils.repeat("*", awsAccessKeyId.length() - (2 * 4)) + StringUtils.right(awsAccessKeyId, 4);
-                LOGGER.log(Level.FINE, "Connect to Amazon ECS with IAM Access Key {1}", new Object[]{obfuscatedAccessKeyId});
-            }
+            logAmazonCredentials(credentials);
             client = new AmazonECSClient(credentials, clientConfiguration);
         }
         client.setRegion(getRegion(regionName));
-        LOGGER.log(Level.FINE, "Selected Region: {0}", regionName);
+        LOGGER.log(Level.FINE, "Selected ECS Region: {0}", regionName);
         return client;
+    }
+
+    private static ClientConfiguration getClientConfiguration() {
+        ProxyConfiguration proxy = Jenkins.getInstance().proxy;
+        ClientConfiguration clientConfiguration = new ClientConfiguration();            
+        if(proxy != null) {
+            clientConfiguration.setProxyHost(proxy.name);
+            clientConfiguration.setProxyPort(proxy.port);
+            clientConfiguration.setProxyUsername(proxy.getUserName());
+            clientConfiguration.setProxyPassword(proxy.getPassword());
+        }
+        return clientConfiguration;
+    }
+        
+    public static void logAmazonCredentials(AmazonWebServicesCredentials credentials) {
+        if (LOGGER.isLoggable(Level.FINE)) {
+            String awsAccessKeyId = credentials.getCredentials().getAWSAccessKeyId();
+            String obfuscatedAccessKeyId = StringUtils.left(awsAccessKeyId, 4) + StringUtils.repeat("*", awsAccessKeyId.length() - (2 * 4)) + StringUtils.right(awsAccessKeyId, 4);
+            LOGGER.log(Level.FINE, "Connect to Amazon with IAM Access Key {1}", new Object[]{obfuscatedAccessKeyId});
+        }
+    }
+
+    private void triggerCloudWatchAlarm(String reason) {
+        if (StringUtils.isEmpty(cloudWatchAlarmName)) {
+            LOGGER.log(Level.FINE, "Not triggering alarm " + cloudWatchAlarmName);
+            return;
+        }
+        final AmazonCloudWatchClient client = getAmazonCloudWatchClient();
+
+        LOGGER.log(Level.INFO, "Triggering alarm " + cloudWatchAlarmName);
+        try {
+            final SetAlarmStateRequest req = new SetAlarmStateRequest().
+                                                     withAlarmName(cloudWatchAlarmName).
+                                                     withStateReason("Jenkins received " + reason).
+                                                     withStateValue("ALARM");
+            client.setAlarmState(req);
+        } catch(ClientException e) {
+            LOGGER.log(Level.WARNING, "Couldn't trigger alarm " + cloudWatchAlarmName + " caught exception: " + e.getMessage(), e);
+        }
     }
 
     void deleteTask(String taskArn, String clusterArn) {
@@ -261,6 +323,20 @@ public class ECSCloud extends Cloud {
                 LOGGER.log(Level.WARNING, "Slave {0} - Failure to run task with definition {1} on ECS cluster {2}", new Object[]{slave.getNodeName(), definitionArn, cluster});
                 for (Failure failure : runTaskResult.getFailures()) {
                     LOGGER.log(Level.WARNING, "Slave {0} - Failure reason={1}, arn={2}", new Object[]{slave.getNodeName(), failure.getReason(), failure.getArn()});
+                    if (failure.getReason().equals("RESOURCE:CPU") || failure.getReason().equals("RESOURCE:MEMORY")) {
+                        triggerCloudWatchAlarm(failure.getReason());
+                        if (null != slave.getComputer()) {
+                            LOGGER.log(Level.WARNING, "Slave resources unavailable, deleting slave={0} arn={1}", new Object[]{slave.getNodeName(), failure.getArn()});
+                            slave.getComputer().setTemporarilyOffline(true,null);
+                            slave.getComputer().doDoDelete();
+                        }
+                        try {
+                            Thread.sleep(60000);
+                            break;
+                        } catch (InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
                 }
                 throw new AbortException("Failed to run slave container " + slave.getNodeName());
             }
