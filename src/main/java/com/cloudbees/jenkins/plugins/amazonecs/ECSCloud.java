@@ -106,6 +106,9 @@ public class ECSCloud extends Cloud {
         this.templates = templates;
         this.regionName = regionName;
         if (templates != null) {
+            //Deregister the existing task definitions before setting new ones.
+            //This is necessary as every save creates a task definition.
+            ECSTaskTemplate.deregisterAllTaskDefinitions(this);
             for (ECSTaskTemplate template : templates) {
                 template.setOwer(this);
             }
