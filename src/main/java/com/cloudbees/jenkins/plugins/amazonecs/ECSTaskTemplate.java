@@ -26,15 +26,7 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
 import com.amazonaws.services.ecs.AmazonECSClient;
-import com.amazonaws.services.ecs.model.ContainerDefinition;
-import com.amazonaws.services.ecs.model.HostEntry;
-import com.amazonaws.services.ecs.model.Volume;
-import com.amazonaws.services.ecs.model.HostVolumeProperties;
-import com.amazonaws.services.ecs.model.MountPoint;
-import com.amazonaws.services.ecs.model.KeyValuePair;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
-import com.amazonaws.services.ecs.model.LogConfiguration;
+import com.amazonaws.services.ecs.model.*;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -476,6 +468,33 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     private static final Logger LOGGER = Logger.getLogger(ECSTaskTemplate.class.getName());
+
+    public static void deregisterAllTaskDefinitions(ECSCloud owner){
+        final AmazonECSClient client = owner.getAmazonECSClient();
+        final ListTaskDefinitionsRequest req = new ListTaskDefinitionsRequest()
+                .withFamilyPrefix("jenkins-slave");
+        ListTaskDefinitionsResult result = client.listTaskDefinitions(req);
+        List<String> arns = result.getTaskDefinitionArns();
+        for (String arn:arns){
+            deregisterTaskDefinition(client, arn);
+        }
+        //Deal with paginated results. Should never get here but just in case.
+        while(result.getNextToken()!=null){
+            req.setNextToken(result.getNextToken());
+            result = client.listTaskDefinitions(req);
+            arns = result.getTaskDefinitionArns();
+            for (String arn:arns){
+                deregisterTaskDefinition(client, arn);
+            }
+        }
+    }
+
+    private static void deregisterTaskDefinition(AmazonECSClient client, String arn) {
+        LOGGER.info("De-registering task definition: " + arn);
+        DeregisterTaskDefinitionRequest deregisterTaskDefinitionRequest = new DeregisterTaskDefinitionRequest()
+                .withTaskDefinition(arn);
+        client.deregisterTaskDefinition(deregisterTaskDefinitionRequest);
+    }
 
     @Extension
     public static class DescriptorImpl extends Descriptor<ECSTaskTemplate> {
