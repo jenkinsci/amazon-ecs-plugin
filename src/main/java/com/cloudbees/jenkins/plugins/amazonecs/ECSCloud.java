@@ -25,6 +25,7 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,11 +35,15 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.servlet.ServletException;
 
+import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -98,7 +103,7 @@ public class ECSCloud extends Cloud {
     private ECSService ecsService;
     
 	@DataBoundConstructor
-    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, 
+    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId,
     		String cluster, String regionName, String jenkinsUrl, int slaveTimoutInSeconds) {
         super(name);
         this.credentialsId = credentialsId;
@@ -107,7 +112,7 @@ public class ECSCloud extends Cloud {
         this.regionName = regionName;
         if (templates != null) {
             for (ECSTaskTemplate template : templates) {
-                template.setOwer(this);
+                template.setOwner(this);
             }
         }
         
@@ -332,6 +337,20 @@ public class ECSCloud extends Cloud {
                 LOGGER.log(Level.INFO, "Exception searching clusters for credentials=" + credentialsId + ", regionName=" + regionName, e);
                 return new ListBoxModel();
             }
+        }
+
+        public FormValidation doCheckName(@QueryParameter String value) throws IOException, ServletException {
+            if (value.length() == 0) {
+                return FormValidation.error("Please set a name");
+            }
+            //Add check for spaces
+            Pattern pattern = Pattern.compile("\\s");
+            Matcher matcher = pattern.matcher(value);
+            boolean found = matcher.find();
+            if (found) {
+                return FormValidation.error("Please do not use spaces.");
+            }
+            return FormValidation.ok();
         }
 
     }
