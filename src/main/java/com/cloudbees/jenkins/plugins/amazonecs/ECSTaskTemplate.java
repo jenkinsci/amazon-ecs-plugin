@@ -472,6 +472,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             LOGGER.log(Level.FINE, "Slave {0} - Created Task Definition {1}: {2}", new Object[]{label, taskDefinitionArn, req});
             LOGGER.log(Level.INFO, "Slave {0} - Created Task Definition: {1}", new Object[] { label, taskDefinitionArn });
             getDescriptor().save();
+        } else {
+            LOGGER.log(Level.FINE, "Slave {0} - Task Definition already exists {1}", new Object[]{label, taskDefinitionArn});
         }
     }
 
