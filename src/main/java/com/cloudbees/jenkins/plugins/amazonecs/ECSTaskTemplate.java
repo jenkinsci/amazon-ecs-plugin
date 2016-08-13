@@ -40,27 +40,16 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
-import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.servlet.ServletException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -169,7 +158,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
                            @Nullable List<MountPointEntry> mountPoints) {
-        this.templateName = templateName;
+        // If the template name is empty we will add a default name and a
+        // random element that will help to find it later when we want to delete it.
+        this.templateName = templateName.isEmpty() ?
+                "jenkinsTask-" + UUID.randomUUID().toString() : templateName;
         this.label = label;
         this.image = image;
         this.remoteFSRoot = remoteFSRoot;
@@ -448,7 +440,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest(ECSCloud owner) {
-        String familyName = owner.getDisplayName() + '-' + templateName;
+        String familyName = owner.getDisplayName().replaceAll("\\s+","") + '-' + templateName;
         final ContainerDefinition def = new ContainerDefinition()
                 .withName(familyName)
                 .withImage(image)
@@ -500,20 +492,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         public String getDisplayName() {
 
             return Messages.Template();
-        }
-
-        public FormValidation doCheckTemplateName(@QueryParameter String value) throws IOException, ServletException {
-            if (value.length() == 0) {
-                return FormValidation.error("Please set a Template name");
-            }
-            //Add check for spaces
-            Pattern pattern = Pattern.compile("\\s");
-            Matcher matcher = pattern.matcher(value);
-            boolean found = matcher.find();
-            if (found) {
-                return FormValidation.error("Please do not use spaces.");
-            }
-            return FormValidation.ok();
         }
     }
 }
