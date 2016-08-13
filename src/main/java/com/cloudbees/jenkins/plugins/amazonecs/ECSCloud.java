@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
@@ -44,6 +45,7 @@ import javax.annotation.Nullable;
 import javax.servlet.ServletException;
 
 import hudson.util.FormValidation;
+import com.amazonaws.AmazonClientException;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -103,16 +105,24 @@ public class ECSCloud extends Cloud {
     private ECSService ecsService;
     
 	@DataBoundConstructor
-    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId,
-    		String cluster, String regionName, String jenkinsUrl, int slaveTimoutInSeconds) {
+    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, 
+    		String cluster, String regionName, String jenkinsUrl, int slaveTimoutInSeconds) throws InterruptedException{
         super(name);
         this.credentialsId = credentialsId;
         this.cluster = cluster;
         this.templates = templates;
         this.regionName = regionName;
+        LOGGER.log(Level.INFO, "Create cloud {0} on ECS cluster {1} on the region {2}", new Object[]{name, cluster, regionName});
         if (templates != null) {
-            for (ECSTaskTemplate template : templates) {
+            for (Iterator<ECSTaskTemplate> it = templates.iterator(); it.hasNext(); ) {
+                ECSTaskTemplate template = it.next();
                 template.setOwner(this);
+                if (it.hasNext()) {
+                    // JENKINS-36857 AWS throttling error when saving master config
+                    // http://docs.aws.amazon.com/AmazonECS/latest/developerguide/service_limits.html
+                    // "Throttle on task definition registration rate -> 1 per second / 60 max per minute"
+                    Thread.sleep(1000);
+                }
             }
         }
         
@@ -332,8 +342,12 @@ public class ECSCloud extends Cloud {
                     options.add(arn);
                 }
                 return options;
-            } catch (RuntimeException e) {
+            } catch (AmazonClientException e) {
                 // missing credentials will throw an "AmazonClientException: Unable to load AWS credentials from any provider in the chain"
+                LOGGER.log(Level.INFO, "Exception searching clusters for credentials=" + credentialsId + ", regionName=" + regionName + ":" + e);
+                LOGGER.log(Level.FINE, "Exception searching clusters for credentials=" + credentialsId + ", regionName=" + regionName, e);
+                return new ListBoxModel();
+            } catch (RuntimeException e) {
                 LOGGER.log(Level.INFO, "Exception searching clusters for credentials=" + credentialsId + ", regionName=" + regionName, e);
                 return new ListBoxModel();
             }
