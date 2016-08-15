@@ -29,8 +29,12 @@ import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.HostEntry;
 import com.amazonaws.services.ecs.model.Volume;
+import com.amazonaws.services.ecs.model.VolumeFrom;
 import com.amazonaws.services.ecs.model.HostVolumeProperties;
 import com.amazonaws.services.ecs.model.MountPoint;
+import com.amazonaws.services.ecs.model.DescribeTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.TaskDefinition;
+import com.amazonaws.services.ecs.model.PortMapping;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
@@ -115,6 +119,20 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
       Container mount points, imported from volumes
      */
     private List<MountPointEntry> mountPoints;
+    private List<VolumeFromEntry> volumesFrom;
+
+    /**
+      A list of tasks, linked to the current definition
+          - Task definitions are managed using ECS
+              - Task definitions can be locked to a specific revision (default latest)
+              - The obvious disadvantage is, when changes are made to the ECS tasks, 
+                the ECSTaskTemplate must be updated manually
+          - The tasks' container definitions are copied to the new task definition
+              - Each container will be linked to the new container definition
+              - Each port mapping's host port will be set to 0 (random assignment)
+          - All volumes, defined in ECS tasks, will be copied to the new task
+     */
+    private List<LinkedTaskEntry> linkedTasks;
 
     /**
      * Indicates whether the container should run in privileged mode
@@ -156,7 +174,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nullable List<LogDriverOption> logDriverOptions,
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
-                           @Nullable List<MountPointEntry> mountPoints) {
+                           @Nullable List<MountPointEntry> mountPoints,
+                           @Nullable List<VolumeFromEntry> volumesFrom,
+                           @Nullable List<LinkedTaskEntry> linkedTasks
+                          ) {
         this.label = label;
         this.image = image;
         this.remoteFSRoot = remoteFSRoot;
@@ -167,6 +188,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.environments = environments;
         this.extraHosts = extraHosts;
         this.mountPoints = mountPoints;
+        this.volumesFrom = volumesFrom;
+        this.linkedTasks = linkedTasks;
     }
 
     @DataBoundSetter
@@ -275,6 +298,66 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return extraHosts;
     }
 
+    public List<LinkedTaskEntry> getLinkedTasks() {
+        return linkedTasks;
+    }
+
+    private Collection<ECSLinkedTask> getECSLinkedTasks(AmazonECSClient client) {
+        if (null == linkedTasks || linkedTasks.isEmpty()) {
+            return new ArrayList<ECSLinkedTask>();
+        }
+        Collection<ECSLinkedTask> items = new ArrayList<ECSLinkedTask>();
+        for (LinkedTaskEntry linkedTask : linkedTasks) {
+            ECSLinkedTask ecsLinked = new ECSLinkedTask(linkedTask.taskName, client);
+            items.add(ecsLinked);
+        }
+        return items;
+    }
+
+    public static class ECSLinkedTask {
+        public String taskName;
+        public Collection<ContainerDefinition> containers = new ArrayList<ContainerDefinition>();
+        public Collection<Volume> volumes = new ArrayList<Volume>();
+
+        public ECSLinkedTask(String taskName, AmazonECSClient client) {
+            this.taskName = taskName;
+
+            try {
+                DescribeTaskDefinitionRequest req = new DescribeTaskDefinitionRequest().
+                    withTaskDefinition(taskName);
+                TaskDefinition task = client.describeTaskDefinition(req).getTaskDefinition();
+                for (ContainerDefinition container : task.getContainerDefinitions()) {
+                    for (PortMapping p : container.getPortMappings()) {
+                        p.setHostPort(0);
+                    }
+                    addContainerDefinition(container);
+                }
+                for (Volume volume : task.getVolumes()) {
+                    addVolume(volume);
+                }
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, "Exception getting task definition=" + taskName, e);
+                throw e;
+            }
+        }
+
+        public Collection<ContainerDefinition> getContainerDefinitions() {
+            return containers;
+        }
+
+        public void addContainerDefinition(ContainerDefinition def) {
+            containers.add(def);
+        }
+
+        public Collection<Volume> getVolumes() {
+            return volumes;
+        }
+
+        public void addVolume(Volume vol) {
+            volumes.add(vol);
+        }
+    }
+
     private Collection<KeyValuePair> getEnvironmentKeyValuePairs() {
         if (null == environments || environments.isEmpty()) {
             return null;
@@ -312,9 +395,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     private Collection<Volume> getVolumeEntries() {
-        if (null == mountPoints || mountPoints.isEmpty())
-            return null;
         Collection<Volume> vols = new ArrayList<Volume>();
+        if (null == mountPoints || mountPoints.isEmpty())
+            return vols;
         for (MountPointEntry mount : mountPoints) {
             String name = mount.name;
             String sourcePath = mount.sourcePath;
@@ -346,6 +429,23 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return mounts;
     }
 
+    public List<VolumeFromEntry> getVolumesFrom() {
+        return volumesFrom;
+    }
+
+    public Collection<VolumeFrom> getVolumesFromEntries() {
+        if (null == volumesFrom || volumesFrom.isEmpty())
+            return null;
+        Collection<VolumeFrom> volumes = new ArrayList<VolumeFrom>();
+        for (VolumeFromEntry vol : volumesFrom) {
+            if (StringUtils.isEmpty(vol.sourceContainer))
+                continue;
+            volumes.add(new VolumeFrom().withSourceContainer(vol.sourceContainer)
+                                        .withReadOnly(vol.readOnly));
+        }
+        return volumes;
+    }
+
     public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> {
         public String name, value;
 
@@ -365,6 +465,30 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             @Override
             public String getDisplayName() {
                 return "EnvironmentEntry";
+            }
+        }
+    }
+
+    public static class VolumeFromEntry extends AbstractDescribableImpl<VolumeFromEntry> {
+        public String sourceContainer;
+        public Boolean readOnly;
+
+        @DataBoundConstructor
+        public VolumeFromEntry(String sourceContainer, Boolean readOnly) {
+            this.sourceContainer = sourceContainer;
+            this.readOnly = readOnly;
+        }
+
+        @Override
+        public String toString() {
+            return "VolumeFromEntry{sourceContainer:" + sourceContainer + ", readOnly:" + readOnly + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<VolumeFromEntry> {
+            @Override
+            public String getDisplayName() {
+                return "VolumeFromEntry";
             }
         }
     }
@@ -424,6 +548,35 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         }
     }
 
+    public static class LinkedTaskEntry extends AbstractDescribableImpl<LinkedTaskEntry> {
+        public String name, revision, taskName;
+
+        @DataBoundConstructor
+        public LinkedTaskEntry(String name, String revision) {
+            this.name = name;
+            this.revision = revision;
+
+            // check for the AWS ECS task revision number
+            if (null == revision || revision.isEmpty())
+                taskName = name;
+            else
+                taskName = name + ":" + revision;
+        }
+
+        @Override
+        public String toString() {
+            return "LinkedTaskEntry{name:" + name + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<LinkedTaskEntry> {
+            @Override
+            public String getDisplayName() {
+                return "LinkedTaskEntry";
+            }
+        }
+    }
+
     public Set<LabelAtom> getLabelSet() {
         return Label.parse(label);
     }
@@ -432,7 +585,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return "ECS Slave " + label;
     }
 
-    public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest() {
+    public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest(AmazonECSClient client) {
+        Collection<Volume> ecsTaskVolumes = new ArrayList<Volume>();
+        Collection<ContainerDefinition> defs = new ArrayList<ContainerDefinition>();
         final ContainerDefinition def = new ContainerDefinition()
                 .withName("jenkins-slave")
                 .withImage(image)
@@ -440,6 +595,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                 .withExtraHosts(getExtraHostEntries())
                 .withMemory(memory)
                 .withMountPoints(getMountPointEntries())
+                .withVolumesFrom(getVolumesFromEntries())
                 .withCpu(cpu)
                 .withPrivileged(privileged);
         if (entrypoint != null)
@@ -457,16 +613,29 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             def.withLogConfiguration(logConfig);
         }
 
+        for (ECSLinkedTask linked : getECSLinkedTasks(client)) {
+            for (ContainerDefinition d : linked.getContainerDefinitions()) {
+                def.withLinks(d.getName());
+                defs.add(d);
+            }
+            for (Volume v : linked.getVolumes()) {
+                ecsTaskVolumes.add(v);
+            }
+        }
+        defs.add(def);
+        ecsTaskVolumes.addAll(getVolumeEntries());
+
         return new RegisterTaskDefinitionRequest()
             .withFamily("jenkins-slave")
-            .withVolumes(getVolumeEntries())
-            .withContainerDefinitions(def);
+            .withVolumes(ecsTaskVolumes)
+            .withContainerDefinitions(defs);
     }
 
     public void setOwer(ECSCloud owner) {
         final AmazonECSClient client = owner.getAmazonECSClient();
+
         if (taskDefinitionArn == null) {
-            final RegisterTaskDefinitionRequest req = asRegisterTaskDefinitionRequest();
+            final RegisterTaskDefinitionRequest req = asRegisterTaskDefinitionRequest(client);
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
             taskDefinitionArn = result.getTaskDefinition().getTaskDefinitionArn();
             LOGGER.log(Level.FINE, "Slave {0} - Created Task Definition {1}: {2}", new Object[]{label, taskDefinitionArn, req});
