@@ -48,6 +48,7 @@ import com.amazonaws.services.ecs.model.ContainerOverride;
 import com.amazonaws.services.ecs.model.DescribeContainerInstancesRequest;
 import com.amazonaws.services.ecs.model.DescribeContainerInstancesResult;
 import com.amazonaws.services.ecs.model.Failure;
+import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.ListContainerInstancesRequest;
 import com.amazonaws.services.ecs.model.ListContainerInstancesResult;
 import com.amazonaws.services.ecs.model.Resource;
@@ -138,14 +139,24 @@ class ECSService {
 	String runEcsTask(final ECSSlave slave, final ECSTaskTemplate template, String clusterArn, Collection<String> command) throws IOException, AbortException {
 		AmazonECSClient client = getAmazonECSClient();
 		String definitionArn = template.getTaskDefinitionArn();
-		slave.setTaskDefinitonArn(definitionArn);	            
-		    
+		slave.setTaskDefinitonArn(definitionArn);
+
+		KeyValuePair envNodeName = new KeyValuePair();
+		envNodeName.setName("SLAVE_NODE_NAME");
+		envNodeName.setValue("A");
+
+		KeyValuePair envNodeSecret = new KeyValuePair();
+		envNodeSecret.setName("SLAVE_NODE_SECRET");
+		envNodeSecret.setValue("B");
+
 		final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
 		  .withTaskDefinition(definitionArn)
 		  .withOverrides(new TaskOverride()
 		    .withContainerOverrides(new ContainerOverride()
 		      .withName("jenkins-slave")
-		      .withCommand(command)))
+		      .withCommand(command)
+		      .withEnvironment(envNodeName)
+		      .withEnvironment(envNodeSecret)))
 		  .withCluster(clusterArn)
 		);
 
