@@ -143,11 +143,11 @@ class ECSService {
 
 		KeyValuePair envNodeName = new KeyValuePair();
 		envNodeName.setName("SLAVE_NODE_NAME");
-		envNodeName.setValue("A");
+		envNodeName.setValue(slave.getComputer().getName());
 
 		KeyValuePair envNodeSecret = new KeyValuePair();
 		envNodeSecret.setName("SLAVE_NODE_SECRET");
-		envNodeSecret.setValue("B");
+		envNodeSecret.setValue(slave.getComputer().getJnlpMac());
 
 		final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
 		  .withTaskDefinition(definitionArn)
