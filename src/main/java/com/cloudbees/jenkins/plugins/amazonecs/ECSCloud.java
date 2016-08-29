@@ -186,8 +186,11 @@ public class ECSCloud extends Cloud {
     }
 
     private ECSTaskTemplate getTemplate(Label label) {
+        if (label == null) {
+            return null;
+        }
         for (ECSTaskTemplate t : templates) {
-            if (label == null || label.matches(t.getLabelSet())) {
+            if (label.matches(t.getLabelSet())) {
                 return t;
             }
         }
