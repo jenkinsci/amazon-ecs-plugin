@@ -440,7 +440,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest(ECSCloud owner) {
-        String familyName = owner.getDisplayName().replaceAll("\\s+","") + '-' + templateName;
+        String familyName = getFullQualifiedTemplateName(owner);
         final ContainerDefinition def = new ContainerDefinition()
                 .withName(familyName)
                 .withImage(image)
@@ -471,6 +471,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             .withContainerDefinitions(def);
     }
 
+    /**
+     * Returns the template name prefixed with the cloud name 
+     */
+    String getFullQualifiedTemplateName(ECSCloud owner) {
+		return owner.getDisplayName().replaceAll("\\s+","") + '-' + templateName;
+	}
+    
     public void setOwner(ECSCloud owner) {
         final AmazonECSClient client = owner.getAmazonECSClient();
         if (taskDefinitionArn == null) {

@@ -101,4 +101,8 @@ public class ECSSlave extends AbstractCloudSlave {
             cloud.deleteTask(taskArn, clusterArn);
         }
     }
+
+	public ECSCloud getCloud() {
+		return cloud;
+	}
 }

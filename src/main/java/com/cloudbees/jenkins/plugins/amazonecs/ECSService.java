@@ -144,7 +144,7 @@ class ECSService {
 		  .withTaskDefinition(definitionArn)
 		  .withOverrides(new TaskOverride()
 		    .withContainerOverrides(new ContainerOverride()
-		      .withName("jenkins-slave")
+		      .withName(template.getFullQualifiedTemplateName(slave.getCloud()))
 		      .withCommand(command)))
 		  .withCluster(clusterArn)
 		);
