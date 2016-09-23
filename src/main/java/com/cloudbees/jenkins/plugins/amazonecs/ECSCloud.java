@@ -25,6 +25,7 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,15 +33,18 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.servlet.ServletException;
 
+import hudson.util.FormValidation;
 import com.amazonaws.AmazonClientException;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -112,7 +116,7 @@ public class ECSCloud extends Cloud {
         if (templates != null) {
             for (Iterator<ECSTaskTemplate> it = templates.iterator(); it.hasNext(); ) {
                 ECSTaskTemplate template = it.next();
-                template.setOwer(this);
+                template.setOwner(this);
                 if (it.hasNext()) {
                     // JENKINS-36857 AWS throttling error when saving master config
                     // http://docs.aws.amazon.com/AmazonECS/latest/developerguide/service_limits.html
@@ -347,6 +351,20 @@ public class ECSCloud extends Cloud {
                 LOGGER.log(Level.INFO, "Exception searching clusters for credentials=" + credentialsId + ", regionName=" + regionName, e);
                 return new ListBoxModel();
             }
+        }
+
+        public FormValidation doCheckName(@QueryParameter String value) throws IOException, ServletException {
+            if (value.length() == 0) {
+                return FormValidation.error("Please set a name");
+            }
+            //Add check for spaces
+            Pattern pattern = Pattern.compile("\\s");
+            Matcher matcher = pattern.matcher(value);
+            boolean found = matcher.find();
+            if (found) {
+                return FormValidation.error("Please do not use spaces.");
+            }
+            return FormValidation.ok();
         }
 
     }

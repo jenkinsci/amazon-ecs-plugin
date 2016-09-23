@@ -47,12 +47,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -61,6 +56,11 @@ import java.util.logging.Logger;
  */
 public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
+    /**
+     * Template Name
+     */
+    @Nonnull
+    private final String templateName;
     /**
      * White-space separated list of {@link hudson.model.Node} labels.
      *
@@ -147,7 +147,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private List<LogDriverOption> logDriverOptions;
 
     @DataBoundConstructor
-    public ECSTaskTemplate(@Nullable String label,
+    public ECSTaskTemplate(@Nonnull String templateName,
+                           @Nullable String label,
                            @Nonnull String image,
                            @Nullable String remoteFSRoot,
                            int memory,
@@ -157,6 +158,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
                            @Nullable List<MountPointEntry> mountPoints) {
+        // If the template name is empty we will add a default name and a
+        // random element that will help to find it later when we want to delete it.
+        this.templateName = templateName.isEmpty() ?
+                "jenkinsTask-" + UUID.randomUUID().toString() : templateName;
         this.label = label;
         this.image = image;
         this.remoteFSRoot = remoteFSRoot;
@@ -219,6 +224,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     public String getLogDriver() {
         return logDriver;
     }
+
+    public String getTemplateName() {return templateName; }
 
     public static class LogDriverOption extends AbstractDescribableImpl<LogDriverOption>{
         public String name, value;
@@ -432,9 +439,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return "ECS Slave " + label;
     }
 
-    public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest() {
+    public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest(ECSCloud owner) {
+        String familyName = owner.getDisplayName().replaceAll("\\s+","") + '-' + templateName;
         final ContainerDefinition def = new ContainerDefinition()
-                .withName("jenkins-slave")
+                .withName(familyName)
                 .withImage(image)
                 .withEnvironment(getEnvironmentKeyValuePairs())
                 .withExtraHosts(getExtraHostEntries())
@@ -458,15 +466,15 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         }
 
         return new RegisterTaskDefinitionRequest()
-            .withFamily("jenkins-slave")
+            .withFamily(familyName)
             .withVolumes(getVolumeEntries())
             .withContainerDefinitions(def);
     }
 
-    public void setOwer(ECSCloud owner) {
+    public void setOwner(ECSCloud owner) {
         final AmazonECSClient client = owner.getAmazonECSClient();
         if (taskDefinitionArn == null) {
-            final RegisterTaskDefinitionRequest req = asRegisterTaskDefinitionRequest();
+            final RegisterTaskDefinitionRequest req = asRegisterTaskDefinitionRequest(owner);
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
             taskDefinitionArn = result.getTaskDefinition().getTaskDefinitionArn();
             LOGGER.log(Level.FINE, "Slave {0} - Created Task Definition {1}: {2}", new Object[]{label, taskDefinitionArn, req});
