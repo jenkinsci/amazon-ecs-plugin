@@ -318,6 +318,8 @@ public class ECSCloud extends Cloud {
 
     @Extension
     public static class DescriptorImpl extends Descriptor<Cloud> {
+    	
+    	private static String CLOUD_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
 
         @Override
         public String getDisplayName() {
@@ -357,17 +359,10 @@ public class ECSCloud extends Cloud {
         }
 
         public FormValidation doCheckName(@QueryParameter String value) throws IOException, ServletException {
-            if (value.length() == 0) {
-                return FormValidation.error("Please set a name");
+            if (value.length() > 0 && value.length() <= 127 && value.matches(CLOUD_NAME_PATTERN)) {
+                return FormValidation.ok();
             }
-            //Add check for spaces
-            Pattern pattern = Pattern.compile("\\s");
-            Matcher matcher = pattern.matcher(value);
-            boolean found = matcher.find();
-            if (found) {
-                return FormValidation.error("Please do not use spaces.");
-            }
-            return FormValidation.ok();
+            return FormValidation.error("Up to 127 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed");
         }
 
     }
