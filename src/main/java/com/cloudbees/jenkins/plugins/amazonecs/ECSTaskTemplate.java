@@ -114,6 +114,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     @CheckForNull
     private String entrypoint;
     /**
+     * ARN of the IAM role to use for the slave ECS task
+     */
+    @CheckForNull
+    private String taskRoleArn;
+    /**
       JVM arguments to start slave.jar
      */
     @CheckForNull
@@ -183,6 +188,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     @DataBoundSetter
+    public void setTaskRoleArn(String taskRoleArn) {
+        this.taskRoleArn = StringUtils.trimToNull(taskRoleArn);
+    }
+
+    @DataBoundSetter
     public void setEntrypoint(String entrypoint) {
         this.entrypoint = StringUtils.trimToNull(entrypoint);
     }
@@ -219,6 +229,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     public String getEntrypoint() {
         return entrypoint;
+    }
+
+    public String getTaskRoleArn() {
+        return taskRoleArn;
     }
 
     public String getJvmArgs() {
@@ -476,7 +490,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return new RegisterTaskDefinitionRequest()
             .withFamily(familyName)
             .withVolumes(getVolumeEntries())
-            .withContainerDefinitions(def);
+            .withContainerDefinitions(def)
+            .withTaskRoleArn(taskRoleArn);
     }
 
     /**
