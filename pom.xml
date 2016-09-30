@@ -36,7 +36,7 @@
 
   <groupId>com.cloudbees.jenkins.plugins</groupId>
   <artifactId>amazon-ecs</artifactId>
-  <version>1.7-SNAPSHOT:wq</version>
+  <version>1.7-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Amazon EC2 Container Service plugin</name>
   <description>Jenkins plugin to run dynamic slaves in a Amazon ECS/Docker environment</description>
@@ -69,7 +69,7 @@
       <url>http://repo.jenkins-ci.org/public/</url>
     </pluginRepository>
   </pluginRepositories>
-  
+
   <distributionManagement>
     <repository>
       <id>repo.jenkins-ci.org</id>
