@@ -1,93 +1,89 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ~ The MIT License
-  ~
-  ~  Copyright (c) 2015, CloudBees, Inc.
-  ~
-  ~  Permission is hereby granted, free of charge, to any person obtaining a copy
-  ~  of this software and associated documentation files (the "Software"), to deal
-  ~  in the Software without restriction, including without limitation the rights
-  ~  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  ~  copies of the Software, and to permit persons to whom the Software is
-  ~  furnished to do so, subject to the following conditions:
-  ~
-  ~  The above copyright notice and this permission notice shall be included in
-  ~  all copies or substantial portions of the Software.
-  ~
-  ~  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  ~  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  ~  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  ~  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  ~  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  ~  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  ~  THE SOFTWARE.
-  ~
-  -->
+<!-- ~ The MIT License ~ ~ Copyright (c) 2015, CloudBees, Inc. ~ ~ Permission 
+	is hereby granted, free of charge, to any person obtaining a copy ~ of this 
+	software and associated documentation files (the "Software"), to deal ~ in 
+	the Software without restriction, including without limitation the rights 
+	~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+	~ copies of the Software, and to permit persons to whom the Software is ~ 
+	furnished to do so, subject to the following conditions: ~ ~ The above copyright 
+	notice and this permission notice shall be included in ~ all copies or substantial 
+	portions of the Software. ~ ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY 
+	OF ANY KIND, EXPRESS OR ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
+	OF MERCHANTABILITY, ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+	IN NO EVENT SHALL THE ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
+	DAMAGES OR OTHER ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, 
+	ARISING FROM, ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+	DEALINGS IN ~ THE SOFTWARE. ~ -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>org.jenkins-ci.plugins</groupId>
-    <artifactId>plugin</artifactId>
-    <version>1.609</version>
-    <relativePath />
-  </parent>
+	<parent>
+		<groupId>org.jenkins-ci.plugins</groupId>
+		<artifactId>plugin</artifactId>
+		<version>1.609</version>
+		<relativePath />
+	</parent>
 
-  <groupId>com.cloudbees.jenkins.plugins</groupId>
-  <artifactId>amazon-ecs</artifactId>
-  <version>1.7-SNAPSHOT:wq</version>
-  <packaging>hpi</packaging>
-  <name>Amazon EC2 Container Service plugin</name>
-  <description>Jenkins plugin to run dynamic slaves in a Amazon ECS/Docker environment</description>
-  <url>https://wiki.jenkins-ci.org/display/JENKINS/Amazon+EC2+Container+Service+Plugin</url>
+	<groupId>com.cloudbees.jenkins.plugins</groupId>
+	<artifactId>amazon-ecs</artifactId>
+	<version>1.7-SNAPSHOT</version>
+	<packaging>hpi</packaging>
+	<name>Amazon EC2 Container Service plugin</name>
+	<description>Jenkins plugin to run dynamic slaves in a Amazon ECS/Docker environment</description>
+	<url>https://wiki.jenkins-ci.org/display/JENKINS/Amazon+EC2+Container+Service+Plugin</url>
 
-  <developers>
-    <developer>
-      <id>ndeloof</id>
-      <name>Nicolas De Loof</name>
-      <email>nicolas.deloof@gmail.com</email>
-    </developer>
-  </developers>
+	<developers>
+		<developer>
+			<id>ndeloof</id>
+			<name>Nicolas De Loof</name>
+			<email>nicolas.deloof@gmail.com</email>
+		</developer>
+	</developers>
 
-  <scm>
-    <connection>scm:git:git://github.com/jenkinsci/amazon-ecs-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:jenkinsci/amazon-ecs-plugin.git</developerConnection>
-    <url>https://github.com/jenkinsci/amazon-ecs-plugin</url>
-    <tag>HEAD</tag>
-  </scm>
+	<scm>
+		<connection>scm:git:git://github.com/jenkinsci/amazon-ecs-plugin.git</connection>
+		<developerConnection>scm:git:git@github.com:jenkinsci/amazon-ecs-plugin.git</developerConnection>
+		<url>https://github.com/jenkinsci/amazon-ecs-plugin</url>
+		<tag>HEAD</tag>
+	</scm>
 
-  <repositories>
-    <repository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
-    </repository>
-  </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
-    </pluginRepository>
-  </pluginRepositories>
-  
-  <distributionManagement>
-    <repository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/releases/</url>
-    </repository>
-  </distributionManagement>
+	<repositories>
+		<repository>
+			<id>repo.jenkins-ci.org</id>
+			<url>http://repo.jenkins-ci.org/public/</url>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>repo.jenkins-ci.org</id>
+			<url>http://repo.jenkins-ci.org/public/</url>
+		</pluginRepository>
+	</pluginRepositories>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>aws-java-sdk</artifactId>
-      <version>1.10.45</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>aws-credentials</artifactId>
-      <version>1.15</version>
-    </dependency>
-  </dependencies>
+	<distributionManagement>
+		<repository>
+			<id>repo.jenkins-ci.org</id>
+			<url>http://repo.jenkins-ci.org/releases/</url>
+		</repository>
+		<snapshotRepository>
+			<id>repo.jenkins-ci.org</id>
+			<url>http://repo.jenkins-ci.org/snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>aws-java-sdk</artifactId>
+			<version>1.11.37</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>aws-credentials</artifactId>
+			<version>1.16</version>
+		</dependency>
+	</dependencies>
 
 </project>
