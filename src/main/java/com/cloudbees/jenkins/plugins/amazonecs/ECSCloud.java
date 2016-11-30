@@ -55,7 +55,6 @@ import com.amazonaws.services.ecs.AmazonECSClient;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 
-import hudson.AbortException;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -267,7 +266,7 @@ public class ECSCloud extends Cloud {
 					LOGGER.log(Level.INFO, "Slave {0} - Slave Task Started : {1}",
 							new Object[] { slave.getNodeName(), taskArn });
 					slave.setTaskArn(taskArn);
-				} catch (AbortException ex) {
+				} catch (Exception ex) {
 					Jenkins.getInstance().removeNode(slave);
 					throw ex;
 				}

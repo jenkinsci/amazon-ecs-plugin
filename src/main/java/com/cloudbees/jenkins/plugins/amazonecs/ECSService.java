@@ -42,7 +42,6 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECSClient;
-import com.amazonaws.services.ecs.model.ClientException;
 import com.amazonaws.services.ecs.model.ContainerInstance;
 import com.amazonaws.services.ecs.model.ContainerOverride;
 import com.amazonaws.services.ecs.model.DescribeContainerInstancesRequest;
@@ -131,7 +130,7 @@ class ECSService {
         LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
         try {
             client.stopTask(new StopTaskRequest().withTask(taskArn).withCluster(clusterArn));
-        } catch (ClientException e) {
+        } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Couldn't stop task arn " + taskArn + " caught exception: " + e.getMessage(), e);
         }
     }
