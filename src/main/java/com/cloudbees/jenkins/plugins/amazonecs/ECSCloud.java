@@ -72,11 +72,11 @@ import jenkins.model.JenkinsLocationConfiguration;
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class ECSCloud extends Cloud {
-	
+
 	private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
-	
+
 	private static final int DEFAULT_SLAVE_TIMEOUT = 900;
-		
+
     private final List<ECSTaskTemplate> templates;
 
     /**
@@ -96,13 +96,13 @@ public class ECSCloud extends Cloud {
     private String tunnel;
 
     private String jenkinsUrl;
-        
+
     private int slaveTimoutInSeconds;
-        
+
     private ECSService ecsService;
-    
+
 	@DataBoundConstructor
-    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId, 
+    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId,
     		String cluster, String regionName, String jenkinsUrl, int slaveTimoutInSeconds) throws InterruptedException{
         super(name);
         this.credentialsId = credentialsId;
@@ -122,7 +122,7 @@ public class ECSCloud extends Cloud {
                 }
             }
         }
-        
+
         if(StringUtils.isNotBlank(jenkinsUrl)) {
         	this.jenkinsUrl = jenkinsUrl;
         } else {
@@ -267,6 +267,7 @@ public class ECSCloud extends Cloud {
 							new Object[] { slave.getNodeName(), taskArn });
 					slave.setTaskArn(taskArn);
 				} catch (Exception ex) {
+					LOGGER.log(Level.WARNING, "Slave {0} - Cannot create ECS Task");
 					Jenkins.getInstance().removeNode(slave);
 					throw ex;
 				}
@@ -315,7 +316,7 @@ public class ECSCloud extends Cloud {
 
     @Extension
     public static class DescriptorImpl extends Descriptor<Cloud> {
-    	
+
     	private static String CLOUD_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
 
         @Override
@@ -371,7 +372,7 @@ public class ECSCloud extends Cloud {
             return Region.getRegion(Regions.US_EAST_1);
         }
     }
-    
+
 	public String getJenkinsUrl() {
 		return jenkinsUrl;
 	}
