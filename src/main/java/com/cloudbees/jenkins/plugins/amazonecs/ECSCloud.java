@@ -73,9 +73,9 @@ import jenkins.model.JenkinsLocationConfiguration;
  */
 public class ECSCloud extends Cloud {
 
-	private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
 
-	private static final int DEFAULT_SLAVE_TIMEOUT = 900;
+    private static final int DEFAULT_SLAVE_TIMEOUT = 900;
 
     private final List<ECSTaskTemplate> templates;
 
@@ -101,9 +101,9 @@ public class ECSCloud extends Cloud {
 
     private ECSService ecsService;
 
-	@DataBoundConstructor
+    @DataBoundConstructor
     public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId,
-    		String cluster, String regionName, String jenkinsUrl, int slaveTimoutInSeconds) throws InterruptedException{
+            String cluster, String regionName, String jenkinsUrl, int slaveTimoutInSeconds) throws InterruptedException{
         super(name);
         this.credentialsId = credentialsId;
         this.cluster = cluster;
@@ -124,28 +124,28 @@ public class ECSCloud extends Cloud {
         }
 
         if(StringUtils.isNotBlank(jenkinsUrl)) {
-        	this.jenkinsUrl = jenkinsUrl;
+            this.jenkinsUrl = jenkinsUrl;
         } else {
-        	this.jenkinsUrl = JenkinsLocationConfiguration.get().getUrl();
+            this.jenkinsUrl = JenkinsLocationConfiguration.get().getUrl();
         }
 
         if(slaveTimoutInSeconds > 0) {
-        	this.slaveTimoutInSeconds = slaveTimoutInSeconds;
+            this.slaveTimoutInSeconds = slaveTimoutInSeconds;
         } else {
-        	this.slaveTimoutInSeconds = DEFAULT_SLAVE_TIMEOUT;
+            this.slaveTimoutInSeconds = DEFAULT_SLAVE_TIMEOUT;
         }
     }
 
-	synchronized ECSService getEcsService() {
-		if (ecsService == null) {
-			ecsService = new ECSService(credentialsId, regionName);
-		}
-		return ecsService;
-	}
+    synchronized ECSService getEcsService() {
+        if (ecsService == null) {
+            ecsService = new ECSService(credentialsId, regionName);
+        }
+        return ecsService;
+    }
 
-	AmazonECSClient getAmazonECSClient() {
-		return getEcsService().getAmazonECSClient();
-	}
+    AmazonECSClient getAmazonECSClient() {
+        return getEcsService().getAmazonECSClient();
+    }
 
     public List<ECSTaskTemplate> getTemplates() {
         return templates;
@@ -178,7 +178,7 @@ public class ECSCloud extends Cloud {
 
     @CheckForNull
     private static AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
-    	return AWSCredentialsHelper.getCredentials(credentialsId, Jenkins.getActiveInstance());
+        return AWSCredentialsHelper.getCredentials(credentialsId, Jenkins.getActiveInstance());
     }
 
     @Override
@@ -218,17 +218,17 @@ public class ECSCloud extends Cloud {
         }
     }
 
- 	void deleteTask(String taskArn, String clusterArn) {
-		getEcsService().deleteTask(taskArn, clusterArn);
-	}
+     void deleteTask(String taskArn, String clusterArn) {
+        getEcsService().deleteTask(taskArn, clusterArn);
+    }
 
-	public int getSlaveTimoutInSeconds() {
-		return slaveTimoutInSeconds;
-	}
+    public int getSlaveTimoutInSeconds() {
+        return slaveTimoutInSeconds;
+    }
 
-	public void setSlaveTimoutInSeconds(int slaveTimoutInSeconds) {
-		this.slaveTimoutInSeconds = slaveTimoutInSeconds;
-	}
+    public void setSlaveTimoutInSeconds(int slaveTimoutInSeconds) {
+        this.slaveTimoutInSeconds = slaveTimoutInSeconds;
+    }
 
 
     private class ProvisioningCallback implements Callable<Node> {
@@ -243,62 +243,62 @@ public class ECSCloud extends Cloud {
         }
 
         public Node call() throws Exception {
-			final ECSSlave slave;
+            final ECSSlave slave;
 
-			Date now = new Date();
-			Date timeout = new Date(now.getTime() + 1000 * slaveTimoutInSeconds);
+            Date now = new Date();
+            Date timeout = new Date(now.getTime() + 1000 * slaveTimoutInSeconds);
 
-			synchronized (cluster) {
-				getEcsService().waitForSufficientClusterResources(timeout, template, cluster);
+            synchronized (cluster) {
+                getEcsService().waitForSufficientClusterResources(timeout, template, cluster);
 
-				String uniq = Long.toHexString(System.nanoTime());
-				slave = new ECSSlave(ECSCloud.this, name + "-" + uniq, template.getRemoteFSRoot(),
-						label == null ? null : label.toString(), new JNLPLauncher());
-				slave.setClusterArn(cluster);
-				Jenkins.getInstance().addNode(slave);
-				while (Jenkins.getInstance().getNode(slave.getNodeName()) == null) {
-					Thread.sleep(1000);
-				}
-				LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
+                String uniq = Long.toHexString(System.nanoTime());
+                slave = new ECSSlave(ECSCloud.this, name + "-" + uniq, template.getRemoteFSRoot(),
+                        label == null ? null : label.toString(), new JNLPLauncher());
+                slave.setClusterArn(cluster);
+                Jenkins.getInstance().addNode(slave);
+                while (Jenkins.getInstance().getNode(slave.getNodeName()) == null) {
+                    Thread.sleep(1000);
+                }
+                LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
-				try {
-					String taskArn = getEcsService().runEcsTask(slave, template, cluster, getDockerRunCommand(slave));
-					LOGGER.log(Level.INFO, "Slave {0} - Slave Task Started : {1}",
-							new Object[] { slave.getNodeName(), taskArn });
-					slave.setTaskArn(taskArn);
-				} catch (Exception ex) {
-					LOGGER.log(Level.WARNING, "Slave {0} - Cannot create ECS Task");
-					Jenkins.getInstance().removeNode(slave);
-					throw ex;
-				}
-			}
+                try {
+                    String taskArn = getEcsService().runEcsTask(slave, template, cluster, getDockerRunCommand(slave));
+                    LOGGER.log(Level.INFO, "Slave {0} - Slave Task Started : {1}",
+                            new Object[] { slave.getNodeName(), taskArn });
+                    slave.setTaskArn(taskArn);
+                } catch (Exception ex) {
+                    LOGGER.log(Level.WARNING, "Slave {0} - Cannot create ECS Task");
+                    Jenkins.getInstance().removeNode(slave);
+                    throw ex;
+                }
+            }
 
-			// now wait for slave to be online
-			while (timeout.after(new Date())) {
-				if (slave.getComputer() == null) {
-					throw new IllegalStateException(
-							"Slave " + slave.getNodeName() + " - Node was deleted, computer is null");
-				}
-				if (slave.getComputer().isOnline()) {
-					break;
-				}
-				LOGGER.log(Level.FINE, "Waiting for slave {0} (ecs task {1}) to connect since {2}.",
-						new Object[] { slave.getNodeName(), slave.getTaskArn(), now });
-				Thread.sleep(1000);
-			}
-			if (!slave.getComputer().isOnline()) {
-				final String msg = MessageFormat.format("ECS Slave {0} (ecs task {1}) not connected since {2} seconds",
-						slave.getNodeName(), slave.getTaskArn(), now);
-				LOGGER.log(Level.WARNING, msg);
-				Jenkins.getInstance().removeNode(slave);
-				throw new IllegalStateException(msg);
-			}
+            // now wait for slave to be online
+            while (timeout.after(new Date())) {
+                if (slave.getComputer() == null) {
+                    throw new IllegalStateException(
+                            "Slave " + slave.getNodeName() + " - Node was deleted, computer is null");
+                }
+                if (slave.getComputer().isOnline()) {
+                    break;
+                }
+                LOGGER.log(Level.FINE, "Waiting for slave {0} (ecs task {1}) to connect since {2}.",
+                        new Object[] { slave.getNodeName(), slave.getTaskArn(), now });
+                Thread.sleep(1000);
+            }
+            if (!slave.getComputer().isOnline()) {
+                final String msg = MessageFormat.format("ECS Slave {0} (ecs task {1}) not connected since {2} seconds",
+                        slave.getNodeName(), slave.getTaskArn(), now);
+                LOGGER.log(Level.WARNING, msg);
+                Jenkins.getInstance().removeNode(slave);
+                throw new IllegalStateException(msg);
+            }
 
-			LOGGER.log(Level.INFO, "ECS Slave " + slave.getNodeName() + " (ecs task {0}) connected",
-					slave.getTaskArn());
-			return slave;
-		}
-	}
+            LOGGER.log(Level.INFO, "ECS Slave " + slave.getNodeName() + " (ecs task {0}) connected",
+                    slave.getTaskArn());
+            return slave;
+        }
+    }
 
     private Collection<String> getDockerRunCommand(ECSSlave slave) {
         Collection<String> command = new ArrayList<String>();
@@ -317,7 +317,7 @@ public class ECSCloud extends Cloud {
     @Extension
     public static class DescriptorImpl extends Descriptor<Cloud> {
 
-    	private static String CLOUD_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
+        private static String CLOUD_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
 
         @Override
         public String getDisplayName() {
@@ -337,9 +337,9 @@ public class ECSCloud extends Cloud {
         }
 
         public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId, @QueryParameter String regionName) {
-        	ECSService ecsService = new ECSService(credentialsId, regionName);
-        	try {
-        	    final AmazonECSClient client = ecsService.getAmazonECSClient();
+            ECSService ecsService = new ECSService(credentialsId, regionName);
+            try {
+                final AmazonECSClient client = ecsService.getAmazonECSClient();
                 final ListBoxModel options = new ListBoxModel();
                 for (String arn : client.listClusters().getClusterArns()) {
                     options.add(arn);
@@ -373,11 +373,11 @@ public class ECSCloud extends Cloud {
         }
     }
 
-	public String getJenkinsUrl() {
-		return jenkinsUrl;
-	}
+    public String getJenkinsUrl() {
+        return jenkinsUrl;
+    }
 
-	public void setJenkinsUrl(String jenkinsUrl) {
-		this.jenkinsUrl = jenkinsUrl;
-	}
+    public void setJenkinsUrl(String jenkinsUrl) {
+        this.jenkinsUrl = jenkinsUrl;
+    }
 }

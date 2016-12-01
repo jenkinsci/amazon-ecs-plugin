@@ -60,7 +60,7 @@ public class ECSSlave extends AbstractCloudSlave {
      */
     @CheckForNull
     private String taskArn;
-    
+
     public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
         super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, RetentionStrategy.NOOP, Collections.EMPTY_LIST);
         this.cloud = cloud;
@@ -102,7 +102,7 @@ public class ECSSlave extends AbstractCloudSlave {
         }
     }
 
-	public ECSCloud getCloud() {
-		return cloud;
-	}
+    public ECSCloud getCloud() {
+        return cloud;
+    }
 }
