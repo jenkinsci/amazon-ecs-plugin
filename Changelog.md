@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7
+- Added slave and task removal through RetentionStrategy (#35)
+- Added surveillance of ECS tasks for dead instances (attention: This requires ecs:DescribeTasks permission in AWS)
+- Slave timeout is no configurable in UI
+
 ## 1.6
 - Now a name is required for each template and used to derive the ECS task definition name.
 - Slave'name and secret are not availabale during slave startup in the environment variables SLAVE_NODE_NAME and SLAVE_NODE_SECRET.
