@@ -37,6 +37,7 @@ import java.io.IOException;
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class ECSComputer extends AbstractCloudComputer {
+
     public ECSComputer(ECSSlave slave) {
         super(slave);
     }
@@ -58,10 +59,6 @@ public class ECSComputer extends AbstractCloudComputer {
      */
     private void terminate() {
         setAcceptingTasks(false);
-        try {
-            getNode().terminate();
-        } catch (InterruptedException e) {
-        } catch (IOException e) {
-        }
     }
+
 }

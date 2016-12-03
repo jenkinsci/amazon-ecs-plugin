@@ -114,13 +114,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     @CheckForNull
     private String entrypoint;
     /**
-      JVM arguments to start slave.jar
+     * JVM arguments to start slave.jar
      */
     @CheckForNull
     private String jvmArgs;
 
     /**
-      Container mount points, imported from volumes
+     * Container mount points, imported from volumes
      */
     private List<MountPointEntry> mountPoints;
 
@@ -480,12 +480,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     /**
-     * Returns the template name prefixed with the cloud name 
+     * Returns the template name prefixed with the cloud name
      */
     String getFullQualifiedTemplateName(ECSCloud owner) {
-		return owner.getDisplayName().replaceAll("\\s+","") + '-' + templateName;
-	}
-    
+        return owner.getDisplayName().replaceAll("\\s+","") + '-' + templateName;
+    }
+
     public void setOwner(ECSCloud owner) {
         final AmazonECSClient client = owner.getAmazonECSClient();
         if (taskDefinitionArn == null) {
@@ -504,14 +504,14 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     @Extension
     public static class DescriptorImpl extends Descriptor<ECSTaskTemplate> {
-    	
-    	private static String TEMPLATE_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
+
+        private static String TEMPLATE_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
 
         @Override
         public String getDisplayName() {
             return Messages.Template();
         }
-        
+
         public FormValidation doCheckTemplateName(@QueryParameter String value) throws IOException, ServletException {
             if (value.length() > 0 && value.length() <= 127 && value.matches(TEMPLATE_NAME_PATTERN)) {
                 return FormValidation.ok();

@@ -42,7 +42,6 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECSClient;
-import com.amazonaws.services.ecs.model.ClientException;
 import com.amazonaws.services.ecs.model.ContainerInstance;
 import com.amazonaws.services.ecs.model.ContainerOverride;
 import com.amazonaws.services.ecs.model.DescribeContainerInstancesRequest;
@@ -65,35 +64,35 @@ import jenkins.model.Jenkins;
 
 /**
  * Encapsulates interactions with Amazon ECS.
- * 
+ *
  * @author Jan Roehrich <jan@roehrich.info>
  *
  */
 class ECSService {
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
-    
-    private String credentialsId;
-    
-    private String regionName;
-	
-    public ECSService(String credentialsId, String regionName) {
-		super();
-		this.credentialsId = credentialsId;
-		this.regionName = regionName;
-	}
 
-	AmazonECSClient getAmazonECSClient() {
+    private String credentialsId;
+
+    private String regionName;
+
+    public ECSService(String credentialsId, String regionName) {
+        super();
+        this.credentialsId = credentialsId;
+        this.regionName = regionName;
+    }
+
+    AmazonECSClient getAmazonECSClient() {
         final AmazonECSClient client;
-        
+
         ProxyConfiguration proxy = Jenkins.getInstance().proxy;
-        ClientConfiguration clientConfiguration = new ClientConfiguration();            
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
         if(proxy != null) {
-        	clientConfiguration.setProxyHost(proxy.name);
-        	clientConfiguration.setProxyPort(proxy.port);
-        	clientConfiguration.setProxyUsername(proxy.getUserName());
-        	clientConfiguration.setProxyPassword(proxy.getPassword());
+            clientConfiguration.setProxyHost(proxy.name);
+            clientConfiguration.setProxyPort(proxy.port);
+            clientConfiguration.setProxyUsername(proxy.getUserName());
+            clientConfiguration.setProxyPassword(proxy.getPassword());
         }
-        
+
         AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
         if (credentials == null) {
             // no credentials provided, rely on com.amazonaws.auth.DefaultAWSCredentialsProviderChain
@@ -111,7 +110,7 @@ class ECSService {
         LOGGER.log(Level.FINE, "Selected Region: {0}", regionName);
         return client;
     }
-    
+
     Region getRegion(String regionName) {
         if (StringUtils.isNotEmpty(regionName)) {
             return RegionUtils.getRegion(regionName);
@@ -119,95 +118,95 @@ class ECSService {
             return Region.getRegion(Regions.US_EAST_1);
         }
     }
-    
+
     @CheckForNull
     private AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
         return AWSCredentialsHelper.getCredentials(credentialsId, Jenkins.getActiveInstance());
     }
-    
+
     void deleteTask(String taskArn, String clusterArn) {
         final AmazonECSClient client = getAmazonECSClient();
 
         LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
         try {
             client.stopTask(new StopTaskRequest().withTask(taskArn).withCluster(clusterArn));
-        } catch (ClientException e) {
+        } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Couldn't stop task arn " + taskArn + " caught exception: " + e.getMessage(), e);
         }
     }
-    
-	String runEcsTask(final ECSSlave slave, final ECSTaskTemplate template, String clusterArn, Collection<String> command) throws IOException, AbortException {
-		AmazonECSClient client = getAmazonECSClient();
-		String definitionArn = template.getTaskDefinitionArn();
-		slave.setTaskDefinitonArn(definitionArn);
 
-		KeyValuePair envNodeName = new KeyValuePair();
-		envNodeName.setName("SLAVE_NODE_NAME");
-		envNodeName.setValue(slave.getComputer().getName());
+    String runEcsTask(final ECSSlave slave, final ECSTaskTemplate template, String clusterArn, Collection<String> command) throws IOException, AbortException {
+        AmazonECSClient client = getAmazonECSClient();
+        String definitionArn = template.getTaskDefinitionArn();
+        slave.setTaskDefinitonArn(definitionArn);
 
-		KeyValuePair envNodeSecret = new KeyValuePair();
-		envNodeSecret.setName("SLAVE_NODE_SECRET");
-		envNodeSecret.setValue(slave.getComputer().getJnlpMac());
+        KeyValuePair envNodeName = new KeyValuePair();
+        envNodeName.setName("SLAVE_NODE_NAME");
+        envNodeName.setValue(slave.getComputer().getName());
 
-		final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
-		  .withTaskDefinition(definitionArn)
-		  .withOverrides(new TaskOverride()
-		    .withContainerOverrides(new ContainerOverride()
-		      .withName(template.getFullQualifiedTemplateName(slave.getCloud()))
-		      .withCommand(command)
-		      .withEnvironment(envNodeName)
-		      .withEnvironment(envNodeSecret)))
-		  .withCluster(clusterArn)
-		);
+        KeyValuePair envNodeSecret = new KeyValuePair();
+        envNodeSecret.setName("SLAVE_NODE_SECRET");
+        envNodeSecret.setValue(slave.getComputer().getJnlpMac());
 
-		if (!runTaskResult.getFailures().isEmpty()) {
-		    LOGGER.log(Level.WARNING, "Slave {0} - Failure to run task with definition {1} on ECS cluster {2}", new Object[]{slave.getNodeName(), definitionArn, clusterArn});
-		    for (Failure failure : runTaskResult.getFailures()) {
-		        LOGGER.log(Level.WARNING, "Slave {0} - Failure reason={1}, arn={2}", new Object[]{slave.getNodeName(), failure.getReason(), failure.getArn()});
-		    }			    
-		    throw new AbortException("Failed to run slave container " + slave.getNodeName());
-		}
-		return runTaskResult.getTasks().get(0).getTaskArn();            
-	}
-	
-	void waitForSufficientClusterResources(Date timeout, ECSTaskTemplate template, String clusterArn) throws InterruptedException, AbortException {
-		AmazonECSClient client = getAmazonECSClient();
-		
-		boolean hasEnoughResources = false;			
-		WHILE:
-		do {
-			ListContainerInstancesResult listContainerInstances = client.listContainerInstances(new ListContainerInstancesRequest().withCluster(clusterArn));
-			DescribeContainerInstancesResult containerInstancesDesc = client.describeContainerInstances(new DescribeContainerInstancesRequest().withContainerInstances(listContainerInstances.getContainerInstanceArns()).withCluster(clusterArn));
-			LOGGER.log(Level.INFO, "Found {0} instances", containerInstancesDesc.getContainerInstances().size());
-			for(ContainerInstance instance : containerInstancesDesc.getContainerInstances()) {
-				LOGGER.log(Level.INFO, "Resources found in instance {1}: {0}", new Object[] {instance.getRemainingResources(), instance.getContainerInstanceArn()});
-				Resource memoryResource = null;
-				Resource cpuResource = null;
-				for(Resource resource : instance.getRemainingResources()) {
-					if("MEMORY".equals(resource.getName())) {
-						memoryResource = resource;
-					} else if("CPU".equals(resource.getName())) {
-						cpuResource = resource;
-					}        					
-				}
-				
-				LOGGER.log(Level.INFO, "Instance {0} has {1}mb of free memory. {2}mb are required", new Object[]{ instance.getContainerInstanceArn(), memoryResource.getIntegerValue(), template.getMemory()});
-				LOGGER.log(Level.INFO, "Instance {0} has {1} units of free cpu. {2} units are required", new Object[]{ instance.getContainerInstanceArn(), cpuResource.getIntegerValue(), template.getCpu()});
-				if(memoryResource.getIntegerValue() >= template.getMemory() 
-						&& cpuResource.getIntegerValue() >= template.getCpu()) {
-					hasEnoughResources = true;
-					break WHILE;
-				}
-			}
-			
-			// sleep 10s and check memory again
-			Thread.sleep(10000);
-		} while(!hasEnoughResources && timeout.after(new Date()));
-		
-		if(!hasEnoughResources) {
-			final String msg = MessageFormat.format("Timeout while waiting for sufficient resources: {0} cpu units, {1}mb free memory", template.getCpu(), template.getMemory());
-		    LOGGER.log(Level.WARNING, msg);
-		    throw new AbortException(msg);
-		}
-	}
+        final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
+          .withTaskDefinition(definitionArn)
+          .withOverrides(new TaskOverride()
+            .withContainerOverrides(new ContainerOverride()
+              .withName(template.getFullQualifiedTemplateName(slave.getCloud()))
+              .withCommand(command)
+              .withEnvironment(envNodeName)
+              .withEnvironment(envNodeSecret)))
+          .withCluster(clusterArn)
+        );
+
+        if (!runTaskResult.getFailures().isEmpty()) {
+            LOGGER.log(Level.WARNING, "Slave {0} - Failure to run task with definition {1} on ECS cluster {2}", new Object[]{slave.getNodeName(), definitionArn, clusterArn});
+            for (Failure failure : runTaskResult.getFailures()) {
+                LOGGER.log(Level.WARNING, "Slave {0} - Failure reason={1}, arn={2}", new Object[]{slave.getNodeName(), failure.getReason(), failure.getArn()});
+            }
+            throw new AbortException("Failed to run slave container " + slave.getNodeName());
+        }
+        return runTaskResult.getTasks().get(0).getTaskArn();
+    }
+
+    void waitForSufficientClusterResources(Date timeout, ECSTaskTemplate template, String clusterArn) throws InterruptedException, AbortException {
+        AmazonECSClient client = getAmazonECSClient();
+
+        boolean hasEnoughResources = false;
+        WHILE:
+        do {
+            ListContainerInstancesResult listContainerInstances = client.listContainerInstances(new ListContainerInstancesRequest().withCluster(clusterArn));
+            DescribeContainerInstancesResult containerInstancesDesc = client.describeContainerInstances(new DescribeContainerInstancesRequest().withContainerInstances(listContainerInstances.getContainerInstanceArns()).withCluster(clusterArn));
+            LOGGER.log(Level.INFO, "Found {0} instances", containerInstancesDesc.getContainerInstances().size());
+            for(ContainerInstance instance : containerInstancesDesc.getContainerInstances()) {
+                LOGGER.log(Level.INFO, "Resources found in instance {1}: {0}", new Object[] {instance.getRemainingResources(), instance.getContainerInstanceArn()});
+                Resource memoryResource = null;
+                Resource cpuResource = null;
+                for(Resource resource : instance.getRemainingResources()) {
+                    if("MEMORY".equals(resource.getName())) {
+                        memoryResource = resource;
+                    } else if("CPU".equals(resource.getName())) {
+                        cpuResource = resource;
+                    }
+                }
+
+                LOGGER.log(Level.INFO, "Instance {0} has {1}mb of free memory. {2}mb are required", new Object[]{ instance.getContainerInstanceArn(), memoryResource.getIntegerValue(), template.getMemory()});
+                LOGGER.log(Level.INFO, "Instance {0} has {1} units of free cpu. {2} units are required", new Object[]{ instance.getContainerInstanceArn(), cpuResource.getIntegerValue(), template.getCpu()});
+                if(memoryResource.getIntegerValue() >= template.getMemory()
+                        && cpuResource.getIntegerValue() >= template.getCpu()) {
+                    hasEnoughResources = true;
+                    break WHILE;
+                }
+            }
+
+            // sleep 10s and check memory again
+            Thread.sleep(10000);
+        } while(!hasEnoughResources && timeout.after(new Date()));
+
+        if(!hasEnoughResources) {
+            final String msg = MessageFormat.format("Timeout while waiting for sufficient resources: {0} cpu units, {1}mb free memory", template.getCpu(), template.getMemory());
+            LOGGER.log(Level.WARNING, msg);
+            throw new AbortException(msg);
+        }
+    }
 }
