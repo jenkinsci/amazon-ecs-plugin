@@ -40,6 +40,11 @@
 			<name>Nicolas De Loof</name>
 			<email>nicolas.deloof@gmail.com</email>
 		</developer>
+		<developer>
+            <id>roehrijn</id>
+            <name>Jan Roehrich</name>
+            <email>jan@roehrich.info</email>
+        </developer>
 	</developers>
 
 	<scm>
