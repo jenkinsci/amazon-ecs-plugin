@@ -91,10 +91,20 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      * The number of MiB of memory reserved for the Docker container. If your
      * container attempts to exceed the memory allocated here, the container
      * is killed by ECS.
+     * Also referred to as the hard memory limit
      *
      * @see ContainerDefinition#withMemory(Integer)
      */
     private final int memory;
+    /**
+     * The number of MiB of memory reserved for the Docker container. If your
+     * container attempts to exceed the memory allocated here, the container
+     * is killed by ECS.
+     * Also referred to as the soft memory limit
+     *
+     * @see ContainerDefinition#withMemoryReservation(Integer)
+     */
+    private final int memoryReservation;
     /**
      * The number of <code>cpu</code> units reserved for the container. A
      * container instance has 1,024 <code>cpu</code> units for every CPU
@@ -160,6 +170,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nonnull String image,
                            @Nullable String remoteFSRoot,
                            int memory,
+                           int memoryReservation,
                            int cpu,
                            boolean privileged,
                            @Nullable List<LogDriverOption> logDriverOptions,
@@ -174,6 +185,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.image = image;
         this.remoteFSRoot = remoteFSRoot;
         this.memory = memory;
+        this.memoryReservation = memoryReservation;
         this.cpu = cpu;
         this.privileged = privileged;
         this.logDriverOptions = logDriverOptions;
@@ -211,6 +223,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     public int getMemory() {
         return memory;
+    }
+
+    public int getMemoryReservation() {
+        return memoryReservation;
     }
 
     public int getCpu() {
@@ -454,10 +470,14 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                 .withImage(image)
                 .withEnvironment(getEnvironmentKeyValuePairs())
                 .withExtraHosts(getExtraHostEntries())
-                .withMemory(memory)
+                .withMemoryReservation(memoryReservation)
                 .withMountPoints(getMountPointEntries())
                 .withCpu(cpu)
                 .withPrivileged(privileged);
+
+        if (memory > 0) /* this is the hard limit */
+            def.withMemory(memory);
+
         if (entrypoint != null)
             def.withEntryPoint(StringUtils.split(entrypoint));
 
