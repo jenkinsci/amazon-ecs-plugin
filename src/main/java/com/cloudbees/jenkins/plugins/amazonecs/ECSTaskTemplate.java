@@ -91,16 +91,17 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      * The number of MiB of memory reserved for the Docker container. If your
      * container attempts to exceed the memory allocated here, the container
      * is killed by ECS.
-     * Also referred to as the hard memory limit
      *
      * @see ContainerDefinition#withMemory(Integer)
      */
     private final int memory;
     /**
-     * The number of MiB of memory reserved for the Docker container. If your
-     * container attempts to exceed the memory allocated here, the container
-     * is killed by ECS.
-     * Also referred to as the soft memory limit
+     * The soft limit (in MiB) of memory to reserve for the container. When
+     * system memory is under contention, Docker attempts to keep the container
+     * memory to this soft limit; however, your container can consume more
+     * memory when it needs to, up to either the hard limit specified with the
+     * memory parameter (if applicable), or all of the available memory on the
+     * container instance, whichever comes first.
      *
      * @see ContainerDefinition#withMemoryReservation(Integer)
      */
