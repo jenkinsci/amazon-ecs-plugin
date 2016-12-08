@@ -35,11 +35,6 @@
 	<url>https://wiki.jenkins-ci.org/display/JENKINS/Amazon+EC2+Container+Service+Plugin</url>
 
 	<developers>
-		<developer>
-			<id>ndeloof</id>
-			<name>Nicolas De Loof</name>
-			<email>nicolas.deloof@gmail.com</email>
-		</developer>
 	</developers>
 
 	<scm>
