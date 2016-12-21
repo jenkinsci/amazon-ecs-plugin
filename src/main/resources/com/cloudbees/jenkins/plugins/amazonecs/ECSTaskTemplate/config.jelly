@@ -44,7 +44,7 @@
     <f:textbox default="1"/>
   </f:entry>
   <f:advanced>
-    <f:entry title="${%ECS Task Role ARN}" field="taskRoleArn">
+    <f:entry title="${%Task Role ARN}" field="taskrole">
       <f:textbox />
     </f:entry>
     <f:entry title="${%Override entrypoint}" field="entrypoint">

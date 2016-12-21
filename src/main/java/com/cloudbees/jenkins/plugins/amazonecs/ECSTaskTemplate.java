@@ -113,21 +113,22 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      */
     @CheckForNull
     private String entrypoint;
-  
+
     /**
      * ARN of the IAM role to use for the slave ECS task
+     *
+     * @see RegisterTaskDefinitionRequest#withTaskRoleArn(String)
      */
     @CheckForNull
-    private String taskRoleArn;
-  
+    private String taskrole;
     /**
-     * JVM arguments to start slave.jar
+      JVM arguments to start slave.jar
      */
     @CheckForNull
     private String jvmArgs;
 
     /**
-     * Container mount points, imported from volumes
+      Container mount points, imported from volumes
      */
     private List<MountPointEntry> mountPoints;
 
@@ -190,8 +191,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     @DataBoundSetter
-    public void setTaskRoleArn(String taskRoleArn) {
-        this.taskRoleArn = StringUtils.trimToNull(taskRoleArn);
+    public void setTaskrole(String taskRoleArn) {
+        this.taskrole = StringUtils.trimToNull(taskRoleArn);
     }
 
     @DataBoundSetter
@@ -233,8 +234,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return entrypoint;
     }
 
-    public String getTaskRoleArn() {
-        return taskRoleArn;
+    public String getTaskrole() {
+        return taskrole;
     }
 
     public String getJvmArgs() {
@@ -489,11 +490,16 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             def.withLogConfiguration(logConfig);
         }
 
-        return new RegisterTaskDefinitionRequest()
-            .withFamily(familyName)
-            .withVolumes(getVolumeEntries())
-            .withContainerDefinitions(def)
-            .withTaskRoleArn(taskRoleArn);
+        final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()
+                .withFamily(familyName)
+                .withVolumes(getVolumeEntries())
+                .withContainerDefinitions(def);
+
+        if (taskrole != null) {
+            request.withTaskRoleArn(taskrole);
+        }
+
+        return request;
     }
 
     /**
