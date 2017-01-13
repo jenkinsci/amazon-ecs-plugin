@@ -29,7 +29,7 @@
     <f:textbox />
   </f:entry>
 
-  <f:entry field="credentialsId" title="${%Amazon ECS Crendentials}" description="AWS IAM Access Key used to connect to ECS. If not specified, implicit authentication mechanisms are used (IAM roles...)">
+  <f:entry field="credentialsId" title="${%Amazon ECS Credentials}" description="AWS IAM Access Key used to connect to ECS. If not specified, implicit authentication mechanisms are used (IAM roles...)">
     <c:select />
   </f:entry>
 
@@ -46,6 +46,9 @@
       <f:textbox />
     </f:entry>
     <f:entry field="jenkinsUrl" title="${%Alternative Jenkins URL}" description="If needed, the Jenkins URL can be overwritten with this property (e.g. to support other HTTP(S) endpoints due to reverse proxies or firewalling). By default the URL from the global Jenkins configuration is used.">
+      <f:textbox />
+    </f:entry>
+    <f:entry field="slaveTimoutInSeconds" title="${%ECS task creation timeout}" description="Timeout (in second) for ECS task to be created, usefull if you use large docker slave image, because the host will take more time to pull the docker image">
       <f:textbox />
     </f:entry>
   </f:advanced>

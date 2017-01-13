@@ -31,6 +31,7 @@ import java.util.Collections;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 
 import hudson.model.Descriptor;
 import hudson.model.TaskListener;
@@ -39,10 +40,15 @@ import hudson.slaves.AbstractCloudSlave;
 import hudson.slaves.ComputerLauncher;
 import hudson.slaves.RetentionStrategy;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class ECSSlave extends AbstractCloudSlave {
+
+    private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
 
     @Nonnull
     private final ECSCloud cloud;
@@ -60,9 +66,33 @@ public class ECSSlave extends AbstractCloudSlave {
      */
     @CheckForNull
     private String taskArn;
-    
+
+    private static RetentionStrategy deleteAfterFinished = new RetentionStrategy<ECSComputer>() {
+        @Override
+        public boolean isManualLaunchAllowed(ECSComputer c) {
+            return false;
+        }
+
+        @Override
+        @GuardedBy("hudson.model.Queue.lock")
+        public long check(ECSComputer c) {
+            AbstractCloudSlave node = c.getNode();
+            if(!c.isAcceptingTasks() && node != null) {
+                try {
+                    node.terminate();
+                } catch (InterruptedException e) {
+                    LOGGER.log(Level.WARNING, "Failed to terminate " + c.getName(), e);
+                } catch (IOException e) {
+                    LOGGER.log(Level.WARNING, "Failed to terminate " + c.getName(), e);
+                }
+            }
+            return 1;
+        }
+
+    };
+
     public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
-        super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, RetentionStrategy.NOOP, Collections.EMPTY_LIST);
+        super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, deleteAfterFinished, Collections.EMPTY_LIST);
         this.cloud = cloud;
     }
 
@@ -102,7 +132,7 @@ public class ECSSlave extends AbstractCloudSlave {
         }
     }
 
-	public ECSCloud getCloud() {
-		return cloud;
-	}
+    public ECSCloud getCloud() {
+        return cloud;
+    }
 }
