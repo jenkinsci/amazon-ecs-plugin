@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8
+- Added taskRoleArn configuration option
+- minor typos fixed
+
 ## 1.7
 - Added slave and task removal through RetentionStrategy (#35)
 - Added surveillance of ECS tasks for dead instances (attention: This requires ecs:DescribeTasks permission in AWS)
