@@ -38,7 +38,7 @@
     <f:textbox default="/home/jenkins" />
   </f:entry>
   <f:entry title="${%Memory Reservation (Mb)}" field="memoryReservation">
-    <f:textbox default="1"/>
+    <f:textbox default="0"/>
   </f:entry>
   <f:entry title="${%Memory (Mb)}" field="memory">
     <f:textbox default="0"/>

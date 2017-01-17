@@ -471,10 +471,16 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                 .withImage(image)
                 .withEnvironment(getEnvironmentKeyValuePairs())
                 .withExtraHosts(getExtraHostEntries())
-                .withMemoryReservation(memoryReservation)
                 .withMountPoints(getMountPointEntries())
                 .withCpu(cpu)
                 .withPrivileged(privileged);
+
+        /*
+            at least one of memory or memoryReservation has to be set
+            the form validation will highlight if the settings are inappropriate
+        */
+        if (memoryReservation > 0) /* this is the soft limit */
+            def.withMemoryReservation(memoryReservation);
 
         if (memory > 0) /* this is the hard limit */
             def.withMemory(memory);
@@ -523,6 +529,16 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     private static final Logger LOGGER = Logger.getLogger(ECSTaskTemplate.class.getName());
 
+    public class MemoryValidationError extends Exception {
+        String e;
+        MemoryValidationError(String e) {
+            this.e = e;
+        }
+        public String toString() {
+            return this.e;
+        }
+    }
+
     @Extension
     public static class DescriptorImpl extends Descriptor<ECSTaskTemplate> {
 
@@ -538,6 +554,30 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                 return FormValidation.ok();
             }
             return FormValidation.error("Up to 127 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed");
+        }
+
+        /* we validate both memory and memoryReservation fields to the same rules */
+        public FormValidation doCheckMemory(@QueryParameter("memory") int memory, @QueryParameter("memoryReservation") int memoryReservation) throws IOException, ServletException {
+            return validateMemorySettings(memory,memoryReservation);
+        }
+
+        public FormValidation doCheckMemoryReservation(@QueryParameter("memory") int memory, @QueryParameter("memoryReservation") int memoryReservation) throws IOException, ServletException {
+            return validateMemorySettings(memory,memoryReservation);
+        }
+
+        private FormValidation validateMemorySettings(int memory, int memoryReservation) {
+            if (memory < 0 || memoryReservation < 0) {
+                return FormValidation.error("memory and/or memoryReservation must be 0 or a positive integer");
+            }
+            if (memory == 0 && memoryReservation == 0) {
+                return FormValidation.error("at least one of memory or memoryReservation are required to be > 0");
+            }
+            if (memory > 0 && memoryReservation > 0) {
+                if (memory <= memoryReservation) {
+                    return FormValidation.error("memory must be greater than memoryReservation if both are specified");
+                }
+            }
+            return FormValidation.ok();
         }
     }
 }
