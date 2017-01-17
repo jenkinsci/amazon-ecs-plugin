@@ -106,6 +106,15 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      * @see ContainerDefinition#withMemoryReservation(Integer)
      */
     private final int memoryReservation;
+
+    /* a hint to ECSService regarding whether it can ask AWS to make a new container or not */
+    public int getMemoryConstraint() {
+        if (this.memoryReservation > 0) {
+            return this.memoryReservation;
+        }
+        return this.memory;
+    }
+
     /**
      * The number of <code>cpu</code> units reserved for the container. A
      * container instance has 1,024 <code>cpu</code> units for every CPU
