@@ -529,16 +529,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     private static final Logger LOGGER = Logger.getLogger(ECSTaskTemplate.class.getName());
 
-    public class MemoryValidationError extends Exception {
-        String e;
-        MemoryValidationError(String e) {
-            this.e = e;
-        }
-        public String toString() {
-            return this.e;
-        }
-    }
-
     @Extension
     public static class DescriptorImpl extends Descriptor<ECSTaskTemplate> {
 

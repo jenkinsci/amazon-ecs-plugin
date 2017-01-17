@@ -37,10 +37,10 @@
   <f:entry title="${%Filesystem root}" field="remoteFSRoot">
     <f:textbox default="/home/jenkins" />
   </f:entry>
-  <f:entry title="${%Memory Reservation (Mb)}" field="memoryReservation">
+  <f:entry title="${%Soft Memory Reservation (Mb)}" field="memoryReservation" description="The soft memory limit in Mb for the container. A 0 value implies no limit will be assigned. If in doubt apply a limit here and leave the Hard Memory Reservation to 0.">
     <f:textbox default="0"/>
   </f:entry>
-  <f:entry title="${%Memory (Mb)}" field="memory">
+  <f:entry title="${%Hard Memory Reservation (Mb)}" field="memory" description="The hard memory limit in Mb for the container. A 0 value implies no limit will be assigned">
     <f:textbox default="0"/>
   </f:entry>
   <f:entry title="${%CPU units}" field="cpu">
