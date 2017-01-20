@@ -96,6 +96,26 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      */
     private final int memory;
     /**
+     * The soft limit (in MiB) of memory to reserve for the container. When
+     * system memory is under contention, Docker attempts to keep the container
+     * memory to this soft limit; however, your container can consume more
+     * memory when it needs to, up to either the hard limit specified with the
+     * memory parameter (if applicable), or all of the available memory on the
+     * container instance, whichever comes first.
+     *
+     * @see ContainerDefinition#withMemoryReservation(Integer)
+     */
+    private final int memoryReservation;
+
+    /* a hint to ECSService regarding whether it can ask AWS to make a new container or not */
+    public int getMemoryConstraint() {
+        if (this.memoryReservation > 0) {
+            return this.memoryReservation;
+        }
+        return this.memory;
+    }
+
+    /**
      * The number of <code>cpu</code> units reserved for the container. A
      * container instance has 1,024 <code>cpu</code> units for every CPU
      * core. This parameter specifies the minimum amount of CPU to reserve
@@ -168,6 +188,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nonnull String image,
                            @Nullable String remoteFSRoot,
                            int memory,
+                           int memoryReservation,
                            int cpu,
                            boolean privileged,
                            @Nullable List<LogDriverOption> logDriverOptions,
@@ -182,6 +203,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.image = image;
         this.remoteFSRoot = remoteFSRoot;
         this.memory = memory;
+        this.memoryReservation = memoryReservation;
         this.cpu = cpu;
         this.privileged = privileged;
         this.logDriverOptions = logDriverOptions;
@@ -224,6 +246,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     public int getMemory() {
         return memory;
+    }
+
+    public int getMemoryReservation() {
+        return memoryReservation;
     }
 
     public int getCpu() {
@@ -471,10 +497,20 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                 .withImage(image)
                 .withEnvironment(getEnvironmentKeyValuePairs())
                 .withExtraHosts(getExtraHostEntries())
-                .withMemory(memory)
                 .withMountPoints(getMountPointEntries())
                 .withCpu(cpu)
                 .withPrivileged(privileged);
+
+        /*
+            at least one of memory or memoryReservation has to be set
+            the form validation will highlight if the settings are inappropriate
+        */
+        if (memoryReservation > 0) /* this is the soft limit */
+            def.withMemoryReservation(memoryReservation);
+
+        if (memory > 0) /* this is the hard limit */
+            def.withMemory(memory);
+
         if (entrypoint != null)
             def.withEntryPoint(StringUtils.split(entrypoint));
 
@@ -540,6 +576,30 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                 return FormValidation.ok();
             }
             return FormValidation.error("Up to 127 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed");
+        }
+
+        /* we validate both memory and memoryReservation fields to the same rules */
+        public FormValidation doCheckMemory(@QueryParameter("memory") int memory, @QueryParameter("memoryReservation") int memoryReservation) throws IOException, ServletException {
+            return validateMemorySettings(memory,memoryReservation);
+        }
+
+        public FormValidation doCheckMemoryReservation(@QueryParameter("memory") int memory, @QueryParameter("memoryReservation") int memoryReservation) throws IOException, ServletException {
+            return validateMemorySettings(memory,memoryReservation);
+        }
+
+        private FormValidation validateMemorySettings(int memory, int memoryReservation) {
+            if (memory < 0 || memoryReservation < 0) {
+                return FormValidation.error("memory and/or memoryReservation must be 0 or a positive integer");
+            }
+            if (memory == 0 && memoryReservation == 0) {
+                return FormValidation.error("at least one of memory or memoryReservation are required to be > 0");
+            }
+            if (memory > 0 && memoryReservation > 0) {
+                if (memory <= memoryReservation) {
+                    return FormValidation.error("memory must be greater than memoryReservation if both are specified");
+                }
+            }
+            return FormValidation.ok();
         }
     }
 }

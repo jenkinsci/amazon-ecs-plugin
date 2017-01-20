@@ -22,4 +22,4 @@
   ~  THE SOFTWARE.
   ~
   -->
-The hard limit (in MiB) of memory to present to the container. If your container attempts to exceed the memory specified here, the container is killed. Either one of memory or memoryReservation must be set with 0 being "don't apply a limit"
+The soft limit (in MiB) of memory to reserve for the container. When system memory is under contention, Docker attempts to keep the container memory to this soft limit; however, your container can consume more memory when it needs to, up to either the hard limit specified with the memory parameter (if applicable), or all of the available memory on the container instance, whichever comes first. Either one of memory or memoryReservation must be set with 0 being "don't apply a limit"
