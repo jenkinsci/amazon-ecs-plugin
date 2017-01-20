@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.9
+- JENKINS-40300: Add MemoryReservation to set soft memory limits on the containers
+- PR #39: Allow Specification of Task Role ARN for ECS Slave Templates
+
 ## 1.8
 - Added taskRoleArn configuration option
 - minor typos fixed
@@ -18,7 +22,7 @@
 - [JENKINS-36857] Sleep 1000 ms between 2 interactions with AWS ECS API
 
 ## 1.1
-- Support implicit AWS credentials (`~/.aws/credentials`) 
+- Support implicit AWS credentials (`~/.aws/credentials`)
 - Only create a taskDefinition when template is saved
 
 ## 1.0
