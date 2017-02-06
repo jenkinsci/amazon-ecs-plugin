@@ -25,7 +25,6 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
-import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.HostEntry;
 import com.amazonaws.services.ecs.model.Volume;
@@ -33,8 +32,6 @@ import com.amazonaws.services.ecs.model.HostVolumeProperties;
 import com.amazonaws.services.ecs.model.MountPoint;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
-import com.amazonaws.services.ecs.model.LogConfiguration;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -54,10 +51,6 @@ import javax.servlet.ServletException;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -159,8 +152,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     private List<EnvironmentEntry> environments;
     private List<ExtraHostEntry> extraHosts;
-
-    private String taskDefinitionArn;
 
     /**
     * The log configuration specification for the container.
@@ -305,7 +296,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return logDriverOptions;
     }
 
-    private Map<String,String> getLogDriverOptionsMap() {
+    Map<String,String> getLogDriverOptionsMap() {
         if (null == logDriverOptions || logDriverOptions.isEmpty()) {
             return null;
         }
@@ -321,10 +312,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return options;
     }
 
-    public String getTaskDefinitionArn() {
-        return taskDefinitionArn;
-    }
-
     public List<EnvironmentEntry> getEnvironments() {
         return environments;
     }
@@ -333,7 +320,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return extraHosts;
     }
 
-    private Collection<KeyValuePair> getEnvironmentKeyValuePairs() {
+    Collection<KeyValuePair> getEnvironmentKeyValuePairs() {
         if (null == environments || environments.isEmpty()) {
             return null;
         }
@@ -349,7 +336,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return items;
     }
 
-    private Collection<HostEntry> getExtraHostEntries() {
+    Collection<HostEntry> getExtraHostEntries() {
         if (null == extraHosts || extraHosts.isEmpty()) {
             return null;
         }
@@ -369,25 +356,25 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return mountPoints;
     }
 
-    private Collection<Volume> getVolumeEntries() {
-        if (null == mountPoints || mountPoints.isEmpty())
-            return null;
-        Collection<Volume> vols = new ArrayList<Volume>();
-        for (MountPointEntry mount : mountPoints) {
-            String name = mount.name;
-            String sourcePath = mount.sourcePath;
-            HostVolumeProperties hostVolume = new HostVolumeProperties();
-            if (StringUtils.isEmpty(name))
-                continue;
-            if (! StringUtils.isEmpty(sourcePath))
-                hostVolume.setSourcePath(sourcePath);
-            vols.add(new Volume().withName(name)
-                                 .withHost(hostVolume));
+    Collection<Volume> getVolumeEntries() {
+        Collection<Volume> vols = new LinkedList<Volume>();
+        if (null != mountPoints ) {
+            for (MountPointEntry mount : mountPoints) {
+                String name = mount.name;
+                String sourcePath = mount.sourcePath;
+                HostVolumeProperties hostVolume = new HostVolumeProperties();
+                if (StringUtils.isEmpty(name))
+                    continue;
+                if (! StringUtils.isEmpty(sourcePath))
+                    hostVolume.setSourcePath(sourcePath);
+                vols.add(new Volume().withName(name)
+                                     .withHost(hostVolume));
+            }
         }
         return vols;
     }
 
-    private Collection<MountPoint> getMountPointEntries() {
+    Collection<MountPoint> getMountPointEntries() {
         if (null == mountPoints || mountPoints.isEmpty())
             return null;
         Collection<MountPoint> mounts = new ArrayList<MountPoint>();
@@ -489,77 +476,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     public String getDisplayName() {
         return "ECS Slave " + label;
     }
-
-    public RegisterTaskDefinitionRequest asRegisterTaskDefinitionRequest(ECSCloud owner) {
-        String familyName = getFullQualifiedTemplateName(owner);
-        final ContainerDefinition def = new ContainerDefinition()
-                .withName(familyName)
-                .withImage(image)
-                .withEnvironment(getEnvironmentKeyValuePairs())
-                .withExtraHosts(getExtraHostEntries())
-                .withMountPoints(getMountPointEntries())
-                .withCpu(cpu)
-                .withPrivileged(privileged);
-
-        /*
-            at least one of memory or memoryReservation has to be set
-            the form validation will highlight if the settings are inappropriate
-        */
-        if (memoryReservation > 0) /* this is the soft limit */
-            def.withMemoryReservation(memoryReservation);
-
-        if (memory > 0) /* this is the hard limit */
-            def.withMemory(memory);
-
-        if (entrypoint != null)
-            def.withEntryPoint(StringUtils.split(entrypoint));
-
-        if (jvmArgs != null)
-            def.withEnvironment(new KeyValuePair()
-                .withName("JAVA_OPTS").withValue(jvmArgs))
-                .withEssential(true);
-
-        if (logDriver != null) {
-            LogConfiguration logConfig = new LogConfiguration();
-            logConfig.setLogDriver(logDriver);
-            logConfig.setOptions(getLogDriverOptionsMap());
-            def.withLogConfiguration(logConfig);
-        }
-
-        final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()
-                .withFamily(familyName)
-                .withVolumes(getVolumeEntries())
-                .withContainerDefinitions(def);
-
-        if (taskrole != null) {
-            request.withTaskRoleArn(taskrole);
-        }
-
-        return request;
-    }
-
-    /**
-     * Returns the template name prefixed with the cloud name
-     */
-    String getFullQualifiedTemplateName(ECSCloud owner) {
-        return owner.getDisplayName().replaceAll("\\s+","") + '-' + templateName;
-    }
-
-    public void setOwner(ECSCloud owner) {
-        final AmazonECSClient client = owner.getAmazonECSClient();
-        if (taskDefinitionArn == null) {
-            final RegisterTaskDefinitionRequest req = asRegisterTaskDefinitionRequest(owner);
-            final RegisterTaskDefinitionResult result = client.registerTaskDefinition(req);
-            taskDefinitionArn = result.getTaskDefinition().getTaskDefinitionArn();
-            LOGGER.log(Level.FINE, "Slave {0} - Created Task Definition {1}: {2}", new Object[]{label, taskDefinitionArn, req});
-            LOGGER.log(Level.INFO, "Slave {0} - Created Task Definition: {1}", new Object[] { label, taskDefinitionArn });
-            getDescriptor().save();
-        } else {
-            LOGGER.log(Level.FINE, "Slave {0} - Task Definition already exists {1}", new Object[]{label, taskDefinitionArn});
-        }
-    }
-
-    private static final Logger LOGGER = Logger.getLogger(ECSTaskTemplate.class.getName());
 
     @Extension
     public static class DescriptorImpl extends Descriptor<ECSTaskTemplate> {

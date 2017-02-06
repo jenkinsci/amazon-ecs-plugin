@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
@@ -110,18 +109,6 @@ public class ECSCloud extends Cloud {
         this.templates = templates;
         this.regionName = regionName;
         LOGGER.log(Level.INFO, "Create cloud {0} on ECS cluster {1} on the region {2}", new Object[]{name, cluster, regionName});
-        if (templates != null) {
-            for (Iterator<ECSTaskTemplate> it = templates.iterator(); it.hasNext(); ) {
-                ECSTaskTemplate template = it.next();
-                template.setOwner(this);
-                if (it.hasNext()) {
-                    // JENKINS-36857 AWS throttling error when saving master config
-                    // http://docs.aws.amazon.com/AmazonECS/latest/developerguide/service_limits.html
-                    // "Throttle on task definition registration rate -> 1 per second / 60 max per minute"
-                    Thread.sleep(1000);
-                }
-            }
-        }
 
         if(StringUtils.isNotBlank(jenkinsUrl)) {
             this.jenkinsUrl = jenkinsUrl;
@@ -262,7 +249,8 @@ public class ECSCloud extends Cloud {
                 LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
                 try {
-                    String taskArn = getEcsService().runEcsTask(slave, template, cluster, getDockerRunCommand(slave));
+                    String taskDefintionArn = getEcsService().registerTemplate(slave.getCloud(), template, cluster);
+                    String taskArn = getEcsService().runEcsTask(slave, template, cluster, getDockerRunCommand(slave), taskDefintionArn);
                     LOGGER.log(Level.INFO, "Slave {0} - Slave Task Started : {1}",
                             new Object[] { slave.getNodeName(), taskArn });
                     slave.setTaskArn(taskArn);

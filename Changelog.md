@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.10
+- Task definitions are now created on demand and no longer on save of Jenkins configuration page
+
 ## 1.9
 - JENKINS-40300: Add MemoryReservation to set soft memory limits on the containers
 - PR #39: Allow Specification of Task Role ARN for ECS Slave Templates
