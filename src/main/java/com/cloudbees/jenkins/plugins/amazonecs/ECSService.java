@@ -29,12 +29,15 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 
 import com.amazonaws.ClientConfiguration;
@@ -42,14 +45,22 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECSClient;
+import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.ContainerInstance;
 import com.amazonaws.services.ecs.model.ContainerOverride;
 import com.amazonaws.services.ecs.model.DescribeContainerInstancesRequest;
 import com.amazonaws.services.ecs.model.DescribeContainerInstancesResult;
+import com.amazonaws.services.ecs.model.DescribeTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.DescribeTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.ListContainerInstancesRequest;
 import com.amazonaws.services.ecs.model.ListContainerInstancesResult;
+import com.amazonaws.services.ecs.model.ListTaskDefinitionsRequest;
+import com.amazonaws.services.ecs.model.ListTaskDefinitionsResult;
+import com.amazonaws.services.ecs.model.LogConfiguration;
+import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.Resource;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
@@ -134,11 +145,103 @@ class ECSService {
             LOGGER.log(Level.SEVERE, "Couldn't stop task arn " + taskArn + " caught exception: " + e.getMessage(), e);
         }
     }
+    
+    /**
+     * Looks whether the latest task definition matches the desired one. If yes, returns the ARN of the existing one. 
+     * If no, register a new task definition with desired parameters and return the new ARN.
+     */
+    String registerTemplate(final ECSCloud cloud, final ECSTaskTemplate template, String clusterArn) {
+        final AmazonECSClient client = getAmazonECSClient();
+        
+        String familyName = fullQualifiedTemplateName(cloud, template);
+        final ContainerDefinition def = new ContainerDefinition()
+                .withName(familyName)
+                .withImage(template.getImage())
+                .withEnvironment(template.getEnvironmentKeyValuePairs())
+                .withExtraHosts(template.getExtraHostEntries())
+                .withMountPoints(template.getMountPointEntries())
+                .withCpu(template.getCpu())
+                .withPrivileged(template.getPrivileged())
+                .withEssential(true);
 
-    String runEcsTask(final ECSSlave slave, final ECSTaskTemplate template, String clusterArn, Collection<String> command) throws IOException, AbortException {
+        /*
+            at least one of memory or memoryReservation has to be set
+            the form validation will highlight if the settings are inappropriate
+        */
+        if (template.getMemoryReservation() > 0) /* this is the soft limit */
+            def.withMemoryReservation(template.getMemoryReservation());
+
+        if (template.getMemory() > 0) /* this is the hard limit */
+            def.withMemory(template.getMemory());
+
+        if (template.getEntrypoint() != null)
+            def.withEntryPoint(StringUtils.split(template.getEntrypoint()));
+
+        if (template.getJvmArgs() != null)
+            def.withEnvironment(new KeyValuePair()
+                .withName("JAVA_OPTS").withValue(template.getJvmArgs()))
+                .withEssential(true);
+
+        if (template.getLogDriver() != null) {
+            LogConfiguration logConfig = new LogConfiguration();
+            logConfig.setLogDriver(template.getLogDriver());
+            logConfig.setOptions(template.getLogDriverOptionsMap());
+            def.withLogConfiguration(logConfig);
+        }
+
+        String lastToken = null;
+        Deque<String> taskDefinitions = new LinkedList<String>();
+        do {
+            ListTaskDefinitionsResult listTaskDefinitions = client.listTaskDefinitions(new ListTaskDefinitionsRequest()
+                    .withFamilyPrefix(familyName)
+                    .withMaxResults(100));
+            taskDefinitions.addAll(listTaskDefinitions.getTaskDefinitionArns());
+            lastToken = listTaskDefinitions.getNextToken();
+        } while(lastToken != null);        
+        DescribeTaskDefinitionResult describeTaskDefinition = client.describeTaskDefinition(new DescribeTaskDefinitionRequest().withTaskDefinition(taskDefinitions.getLast()));
+        
+        
+        boolean templateMatchesExistingContainerDefinition = def.equals(describeTaskDefinition.getTaskDefinition().getContainerDefinitions().get(0));
+        LOGGER.log(Level.INFO, "Match on container defintion: {0}", new Object[] {templateMatchesExistingContainerDefinition});
+        LOGGER.log(Level.FINE, "Match on container defintion: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingContainerDefinition, def, describeTaskDefinition.getTaskDefinition().getContainerDefinitions().get(0)});
+        
+        
+        boolean templateMatchesExistingVolumes = ObjectUtils.equals(template.getVolumeEntries(), describeTaskDefinition.getTaskDefinition().getVolumes());
+        LOGGER.log(Level.INFO, "Match on volumes: {0}", new Object[] {templateMatchesExistingVolumes});
+        LOGGER.log(Level.FINE, "Match on volumes: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingVolumes, template.getVolumeEntries(), describeTaskDefinition.getTaskDefinition().getVolumes()});
+
+        boolean templateMatchesExistingTaskRole = template.getTaskrole() == null || template.getTaskrole().equals(describeTaskDefinition.getTaskDefinition().getTaskRoleArn());
+        LOGGER.log(Level.INFO, "Match on task role: {0}", new Object[] {templateMatchesExistingTaskRole});
+        LOGGER.log(Level.FINE, "Match on task role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingTaskRole, template.getTaskrole(), describeTaskDefinition.getTaskDefinition().getTaskRoleArn()});
+
+        
+        if(templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole) {
+            LOGGER.log(Level.FINE, "Task Definition already exists: {0}", new Object[]{describeTaskDefinition.getTaskDefinition().getTaskDefinitionArn()});
+            return describeTaskDefinition.getTaskDefinition().getTaskDefinitionArn();
+        } else {
+            final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()                
+                    .withFamily(familyName)
+                    .withVolumes(template.getVolumeEntries())
+                    .withContainerDefinitions(def);
+            
+            if (template.getTaskrole() != null) {
+                request.withTaskRoleArn(template.getTaskrole());
+            }            
+            final RegisterTaskDefinitionResult result = client.registerTaskDefinition(request);
+            String taskDefinitionArn = result.getTaskDefinition().getTaskDefinitionArn();
+            LOGGER.log(Level.FINE, "Created Task Definition {0}: {1}", new Object[]{taskDefinitionArn, request});
+            LOGGER.log(Level.INFO, "Created Task Definition: {0}", new Object[] { taskDefinitionArn });
+            return taskDefinitionArn;
+        }
+    }
+
+    private String fullQualifiedTemplateName(final ECSCloud cloud, final ECSTaskTemplate template) {
+        return cloud.getDisplayName().replaceAll("\\s+","") + '-' + template.getTemplateName();
+    }
+
+    String runEcsTask(final ECSSlave slave, final ECSTaskTemplate template, String clusterArn, Collection<String> command, String taskDefinitionArn) throws IOException, AbortException {
         AmazonECSClient client = getAmazonECSClient();
-        String definitionArn = template.getTaskDefinitionArn();
-        slave.setTaskDefinitonArn(definitionArn);
+        slave.setTaskDefinitonArn(taskDefinitionArn);
 
         KeyValuePair envNodeName = new KeyValuePair();
         envNodeName.setName("SLAVE_NODE_NAME");
@@ -149,10 +252,10 @@ class ECSService {
         envNodeSecret.setValue(slave.getComputer().getJnlpMac());
 
         final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
-          .withTaskDefinition(definitionArn)
+          .withTaskDefinition(taskDefinitionArn)
           .withOverrides(new TaskOverride()
             .withContainerOverrides(new ContainerOverride()
-              .withName(template.getFullQualifiedTemplateName(slave.getCloud()))
+              .withName(fullQualifiedTemplateName(slave.getCloud(), template))
               .withCommand(command)
               .withEnvironment(envNodeName)
               .withEnvironment(envNodeSecret)))
@@ -160,7 +263,7 @@ class ECSService {
         );
 
         if (!runTaskResult.getFailures().isEmpty()) {
-            LOGGER.log(Level.WARNING, "Slave {0} - Failure to run task with definition {1} on ECS cluster {2}", new Object[]{slave.getNodeName(), definitionArn, clusterArn});
+            LOGGER.log(Level.WARNING, "Slave {0} - Failure to run task with definition {1} on ECS cluster {2}", new Object[]{slave.getNodeName(), taskDefinitionArn, clusterArn});
             for (Failure failure : runTaskResult.getFailures()) {
                 LOGGER.log(Level.WARNING, "Slave {0} - Failure reason={1}, arn={2}", new Object[]{slave.getNodeName(), failure.getReason(), failure.getArn()});
             }
