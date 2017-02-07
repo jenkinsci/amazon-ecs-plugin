@@ -47,7 +47,7 @@
     <f:textbox default="1"/>
   </f:entry>
   <f:advanced>
-    <f:entry title="${%Dns Search Domains}" field="dnsSearchDomains">
+    <f:entry title="${%DNS Search Domains}" field="dnsSearchDomains">
       <f:textbox />
     </f:entry>
     <f:entry title="${%Task Role ARN}" field="taskrole">
