@@ -119,6 +119,15 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      * @see ContainerDefinition#withCpu(Integer)
      */
     private final int cpu;
+
+    /**
+     * Space delimited list of Docker dns search domains
+     *
+     * @see ContainerDefinition#withDnsSearchDomains(Collection)
+     */
+    @CheckForNull
+    private String dnsSearchDomains;
+
     /**
      * Space delimited list of Docker entry points
      *
@@ -223,6 +232,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.logDriver = StringUtils.trimToNull(logDriver);
     }
 
+    @DataBoundSetter
+    public void setDnsSearchDomains(String dnsSearchDomains) {
+        this.dnsSearchDomains = StringUtils.trimToNull(dnsSearchDomains);
+    }
+
     public String getLabel() {
         return label;
     }
@@ -245,6 +259,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     public int getCpu() {
         return cpu;
+    }
+
+    public String getDnsSearchDomains() {
+        return dnsSearchDomains;
     }
 
     public String getEntrypoint() {
