@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11
+- JENKINS-41993: Amazon ECS plugin fails to register task definition v 1.10
+- PR #40: Add DnsSearchDomains option
+
 ## 1.10
 - Task definitions are now created on demand and no longer on save of Jenkins configuration page
 
