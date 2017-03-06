@@ -120,6 +120,16 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return this.memory;
     }
 
+    public int getTotalMemoryConstraint() {
+        int totalMemoryConstraint = getMemoryConstraint();
+
+        for(ServiceContainerEntry service:serviceContainers) {
+            totalMemoryConstraint += service.getMemoryConstraint();
+        }
+
+        return totalMemoryConstraint;
+    }
+
     /**
      * The number of <code>cpu</code> units reserved for the container. A
      * container instance has 1,024 <code>cpu</code> units for every CPU
@@ -216,6 +226,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private List<EnvironmentEntry> environments;
     private List<ExtraHostEntry> extraHosts;
     private List<PortMappingEntry> portMappings;
+    private List<ServiceContainerEntry> serviceContainers;
 
     /**
     * The log configuration specification for the container.
@@ -252,6 +263,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            boolean assignPublicIp,
                            boolean privileged,
                            @Nullable String containerUser,
+                           @Nullable List<ServiceContainerEntry> serviceContainers,
                            @Nullable List<LogDriverOption> logDriverOptions,
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
@@ -289,6 +301,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.extraHosts = extraHosts;
         this.mountPoints = mountPoints;
         this.portMappings = portMappings;
+
+        if(serviceContainers == null) {
+            this.serviceContainers = new ArrayList<ServiceContainerEntry>();
+        } else {
+            this.serviceContainers = serviceContainers;
+        }
     }
 
     @DataBoundSetter
@@ -374,6 +392,16 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     public boolean getAssignPublicIp() {
         return assignPublicIp;
+    }
+
+    public int getTotalCpu() {
+        int totalCpu = cpu;
+
+        for(ServiceContainerEntry service:serviceContainers) {
+            totalCpu += service.getCpu();
+        }
+
+        return totalCpu;
     }
 
     public String getDnsSearchDomains() {
@@ -471,6 +499,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     public List<PortMappingEntry> getPortMappings() {
         return portMappings;
     }
+
+    public List<ServiceContainerEntry> getServiceContainers() { return serviceContainers; }
 
     Collection<KeyValuePair> getEnvironmentKeyValuePairs() {
         if (null == environments || environments.isEmpty()) {
@@ -670,6 +700,59 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                 return "PortMappingEntry";
             }
         }
+    }
+
+    public static class ServiceContainerEntry extends AbstractDescribableImpl<ServiceContainerEntry> {
+        public String name, image, containerPath, remoteFSRoot;
+        public int memoryReservation, memory, cpu;
+
+        @DataBoundConstructor
+        public ServiceContainerEntry(String name,
+                               String image,
+                               String containerPath,
+                               String remoteFSRoot,
+                               int memoryReservation,
+                               int memory,
+                               int cpu
+                               ) {
+            this.name = name;
+            this.image = image;
+            this.containerPath = containerPath;
+            this.remoteFSRoot = remoteFSRoot;
+            this.memoryReservation = memoryReservation;
+            this.memory = memory;
+            this.cpu = cpu;
+        }
+
+        public int getMemoryConstraint() {
+            if (this.memoryReservation > 0) {
+                return this.memoryReservation;
+            }
+            return this.memory;
+        }
+
+        public int getMemory() { return memory; }
+
+        public int getMemoryReservation() {
+            return memoryReservation;
+        }
+
+        public int getCpu() {
+            return cpu;
+        }
+
+        public String getImage() { return image; }
+
+        public String getName() { return name; }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<ServiceContainerEntry> {
+            @Override
+            public String getDisplayName() {
+                return "ServiceContainerEntry";
+            }
+        }
+
     }
 
     public Set<LabelAtom> getLabelSet() {
