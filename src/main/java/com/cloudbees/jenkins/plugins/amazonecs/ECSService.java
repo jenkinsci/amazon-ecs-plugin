@@ -160,6 +160,7 @@ class ECSService {
                 .withEnvironment(template.getEnvironmentKeyValuePairs())
                 .withExtraHosts(template.getExtraHostEntries())
                 .withMountPoints(template.getMountPointEntries())
+                .withPortMappings(template.getPortMappingEntries())
                 .withCpu(template.getCpu())
                 .withPrivileged(template.getPrivileged())
                 .withEssential(true);
