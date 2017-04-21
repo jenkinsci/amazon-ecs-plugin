@@ -39,6 +39,7 @@ import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -424,8 +425,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         for (PortMappingEntry portMapping : this.portMappings) {
             Integer container = portMapping.containerPort;
             Integer host = portMapping.hostPort;
+            String protocol = portMapping.protocol;
 
-            ports.add(new PortMapping().withContainerPort(container).withHostPort(host));
+            ports.add(new PortMapping().withContainerPort(container)
+                                       .withHostPort(host)
+                                       .withProtocol(protocol));
         }
         return ports;
     }
@@ -510,20 +514,32 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     public static class PortMappingEntry extends AbstractDescribableImpl<PortMappingEntry> {
         public Integer containerPort, hostPort;
+        public String protocol;
 
         @DataBoundConstructor
-        public PortMappingEntry(Integer containerPort, Integer hostPort) {
+        public PortMappingEntry(Integer containerPort, Integer hostPort, String protocol) {
             this.containerPort = containerPort;
             this.hostPort = hostPort;
+            this.protocol = protocol;
         }
 
         @Override
         public String toString() {
-            return "PortMappingEntry{" + "containerPort=" + containerPort + ", hostPort=" + hostPort + "}";
+            return "PortMappingEntry{" +
+                    "containerPort=" + containerPort +
+                    ", hostPort=" + hostPort +
+                    ", protocol='" + protocol + "}";
         }
 
         @Extension
         public static class DescriptorImpl extends Descriptor<PortMappingEntry> {
+            public ListBoxModel doFillProtocolItems() {
+                final ListBoxModel options = new ListBoxModel();
+                options.add("TCP", "tcp");
+                options.add("UDP", "udp");
+                return options;
+            }
+            
             @Override
             public String getDisplayName() {
                 return "PortMappingEntry";
