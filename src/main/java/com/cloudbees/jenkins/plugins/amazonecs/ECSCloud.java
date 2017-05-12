@@ -25,27 +25,6 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
-import java.io.IOException;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.servlet.ServletException;
-
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
@@ -53,7 +32,6 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECSClient;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
-
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -66,6 +44,21 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import jenkins.model.JenkinsLocationConfiguration;
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.servlet.ServletException;
+import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -77,6 +70,8 @@ public class ECSCloud extends Cloud {
     private static final int DEFAULT_SLAVE_TIMEOUT = 900;
 
     private final List<ECSTaskTemplate> templates;
+
+    private final List<ECSTaskDefinition> taskDefinitions;
 
     /**
      * Id of the {@link AmazonWebServicesCredentials} used to connect to Amazon ECS
@@ -101,22 +96,24 @@ public class ECSCloud extends Cloud {
     private ECSService ecsService;
 
     @DataBoundConstructor
-    public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId,
-            String cluster, String regionName, String jenkinsUrl, int slaveTimoutInSeconds) throws InterruptedException{
+    public ECSCloud(String name, List<ECSTaskTemplate> templates, List<ECSTaskDefinition> taskDefinitions,
+                    @Nonnull String credentialsId, String cluster, String regionName, String jenkinsUrl,
+                    int slaveTimoutInSeconds) throws InterruptedException {
         super(name);
         this.credentialsId = credentialsId;
         this.cluster = cluster;
         this.templates = templates;
+        this.taskDefinitions = taskDefinitions;
         this.regionName = regionName;
         LOGGER.log(Level.INFO, "Create cloud {0} on ECS cluster {1} on the region {2}", new Object[]{name, cluster, regionName});
 
-        if(StringUtils.isNotBlank(jenkinsUrl)) {
+        if (StringUtils.isNotBlank(jenkinsUrl)) {
             this.jenkinsUrl = jenkinsUrl;
         } else {
             this.jenkinsUrl = JenkinsLocationConfiguration.get().getUrl();
         }
 
-        if(slaveTimoutInSeconds > 0) {
+        if (slaveTimoutInSeconds > 0) {
             this.slaveTimoutInSeconds = slaveTimoutInSeconds;
         } else {
             this.slaveTimoutInSeconds = DEFAULT_SLAVE_TIMEOUT;
@@ -136,6 +133,10 @@ public class ECSCloud extends Cloud {
 
     public List<ECSTaskTemplate> getTemplates() {
         return templates;
+    }
+
+    public List<ECSTaskDefinition> getTaskDefinitions() {
+        return taskDefinitions;
     }
 
     public String getCredentialsId() {
@@ -170,16 +171,25 @@ public class ECSCloud extends Cloud {
 
     @Override
     public boolean canProvision(Label label) {
-        return getTemplate(label) != null;
+        return getTask(label) != null;
     }
 
-    private ECSTaskTemplate getTemplate(Label label) {
+    private ECSTask getTask(Label label) {
         if (label == null) {
             return null;
         }
-        for (ECSTaskTemplate t : templates) {
-            if (label.matches(t.getLabelSet())) {
-                return t;
+        if (templates != null) {
+            for (ECSTaskTemplate t : templates) {
+                if (label.matches(t.getLabelSet())) {
+                    return t;
+                }
+            }
+        }
+        if (taskDefinitions != null) {
+            for (ECSTaskDefinition t : taskDefinitions) {
+                if (label.matches(t.getLabelSet())) {
+                    return t;
+                }
             }
         }
         return null;
@@ -191,12 +201,12 @@ public class ECSCloud extends Cloud {
         try {
 
             List<NodeProvisioner.PlannedNode> r = new ArrayList<NodeProvisioner.PlannedNode>();
-            final ECSTaskTemplate template = getTemplate(label);
+            final ECSTask template = getTask(label);
 
             for (int i = 1; i <= excessWorkload; i++) {
 
                 r.add(new NodeProvisioner.PlannedNode(template.getDisplayName(), Computer.threadPoolForRemoting
-                  .submit(new ProvisioningCallback(template, label)), 1));
+                        .submit(new ProvisioningCallback(template, label)), 1));
             }
             return r;
         } catch (Exception e) {
@@ -205,7 +215,7 @@ public class ECSCloud extends Cloud {
         }
     }
 
-     void deleteTask(String taskArn, String clusterArn) {
+    void deleteTask(String taskArn, String clusterArn) {
         getEcsService().deleteTask(taskArn, clusterArn);
     }
 
@@ -220,12 +230,13 @@ public class ECSCloud extends Cloud {
 
     private class ProvisioningCallback implements Callable<Node> {
 
-        private final ECSTaskTemplate template;
+        private final ECSTask task;
+
         @CheckForNull
         private Label label;
 
-        public ProvisioningCallback(ECSTaskTemplate template, @Nullable Label label) {
-            this.template = template;
+        public ProvisioningCallback(ECSTask task, @Nullable Label label) {
+            this.task = task;
             this.label = label;
         }
 
@@ -236,10 +247,10 @@ public class ECSCloud extends Cloud {
             Date timeout = new Date(now.getTime() + 1000 * slaveTimoutInSeconds);
 
             synchronized (cluster) {
-                getEcsService().waitForSufficientClusterResources(timeout, template, cluster);
+                getEcsService().waitForSufficientClusterResources(timeout, task, cluster);
 
                 String uniq = Long.toHexString(System.nanoTime());
-                slave = new ECSSlave(ECSCloud.this, name + "-" + uniq, template.getRemoteFSRoot(),
+                slave = new ECSSlave(ECSCloud.this, name + "-" + uniq, task.getRemoteFSRoot(),
                         label == null ? null : label.toString(), new JNLPLauncher());
                 slave.setClusterArn(cluster);
                 Jenkins.getInstance().addNode(slave);
@@ -249,10 +260,10 @@ public class ECSCloud extends Cloud {
                 LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
                 try {
-                    String taskDefintionArn = getEcsService().registerTemplate(slave.getCloud(), template, cluster);
-                    String taskArn = getEcsService().runEcsTask(slave, template, cluster, getDockerRunCommand(slave), taskDefintionArn);
+                    String taskDefinitionArn = getEcsService().getTaskArn(slave.getCloud(), task, cluster);
+                    String taskArn = getEcsService().runEcsTask(slave, task, cluster, getDockerRunCommand(slave), taskDefinitionArn);
                     LOGGER.log(Level.INFO, "Slave {0} - Slave Task Started : {1}",
-                            new Object[] { slave.getNodeName(), taskArn });
+                            new Object[]{slave.getNodeName(), taskArn});
                     slave.setTaskArn(taskArn);
                 } catch (Exception ex) {
                     LOGGER.log(Level.WARNING, "Slave {0} - Cannot create ECS Task");
@@ -271,7 +282,7 @@ public class ECSCloud extends Cloud {
                     break;
                 }
                 LOGGER.log(Level.FINE, "Waiting for slave {0} (ecs task {1}) to connect since {2}.",
-                        new Object[] { slave.getNodeName(), slave.getTaskArn(), now });
+                        new Object[]{slave.getNodeName(), slave.getTaskArn(), now});
                 Thread.sleep(1000);
             }
             if (!slave.getComputer().isOnline()) {

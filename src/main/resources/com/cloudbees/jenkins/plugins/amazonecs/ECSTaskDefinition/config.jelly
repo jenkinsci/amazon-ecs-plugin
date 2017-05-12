@@ -1,0 +1,27 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:entry title="Label" field="label">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Task Definition Name}" field="taskDefinitionName" description="Task Definition Name">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Soft Memory Reservation (Mb)}" field="memoryReservation"
+             description="The soft memory limit in Mb for the container. A 0 value implies no limit will be assigned. If in doubt apply a limit here and leave the Hard Memory Reservation to 0.">
+        <f:textbox default="0"/>
+    </f:entry>
+    <f:entry title="${%Hard Memory Reservation (Mb)}" field="memory"
+             description="The hard memory limit in Mb for the container. A 0 value implies no limit will be assigned">
+        <f:textbox default="0"/>
+    </f:entry>
+    <f:entry title="${%CPU units}" field="cpu">
+        <f:textbox default="1"/>
+    </f:entry>
+    <f:entry title="${%Filesystem root}" field="remoteFSRoot">
+        <f:textbox default="/home/jenkins"/>
+    </f:entry>
+    <f:entry title="${%Task Definition Jenkins Container Name}" field="jenkinsContainerName"
+             description="Task Definition Jenkins Container Name">
+        <f:textbox/>
+    </f:entry>
+</j:jelly>
