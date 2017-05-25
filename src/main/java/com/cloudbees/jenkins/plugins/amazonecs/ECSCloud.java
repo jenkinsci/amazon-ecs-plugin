@@ -250,7 +250,7 @@ public class ECSCloud extends Cloud {
                 getEcsService().waitForSufficientClusterResources(timeout, task, cluster);
 
                 String uniq = Long.toHexString(System.nanoTime());
-                slave = new ECSSlave(ECSCloud.this, name + "-" + uniq, task.getRemoteFSRoot(),
+                slave = new ECSSlave(ECSCloud.this, name + "-" + task.getLabel() + "-" + uniq, task.getRemoteFSRoot(),
                         label == null ? null : label.toString(), new JNLPLauncher());
                 slave.setClusterArn(cluster);
                 Jenkins.getInstance().addNode(slave);
