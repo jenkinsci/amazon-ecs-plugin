@@ -162,7 +162,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     /**
      * User for conatiner
      */
-    @CheckForNull
+    @Nullable
     private String containerUser;
 
     private List<EnvironmentEntry> environments;
@@ -197,6 +197,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            int memoryReservation,
                            int cpu,
                            boolean privileged,
+                           @Nullable String containerUser,
                            @Nullable List<LogDriverOption> logDriverOptions,
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
@@ -212,6 +213,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.memoryReservation = memoryReservation;
         this.cpu = cpu;
         this.privileged = privileged;
+        this.containerUser = containerUser;
         this.logDriverOptions = logDriverOptions;
         this.environments = environments;
         this.extraHosts = extraHosts;
