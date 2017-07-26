@@ -159,6 +159,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      */
     private final boolean privileged;
 
+    /**
+     * User for conatiner
+     */
+    @CheckForNull
+    private String containerUser;
+
     private List<EnvironmentEntry> environments;
     private List<ExtraHostEntry> extraHosts;
 
@@ -228,6 +234,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     @DataBoundSetter
+    public void setContainerUser(String containerUser) {
+        this.containerUser = StringUtils.trimToNull(containerUser);
+    }
+
+    @DataBoundSetter
     public void setLogDriver(String logDriver) {
         this.logDriver = StringUtils.trimToNull(logDriver);
     }
@@ -279,6 +290,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     public boolean getPrivileged() {
         return privileged;
+    }
+
+    public String getContainerUser() {
+        return containerUser;
     }
 
     public String getLogDriver() {
