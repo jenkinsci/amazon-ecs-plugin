@@ -162,6 +162,7 @@ class ECSService {
                 .withMountPoints(template.getMountPointEntries())
                 .withCpu(template.getCpu())
                 .withPrivileged(template.getPrivileged())
+                .withUser(template.getContainerUser())
                 .withEssential(true);
 
         /*
