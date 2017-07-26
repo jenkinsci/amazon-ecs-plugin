@@ -162,7 +162,6 @@ class ECSService {
                 .withMountPoints(template.getMountPointEntries())
                 .withCpu(template.getCpu())
                 .withPrivileged(template.getPrivileged())
-                .withUser(template.getContainerUser())
                 .withEssential(true);
 
         /*
@@ -182,6 +181,9 @@ class ECSService {
             def.withEnvironment(new KeyValuePair()
                 .withName("JAVA_OPTS").withValue(template.getJvmArgs()))
                 .withEssential(true);
+        
+        if (template.getContainerUser() != null)
+            def.withUser(template.getContainerUser())
 
         if (template.getLogDriver() != null) {
             LogConfiguration logConfig = new LogConfiguration();
