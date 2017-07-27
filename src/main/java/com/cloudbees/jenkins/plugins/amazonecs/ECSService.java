@@ -183,7 +183,7 @@ class ECSService {
                 .withEssential(true);
         
         if (template.getContainerUser() != null)
-            def.withUser(template.getContainerUser())
+            def.withUser(template.getContainerUser());
 
         if (template.getLogDriver() != null) {
             LogConfiguration logConfig = new LogConfiguration();
