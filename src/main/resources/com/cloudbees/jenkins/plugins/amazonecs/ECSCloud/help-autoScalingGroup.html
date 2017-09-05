@@ -1,0 +1,60 @@
+<!--
+  ~ The MIT License
+  ~
+  ~  Copyright (c) 2015, CloudBees, Inc.
+  ~
+  ~  Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~  of this software and associated documentation files (the "Software"), to deal
+  ~  in the Software without restriction, including without limitation the rights
+  ~  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~  copies of the Software, and to permit persons to whom the Software is
+  ~  furnished to do so, subject to the following conditions:
+  ~
+  ~  The above copyright notice and this permission notice shall be included in
+  ~  all copies or substantial portions of the Software.
+  ~
+  ~  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  ~  THE SOFTWARE.
+  ~
+  -->
+
+<p>
+  Name of AWS EC2 auto scaling group used for managing instances in the selected ECS cluster.
+</p>
+<p>
+  Assuming the instances of your ECS cluster are associated with an auto scaling group, this
+  plugin can automatically scale your ECS cluster in and out (and thus prevent you paying for
+  idle EC2 instances). If you leave the autoscaling group empty (by selecting the blank/first
+  item in the dropdown list), autoscaling will not be enabled.
+</p>
+<p>
+  To make use of the auto scaling feature:
+</p>
+<ul>
+  <li>Create an auto scaling group with a minimum of 0 instances and maximum of M instances (with M >= 1)</li>
+  <li>Make sure the launch configuration associated with your auto scaling group correctly configures the ECS agent (new instances need to register with the ECS cluster; more info <a href="http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-config.html">here</a>)</li>
+  <li>Make sure the configured IAM credentials for this plugin have permission to use the AWS auto scaling service</li>
+</ul>
+<p>
+  How does scale out work?
+</p>
+<ul>
+  <li>When a job with a label matching an ECS template in your ECS cloud is added to the build queue, this plugin will check the ECS cluster for sufficient resources (memory + cpu as defined in your ECS cloud templates)</li>
+  <li>If a running instance is found with sufficient resources, an ECS task will be started to run your job in a fresh docker based jenkins slave</li>
+  <li>If no running instances have sufficient free resources (but the auto scaling group has less instances running than the maximum allowed), this plugin will launch an additional instance in your auto scaling group, wait until it's registered in your ECS cluster and launch an ECS task to execute your job.</li>
+  <li>If no running instances have sufficient free resources and the auto scaling group is at it's maximum capacity, this plugin will sleep for a while and look again for free resources.</li>
+</ul>
+<p>
+  How does scale in work?
+</p>
+<ul>
+  <li>Every ECS cloud defined will be actively monitored for idle instances (once per minute)</li>
+  <li>When a running ECS instance is detected which is close to the next billing hour and this instance is currently idle (not running any ECS tasks), it will be put in ECS draining state (that means the ECS scheduler will not launch new tasks on this instance).</li>
+  <li>A draining ECS instance will be terminated and removed from the auto scaling group; the amount of desired instances in the auto scaling group will be decreased by one.</li>
+</ul>
+
