@@ -413,6 +413,8 @@ class ECSService {
                 DescribeContainerInstancesResult containerInstancesDesc = client.describeContainerInstances(new DescribeContainerInstancesRequest().withContainerInstances(listContainerInstances.getContainerInstanceArns()).withCluster(clusterArn));
                 LOGGER.log(Level.INFO, "Found {0} instances", containerInstancesDesc.getContainerInstances().size());
                 for (ContainerInstance instance : containerInstancesDesc.getContainerInstances()) {
+                    // don't count on draining instances; they are not usable for starting new jobs
+                    if (instance.getStatus().equals(ContainerInstanceStatus.DRAINING.name())) continue;
                     LOGGER.log(Level.INFO, "Resources found in instance {1}: {0}", new Object[] {instance.getRemainingResources(), instance.getContainerInstanceArn()});
                     Resource memoryResource = null;
                     Resource cpuResource = null;
@@ -528,7 +530,6 @@ class ECSService {
     private int getEcsRunningCount(final AmazonECSClient ecsClient, final String ecsClusterArn) {
         return ecsClient.listContainerInstances(new ListContainerInstancesRequest()
             .withCluster(ecsClusterArn)
-            .withStatus(ContainerInstanceStatus.ACTIVE)
         ).getContainerInstanceArns().size();
     }
 }
