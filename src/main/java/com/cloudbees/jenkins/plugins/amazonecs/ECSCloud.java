@@ -137,8 +137,9 @@ public class ECSCloud extends Cloud {
         return getEcsService().getAmazonECSClient();
     }
 
+    @Nonnull
     public List<ECSTaskTemplate> getTemplates() {
-        return templates;
+        return templates != null ? templates : Collections.<ECSTaskTemplate> emptyList();
     }
 
     public String getCredentialsId() {
@@ -180,7 +181,7 @@ public class ECSCloud extends Cloud {
         if (label == null) {
             return null;
         }
-        for (ECSTaskTemplate t : templates) {
+        for (ECSTaskTemplate t : getTemplates()) {
             if (label.matches(t.getLabelSet())) {
                 return t;
             }
