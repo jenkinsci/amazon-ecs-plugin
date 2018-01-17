@@ -37,6 +37,9 @@
   <f:entry title="${%Docker Image}" field="image">
     <f:textbox default="jenkinsci/jnlp-slave" />
   </f:entry>
+  <f:entry name="launchType" title="${%Launch type}" field="launchType">
+    <f:select />
+  </f:entry>
   <f:entry title="${%Filesystem root}" field="remoteFSRoot">
     <f:textbox default="/home/jenkins" />
   </f:entry>
@@ -48,6 +51,15 @@
   </f:entry>
   <f:entry title="${%CPU units}" field="cpu">
     <f:textbox default="1"/>
+  </f:entry>
+  <f:entry title="${%Subnets}" field="subnets" description="List of subnets, separated by comma, only needed when using fargate">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="${%Security Groups}" field="securityGroups" description="List of security groups, separated by comma, only needed when using fargate">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="${%Assign Public Ip}" field="assignPublicIp" description="Assign public IP, only needed when using fargate">
+    <f:checkbox />
   </f:entry>
   <f:advanced>
     <f:entry title="${%DNS Search Domains}" field="dnsSearchDomains">
