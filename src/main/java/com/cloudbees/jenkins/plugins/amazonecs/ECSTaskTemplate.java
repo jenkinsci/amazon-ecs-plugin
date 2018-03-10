@@ -32,12 +32,15 @@ import com.amazonaws.services.ecs.model.HostVolumeProperties;
 import com.amazonaws.services.ecs.model.MountPoint;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.Ulimit;
+import com.amazonaws.services.ecs.model.UlimitName;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -59,7 +62,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     /**
      * Template Name
-     */
+    */
     @Nonnull
     private final String templateName;
     /**
@@ -182,6 +185,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private String logDriver;
     private List<LogDriverOption> logDriverOptions;
 
+    /**
+     * Ulimit configuration for the container.
+     */
+    private List<UlimitConfigEntry> ulimitConfiguration;
+
     @DataBoundConstructor
     public ECSTaskTemplate(@Nonnull String templateName,
                            @Nullable String label,
@@ -194,7 +202,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nullable List<LogDriverOption> logDriverOptions,
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
-                           @Nullable List<MountPointEntry> mountPoints) {
+                           @Nullable List<MountPointEntry> mountPoints,
+                           @Nullable List<UlimitConfigEntry> ulimitConfiguration) {
         // If the template name is empty we will add a default name and a
         // random element that will help to find it later when we want to delete it.
         this.templateName = templateName.isEmpty() ?
@@ -210,6 +219,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.environments = environments;
         this.extraHosts = extraHosts;
         this.mountPoints = mountPoints;
+        this.ulimitConfiguration = ulimitConfiguration;
     }
 
     @DataBoundSetter
@@ -409,6 +419,26 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return mounts;
     }
 
+    public List<UlimitConfigEntry> getUlimitConfiguration() {
+      return ulimitConfiguration;
+    }
+
+    Collection<Ulimit> getUlimitConfigEntries() {
+        if (null == ulimitConfiguration || ulimitConfiguration.isEmpty())
+            return null;
+            Collection<Ulimit> ulimits = new ArrayList<Ulimit>();
+            for (UlimitConfigEntry ulimit : ulimitConfiguration) {
+                String ulimitName = ulimit.ulimitName;
+                int softLimit = ulimit.softLimit;
+                int hardLimit = ulimit.hardLimit;
+                ulimits.add (new Ulimit().withName(ulimitName)
+                                         .withSoftLimit(softLimit)
+                                         .withHardLimit(hardLimit));
+            }
+            return ulimits;
+    }
+
+
     public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> {
         public String name, value;
 
@@ -483,6 +513,42 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             @Override
             public String getDisplayName() {
                 return "MountPointEntry";
+            }
+        }
+    }
+
+    public static class UlimitConfigEntry extends AbstractDescribableImpl<UlimitConfigEntry> {
+        public String ulimitName;
+        public Integer softLimit, hardLimit;
+
+        @DataBoundConstructor
+        public UlimitConfigEntry(String ulimitName,
+                                 int softLimit,
+                                 int hardLimit) {
+            this.ulimitName = ulimitName;
+            this.softLimit = softLimit;
+            this.hardLimit = hardLimit;
+        }
+
+        @Override
+        public String toString() {
+            return "UlimitConfigEntry{ulimitName:" + ulimitName +
+                   ", softLimit:" + softLimit +
+                   ", hardLimit:" + hardLimit + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<UlimitConfigEntry> {
+            public ListBoxModel doFillUlimitNameItems() {
+                final ListBoxModel options = new ListBoxModel();
+                for (UlimitName ulimitName: UlimitName.values()) {
+                    options.add(ulimitName.toString());
+                }
+                return options;
+            }
+            @Override
+            public String getDisplayName() {
+                return "UlimitConfigEntry";
             }
         }
     }
