@@ -159,5 +159,25 @@
         </table>
       </f:repeatable>
     </f:entry>
+    <f:entry title="${%Ulimit Configuration}">
+      <f:repeatable field="ulimitConfiguration">
+        <table width="100%">
+          <f:entry title="${%Ulimit Name}" field="ulimitName">
+            <f:select />
+          </f:entry>
+          <f:entry title="${%Soft Limit}" field="softLimit">
+            <f:textbox clazz="required positive-number"/>
+          </f:entry>
+          <f:entry title="${%Hard Limit}" field="hardLimit">
+            <f:textbox clazz="required positive-number"/>
+          </f:entry>
+          <f:entry>
+            <div align="right">
+              <f:repeatableDeleteButton />
+            </div>
+          </f:entry>
+        </table>
+      </f:repeatable>
+    </f:entry>
   </f:advanced>
 </j:jelly>

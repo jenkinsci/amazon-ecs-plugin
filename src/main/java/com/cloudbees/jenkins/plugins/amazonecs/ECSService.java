@@ -66,6 +66,7 @@ import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
 import com.amazonaws.services.ecs.model.TaskOverride;
+import com.amazonaws.services.ecs.model.Ulimit;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 
@@ -145,14 +146,14 @@ class ECSService {
             LOGGER.log(Level.SEVERE, "Couldn't stop task arn " + taskArn + " caught exception: " + e.getMessage(), e);
         }
     }
-    
+
     /**
-     * Looks whether the latest task definition matches the desired one. If yes, returns the ARN of the existing one. 
+     * Looks whether the latest task definition matches the desired one. If yes, returns the ARN of the existing one.
      * If no, register a new task definition with desired parameters and return the new ARN.
      */
     String registerTemplate(final ECSCloud cloud, final ECSTaskTemplate template, String clusterArn) {
         final AmazonECSClient client = getAmazonECSClient();
-        
+
         String familyName = fullQualifiedTemplateName(cloud, template);
         final ContainerDefinition def = new ContainerDefinition()
                 .withName(familyName)
@@ -161,6 +162,7 @@ class ECSService {
                 .withExtraHosts(template.getExtraHostEntries())
                 .withMountPoints(template.getMountPointEntries())
                 .withPortMappings(template.getPortMappingEntries())
+                .withUlimits(template.getUlimitConfigEntries())
                 .withCpu(template.getCpu())
                 .withPrivileged(template.getPrivileged())
                 .withEssential(true);
@@ -212,11 +214,11 @@ class ECSService {
 
         if(taskDefinitions.size() > 0) {
             describeTaskDefinition = client.describeTaskDefinition(new DescribeTaskDefinitionRequest().withTaskDefinition(taskDefinitions.getLast()));
-        
+
             templateMatchesExistingContainerDefinition = def.equals(describeTaskDefinition.getTaskDefinition().getContainerDefinitions().get(0));
             LOGGER.log(Level.INFO, "Match on container defintion: {0}", new Object[] {templateMatchesExistingContainerDefinition});
             LOGGER.log(Level.FINE, "Match on container defintion: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingContainerDefinition, def, describeTaskDefinition.getTaskDefinition().getContainerDefinitions().get(0)});
-            
+
             templateMatchesExistingVolumes = ObjectUtils.equals(template.getVolumeEntries(), describeTaskDefinition.getTaskDefinition().getVolumes());
             LOGGER.log(Level.INFO, "Match on volumes: {0}", new Object[] {templateMatchesExistingVolumes});
             LOGGER.log(Level.FINE, "Match on volumes: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingVolumes, template.getVolumeEntries(), describeTaskDefinition.getTaskDefinition().getVolumes()});
@@ -225,19 +227,19 @@ class ECSService {
             LOGGER.log(Level.INFO, "Match on task role: {0}", new Object[] {templateMatchesExistingTaskRole});
             LOGGER.log(Level.FINE, "Match on task role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingTaskRole, template.getTaskrole(), describeTaskDefinition.getTaskDefinition().getTaskRoleArn()});
         }
-        
+
         if(templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole) {
             LOGGER.log(Level.FINE, "Task Definition already exists: {0}", new Object[]{describeTaskDefinition.getTaskDefinition().getTaskDefinitionArn()});
             return describeTaskDefinition.getTaskDefinition().getTaskDefinitionArn();
         } else {
-            final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()                
+            final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()
                     .withFamily(familyName)
                     .withVolumes(template.getVolumeEntries())
                     .withContainerDefinitions(def);
-            
+
             if (template.getTaskrole() != null) {
                 request.withTaskRoleArn(template.getTaskrole());
-            }            
+            }
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(request);
             String taskDefinitionArn = result.getTaskDefinition().getTaskDefinitionArn();
             LOGGER.log(Level.FINE, "Created Task Definition {0}: {1}", new Object[]{taskDefinitionArn, request});
