@@ -240,7 +240,7 @@ public class ECSCloud extends Cloud {
 
                 String uniq = Long.toHexString(System.nanoTime());
                 slave = new ECSSlave(ECSCloud.this, name + "-" + uniq, template.getRemoteFSRoot(),
-                        label == null ? null : label.toString(), new JNLPLauncher());
+                        template.getLabel(), new JNLPLauncher());
                 slave.setClusterArn(cluster);
                 Jenkins.getInstance().addNode(slave);
                 while (Jenkins.getInstance().getNode(slave.getNodeName()) == null) {
