@@ -25,20 +25,13 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
-import com.amazonaws.services.ecs.model.ContainerDefinition;
-import com.amazonaws.services.ecs.model.HostEntry;
-import com.amazonaws.services.ecs.model.Volume;
-import com.amazonaws.services.ecs.model.HostVolumeProperties;
-import com.amazonaws.services.ecs.model.MountPoint;
-import com.amazonaws.services.ecs.model.KeyValuePair;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.*;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
-
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -48,14 +41,13 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.servlet.ServletException;
-
 import java.io.IOException;
 import java.util.*;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
-public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
+public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> implements ECSTask {
 
     /**
      * Template Name
@@ -71,6 +63,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private final String label;
     /**
      * Docker image
+     *
      * @see ContainerDefinition#withImage(String)
      */
     @Nonnull
@@ -144,13 +137,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     @CheckForNull
     private String taskrole;
     /**
-      JVM arguments to start slave.jar
+     * JVM arguments to start slave.jar
      */
     @CheckForNull
     private String jvmArgs;
 
     /**
-      Container mount points, imported from volumes
+     * Container mount points, imported from volumes
      */
     private List<MountPointEntry> mountPoints;
 
@@ -163,21 +156,21 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private List<ExtraHostEntry> extraHosts;
 
     /**
-    * The log configuration specification for the container.
-    * This parameter maps to LogConfig in the Create a container section of
-    * the Docker Remote API and the --log-driver option to docker run.
-    * Valid log drivers are displayed in the LogConfiguration data type.
-    * This parameter requires version 1.18 of the Docker Remote API or greater
-    * on your container instance. To check the Docker Remote API version on
-    * your container instance, log into your container instance and run the
-    * following command: sudo docker version | grep "Server API version"
-    * The Amazon ECS container agent running on a container instance must
-    * register the logging drivers available on that instance with the
-    * ECS_AVAILABLE_LOGGING_DRIVERS environment variable before containers
-    * placed on that instance can use these log configuration options.
-    * For more information, see Amazon ECS Container Agent Configuration
-    * in the Amazon EC2 Container Service Developer Guide.
-    */
+     * The log configuration specification for the container.
+     * This parameter maps to LogConfig in the Create a container section of
+     * the Docker Remote API and the --log-driver option to docker run.
+     * Valid log drivers are displayed in the LogConfiguration data type.
+     * This parameter requires version 1.18 of the Docker Remote API or greater
+     * on your container instance. To check the Docker Remote API version on
+     * your container instance, log into your container instance and run the
+     * following command: sudo docker version | grep "Server API version"
+     * The Amazon ECS container agent running on a container instance must
+     * register the logging drivers available on that instance with the
+     * ECS_AVAILABLE_LOGGING_DRIVERS environment variable before containers
+     * placed on that instance can use these log configuration options.
+     * For more information, see Amazon ECS Container Agent Configuration
+     * in the Amazon EC2 Container Service Developer Guide.
+     */
     @CheckForNull
     private String logDriver;
     private List<LogDriverOption> logDriverOptions;
@@ -285,9 +278,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return logDriver;
     }
 
-    public String getTemplateName() {return templateName; }
+    public String getTemplateName() {
+        return templateName;
+    }
 
-    public static class LogDriverOption extends AbstractDescribableImpl<LogDriverOption>{
+    public static class LogDriverOption extends AbstractDescribableImpl<LogDriverOption> {
         public String name, value;
 
         @DataBoundConstructor
@@ -314,11 +309,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return logDriverOptions;
     }
 
-    Map<String,String> getLogDriverOptionsMap() {
+    Map<String, String> getLogDriverOptionsMap() {
         if (null == logDriverOptions || logDriverOptions.isEmpty()) {
             return null;
         }
-        Map<String,String> options = new HashMap<String,String>();
+        Map<String, String> options = new HashMap<String, String>();
         for (LogDriverOption logDriverOption : logDriverOptions) {
             String name = logDriverOption.name;
             String value = logDriverOption.value;
@@ -376,17 +371,17 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     Collection<Volume> getVolumeEntries() {
         Collection<Volume> vols = new LinkedList<Volume>();
-        if (null != mountPoints ) {
+        if (null != mountPoints) {
             for (MountPointEntry mount : mountPoints) {
                 String name = mount.name;
                 String sourcePath = mount.sourcePath;
                 HostVolumeProperties hostVolume = new HostVolumeProperties();
                 if (StringUtils.isEmpty(name))
                     continue;
-                if (! StringUtils.isEmpty(sourcePath))
+                if (!StringUtils.isEmpty(sourcePath))
                     hostVolume.setSourcePath(sourcePath);
                 vols.add(new Volume().withName(name)
-                                     .withHost(hostVolume));
+                        .withHost(hostVolume));
             }
         }
         return vols;
@@ -403,8 +398,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             if (StringUtils.isEmpty(src) || StringUtils.isEmpty(path))
                 continue;
             mounts.add(new MountPoint().withSourceVolume(src)
-                                       .withContainerPath(path)
-                                       .withReadOnly(ro));
+                    .withContainerPath(path)
+                    .withReadOnly(ro));
         }
         return mounts;
     }
@@ -473,9 +468,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         @Override
         public String toString() {
             return "MountPointEntry{name:" + name +
-                   ", sourcePath:" + sourcePath +
-                   ", containerPath:" + containerPath +
-                   ", readOnly:" + readOnly + "}";
+                    ", sourcePath:" + sourcePath +
+                    ", containerPath:" + containerPath +
+                    ", readOnly:" + readOnly + "}";
         }
 
         @Extension
@@ -514,11 +509,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
         /* we validate both memory and memoryReservation fields to the same rules */
         public FormValidation doCheckMemory(@QueryParameter("memory") int memory, @QueryParameter("memoryReservation") int memoryReservation) throws IOException, ServletException {
-            return validateMemorySettings(memory,memoryReservation);
+            return validateMemorySettings(memory, memoryReservation);
         }
 
         public FormValidation doCheckMemoryReservation(@QueryParameter("memory") int memory, @QueryParameter("memoryReservation") int memoryReservation) throws IOException, ServletException {
-            return validateMemorySettings(memory,memoryReservation);
+            return validateMemorySettings(memory, memoryReservation);
         }
 
         private FormValidation validateMemorySettings(int memory, int memoryReservation) {
