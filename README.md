@@ -1,6 +1,6 @@
 # Amazon EC2 Container Service Plugin for Jenkins
 
-[![Build Status](https://jenkins.ci.cloudbees.com/job/plugins/job/amazon-ecs-plugin/badge/icon)](https://jenkins.ci.cloudbees.com/job/plugins/job/amazon-ecs-plugin/)
+[![Build Status](https://ci.jenkins.io/job/Plugins/job/amazon-ecs-plugin/job/master/badge/icon)](https://ci.jenkins.io/job/Plugins/job/amazon-ecs-plugin/job/master/)
 
 ## About
 
