@@ -22,7 +22,7 @@
 	<parent>
 		<groupId>org.jenkins-ci.plugins</groupId>
 		<artifactId>plugin</artifactId>
-		<version>2.33</version>
+		<version>1.609</version>
 		<relativePath />
 	</parent>
 
@@ -33,10 +33,6 @@
 	<name>Amazon EC2 Container Service plugin</name>
 	<description>Jenkins plugin to run dynamic slaves in a Amazon ECS/Docker environment</description>
 	<url>https://wiki.jenkins-ci.org/display/JENKINS/Amazon+EC2+Container+Service+Plugin</url>
-
-	<properties>
-		<jenkins.version>2.4</jenkins.version>
-	</properties>
 
 	<developers>
 		<developer>
@@ -99,5 +95,5 @@
 			<version>1.23</version>
 		</dependency>
 	</dependencies>
-
+	
 </project>
