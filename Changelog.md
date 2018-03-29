@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12
+- Bug - [JENKINS-50381] Fix label string passed to the ECSSlave constructor #55
+- Bug - [JENKINS-39220] list all available ECS cluster (instead of first 100) #46
+
 ## 1.11
 - JENKINS-41993: Amazon ECS plugin fails to register task definition v 1.10
 - PR #40: Add DnsSearchDomains option
