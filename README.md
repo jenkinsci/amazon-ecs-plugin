@@ -4,7 +4,7 @@
 
 ## About
 
-This jenkins plugin do use [Amazon EC2 Container Service](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html) to host jobs execution inside docker containers.
+This Jenkins plugin do use [Amazon EC2 Container Service](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html) to host jobs execution inside docker containers.
 
 * see [Jenkins wiki](https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin) for detailed feature descriptions
 * use [JIRA](https://issues.jenkins-ci.org/issues/?jql=project %3D JENKINS AND status in (Open%2C "In Progress"%2C Reopened) AND component %3D amazon-ecs-plugin) to report issues / feature requests
