@@ -139,5 +139,25 @@
         </table>
       </f:repeatable>
     </f:entry>
+    <f:entry field="portMappings" title="${%Port Mappings}">
+      <f:repeatable field="portMappings">
+        <table width="100%">
+          <f:entry field="containerPort" title="${%Container Port}">
+            <f:textbox />
+          </f:entry>
+          <f:entry field="hostPort" title="${%Host Port}">
+            <f:textbox />
+          </f:entry>
+          <f:entry field="protocol" title="${%Protocol}">
+            <f:select />
+          </f:entry>
+          <f:entry>
+            <div align="right">
+              <f:repeatableDeleteButton />
+            </div>
+          </f:entry>
+        </table>
+      </f:repeatable>
+    </f:entry>
   </f:advanced>
 </j:jelly>
