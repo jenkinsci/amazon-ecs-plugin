@@ -174,6 +174,9 @@ class ECSService {
         if (template.getMemory() > 0) /* this is the hard limit */
             def.withMemory(template.getMemory());
 
+        if (template.getDnsServers() != null)
+            def.withDnsServers(StringUtils.split(template.getDnsServers()));
+
         if (template.getEntrypoint() != null)
             def.withEntryPoint(StringUtils.split(template.getEntrypoint()));
 

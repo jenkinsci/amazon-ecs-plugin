@@ -50,6 +50,9 @@
     <f:entry title="${%DNS Search Domains}" field="dnsSearchDomains">
       <f:textbox />
     </f:entry>
+    <f:entry title="${%DNS Servers}" field="dnsServers">
+      <f:textbox />
+    </f:entry>
     <f:entry title="${%Task Role ARN}" field="taskrole">
       <f:textbox />
     </f:entry>
