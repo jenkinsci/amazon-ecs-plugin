@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.13
+- BUG - [JENKINS-46581] DNS Search Domains not honored in Amazon ECS Plugin #42
+- Feature - Adding Port Mapping options for task templates #44
+- Feature - Add container user #49
+
 ## 1.12
 - Bug - [JENKINS-50381] Fix label string passed to the ECSSlave constructor #55
 - Bug - [JENKINS-39220] list all available ECS cluster (instead of first 100) #46
