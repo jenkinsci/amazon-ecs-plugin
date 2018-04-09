@@ -14,3 +14,6 @@ bin/
 .project
 .settings/
 pom.xml.versionsBackup
+
+# VS Code
+.vscode

@@ -27,6 +27,7 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.HostEntry;
+import com.amazonaws.services.ecs.model.PortMapping;
 import com.amazonaws.services.ecs.model.Volume;
 import com.amazonaws.services.ecs.model.HostVolumeProperties;
 import com.amazonaws.services.ecs.model.MountPoint;
@@ -38,6 +39,7 @@ import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -169,8 +171,15 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      */
     private final boolean privileged;
 
+    /**
+     * User for conatiner
+     */
+    @Nullable
+    private String containerUser;
+
     private List<EnvironmentEntry> environments;
     private List<ExtraHostEntry> extraHosts;
+    private List<PortMappingEntry> portMappings;
 
     /**
     * The log configuration specification for the container.
@@ -201,10 +210,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            int memoryReservation,
                            int cpu,
                            boolean privileged,
+                           @Nullable String containerUser,
                            @Nullable List<LogDriverOption> logDriverOptions,
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
-                           @Nullable List<MountPointEntry> mountPoints) {
+                           @Nullable List<MountPointEntry> mountPoints,
+                           @Nullable List<PortMappingEntry> portMappings) {
         // If the template name is empty we will add a default name and a
         // random element that will help to find it later when we want to delete it.
         this.templateName = templateName.isEmpty() ?
@@ -216,10 +227,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.memoryReservation = memoryReservation;
         this.cpu = cpu;
         this.privileged = privileged;
+        this.containerUser = containerUser;
         this.logDriverOptions = logDriverOptions;
         this.environments = environments;
         this.extraHosts = extraHosts;
         this.mountPoints = mountPoints;
+        this.portMappings = portMappings;
     }
 
     @DataBoundSetter
@@ -240,6 +253,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     @DataBoundSetter
     public void setJvmArgs(String jvmArgs) {
         this.jvmArgs = StringUtils.trimToNull(jvmArgs);
+    }
+
+    @DataBoundSetter
+    public void setContainerUser(String containerUser) {
+        this.containerUser = StringUtils.trimToNull(containerUser);
     }
 
     @DataBoundSetter
@@ -300,6 +318,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return privileged;
     }
 
+    public String getContainerUser() {
+        return containerUser;
+    }
+
     public String getLogDriver() {
         return logDriver;
     }
@@ -355,6 +377,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     public List<ExtraHostEntry> getExtraHosts() {
         return extraHosts;
+    }
+
+    public List<PortMappingEntry> getPortMappings() {
+        return portMappings;
     }
 
     Collection<KeyValuePair> getEnvironmentKeyValuePairs() {
@@ -426,6 +452,22 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                                        .withReadOnly(ro));
         }
         return mounts;
+    }
+
+    Collection<PortMapping> getPortMappingEntries() {
+        if (null == portMappings || portMappings.isEmpty())
+            return null;
+        Collection<PortMapping> ports = new ArrayList<PortMapping>();
+        for (PortMappingEntry portMapping : this.portMappings) {
+            Integer container = portMapping.containerPort;
+            Integer host = portMapping.hostPort;
+            String protocol = portMapping.protocol;
+
+            ports.add(new PortMapping().withContainerPort(container)
+                                       .withHostPort(host)
+                                       .withProtocol(protocol));
+        }
+        return ports;
     }
 
     public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> {
@@ -502,6 +544,41 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             @Override
             public String getDisplayName() {
                 return "MountPointEntry";
+            }
+        }
+    }
+
+    public static class PortMappingEntry extends AbstractDescribableImpl<PortMappingEntry> {
+        public Integer containerPort, hostPort;
+        public String protocol;
+
+        @DataBoundConstructor
+        public PortMappingEntry(Integer containerPort, Integer hostPort, String protocol) {
+            this.containerPort = containerPort;
+            this.hostPort = hostPort;
+            this.protocol = protocol;
+        }
+
+        @Override
+        public String toString() {
+            return "PortMappingEntry{" +
+                    "containerPort=" + containerPort +
+                    ", hostPort=" + hostPort +
+                    ", protocol='" + protocol + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<PortMappingEntry> {
+            public ListBoxModel doFillProtocolItems() {
+                final ListBoxModel options = new ListBoxModel();
+                options.add("TCP", "tcp");
+                options.add("UDP", "udp");
+                return options;
+            }
+            
+            @Override
+            public String getDisplayName() {
+                return "PortMappingEntry";
             }
         }
     }
