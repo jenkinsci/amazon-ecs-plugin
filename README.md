@@ -26,6 +26,10 @@ To run locally, execute the following command and open the browser [http://local
   $ mvn -e hpi:run
 ```
 
+## Maintainers
+Philipp Garbe ([GitHub](https://github.com/pgarbe), [Twitter](https://twitter.com/pgarbe))
+Douglas Manley ([GitHub](https://github.com/tekkamanendless))
+Jan Roehrich ([GitHub](https://github.com/roehrijn))
 
 ## Documentation and Installation
 
