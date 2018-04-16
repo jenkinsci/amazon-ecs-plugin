@@ -217,7 +217,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.memoryReservation = memoryReservation;
         this.cpu = cpu;
         this.privileged = privileged;
-        this.containerUser = containerUser;
+        this.containerUser = StringUtils.trimToNull(containerUser);
         this.logDriverOptions = logDriverOptions;
         this.environments = environments;
         this.extraHosts = extraHosts;
