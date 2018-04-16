@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.14
+- BUG - Treat empty username as null #59
+
 ## 1.13
 - BUG - [JENKINS-46581] DNS Search Domains not honored in Amazon ECS Plugin #42
 - Feature - Adding Port Mapping options for task templates #44
