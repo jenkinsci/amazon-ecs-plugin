@@ -210,16 +210,18 @@ class ECSService {
         boolean templateMatchesExistingContainerDefinition = false;
         boolean templateMatchesExistingVolumes = false;
         boolean templateMatchesExistingTaskRole = false;
+        boolean templateMatchesExistingExecutionRole = false;
 
         DescribeTaskDefinitionResult describeTaskDefinition = null;
 
         if(taskDefinitions.size() > 0) {
             describeTaskDefinition = client.describeTaskDefinition(new DescribeTaskDefinitionRequest().withTaskDefinition(taskDefinitions.getLast()));
-        
+
             templateMatchesExistingContainerDefinition = def.equals(describeTaskDefinition.getTaskDefinition().getContainerDefinitions().get(0));
+
             LOGGER.log(Level.INFO, "Match on container definition: {0}", new Object[] {templateMatchesExistingContainerDefinition});
             LOGGER.log(Level.FINE, "Match on container definition: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingContainerDefinition, def, describeTaskDefinition.getTaskDefinition().getContainerDefinitions().get(0)});
-            
+
             templateMatchesExistingVolumes = ObjectUtils.equals(template.getVolumeEntries(), describeTaskDefinition.getTaskDefinition().getVolumes());
             LOGGER.log(Level.INFO, "Match on volumes: {0}", new Object[] {templateMatchesExistingVolumes});
             LOGGER.log(Level.FINE, "Match on volumes: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingVolumes, template.getVolumeEntries(), describeTaskDefinition.getTaskDefinition().getVolumes()});
@@ -227,20 +229,29 @@ class ECSService {
             templateMatchesExistingTaskRole = template.getTaskrole() == null || template.getTaskrole().equals(describeTaskDefinition.getTaskDefinition().getTaskRoleArn());
             LOGGER.log(Level.INFO, "Match on task role: {0}", new Object[] {templateMatchesExistingTaskRole});
             LOGGER.log(Level.FINE, "Match on task role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingTaskRole, template.getTaskrole(), describeTaskDefinition.getTaskDefinition().getTaskRoleArn()});
+
+            templateMatchesExistingExecutionRole = template.getExecutionRole() == null || template.getExecutionRole().equals(describeTaskDefinition.getTaskDefinition().getExecutionRoleArn());
+            LOGGER.log(Level.INFO, "Match on execution role: {0}", new Object[] {templateMatchesExistingExecutionRole});
+            LOGGER.log(Level.FINE, "Match on execution role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingExecutionRole, template.getExecutionRole(), describeTaskDefinition.getTaskDefinition().getExecutionRoleArn()});
         }
-        
+
         if(templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole) {
             LOGGER.log(Level.FINE, "Task Definition already exists: {0}", new Object[]{describeTaskDefinition.getTaskDefinition().getTaskDefinitionArn()});
             return describeTaskDefinition.getTaskDefinition().getTaskDefinitionArn();
         } else {
-            final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()                
+            final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()
                     .withFamily(familyName)
                     .withVolumes(template.getVolumeEntries())
                     .withContainerDefinitions(def);
-            
+
             if (template.getTaskrole() != null) {
                 request.withTaskRoleArn(template.getTaskrole());
-            }            
+            }
+
+            if (template.getExecutionRole() != null) {
+                request.withExecutionRoleArn(template.getExecutionRole());
+            }
+
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(request);
             String taskDefinitionArn = result.getTaskDefinition().getTaskDefinitionArn();
             LOGGER.log(Level.FINE, "Created Task Definition {0}: {1}", new Object[]{taskDefinitionArn, request});
