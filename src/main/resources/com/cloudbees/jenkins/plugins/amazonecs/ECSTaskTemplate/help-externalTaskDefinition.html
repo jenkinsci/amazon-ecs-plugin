@@ -1,0 +1,48 @@
+<!--
+  ~ The MIT License
+  ~
+  ~  Copyright (c) 2015, CloudBees, Inc.
+  ~
+  ~  Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~  of this software and associated documentation files (the "Software"), to deal
+  ~  in the Software without restriction, including without limitation the rights
+  ~  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~  copies of the Software, and to permit persons to whom the Software is
+  ~  furnished to do so, subject to the following conditions:
+  ~
+  ~  The above copyright notice and this permission notice shall be included in
+  ~  all copies or substantial portions of the Software.
+  ~
+  ~  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  ~  THE SOFTWARE.
+  ~
+  -->
+<p>
+    Use an externally-managed task definition, rather than one created by Jenkins. Allows you to use a task definition
+    created in the AWS Console, command line, or other tools. Specifying an explicit task definition will override all
+    other task definition options, and will prevent Jenkins from creating or modifying task definitions for this slave.
+    (You should still specify reasonable CPU and memory sizes in Jenkins. The values will not be used by ECS, but will be
+    used by Jenkins to estimate cluster capacity.)
+</p>
+<p>
+    You may specify either a full task definition ARN, a family name, or a family name and revision. If specifying only a
+    family name, Jenkins will use the latest active task definition with that family name. If you enter the full ARN, Jenkins will
+    always use the specified ARN, even if you create later revisions of the task definition. See the
+    <a href="http://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_DescribeTaskDefinition.html">DescribeTaskDefinition API documentation</a>
+    for details.
+</p>
+<p>
+    For example, if the task definition you would like to use is in the "hello_world" family, you could enter
+    "hello_world", "hello_world:8", or "arn:aws:ecs:us-east-1:123456789012:task-definition/hello_world:8" as the Task
+    Definition Override.
+</p>
+<p>
+    <b>Important:</b> If your externally-managed task definition contains multiple container definitions (sidecars), the
+    Jenkins slave container must be the first container defined in the task definition.
+</p>
+

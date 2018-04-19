@@ -29,14 +29,14 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Deque;
-import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
+import com.amazonaws.services.ecs.model.ClientException;
+import com.amazonaws.services.ecs.model.TaskDefinition;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -56,8 +56,6 @@ import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.ListContainerInstancesRequest;
 import com.amazonaws.services.ecs.model.ListContainerInstancesResult;
-import com.amazonaws.services.ecs.model.ListTaskDefinitionsRequest;
-import com.amazonaws.services.ecs.model.ListTaskDefinitionsResult;
 import com.amazonaws.services.ecs.model.LogConfiguration;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
@@ -145,12 +143,12 @@ class ECSService {
             LOGGER.log(Level.SEVERE, "Couldn't stop task arn " + taskArn + " caught exception: " + e.getMessage(), e);
         }
     }
-    
+
     /**
-     * Looks whether the latest task definition matches the desired one. If yes, returns the ARN of the existing one. 
-     * If no, register a new task definition with desired parameters and return the new ARN.
+     * Looks whether the latest task definition matches the desired one. If yes, returns the full TaskDefinition of the existing one.
+     * If no, register a new task definition with desired parameters and returns the new TaskDefinition.
      */
-    String registerTemplate(final ECSCloud cloud, final ECSTaskTemplate template, String clusterArn) {
+    TaskDefinition registerTemplate(final ECSCloud cloud, final ECSTaskTemplate template) {
         final AmazonECSClient client = getAmazonECSClient();
         
         String familyName = fullQualifiedTemplateName(cloud, template);
@@ -196,42 +194,29 @@ class ECSService {
             def.withLogConfiguration(logConfig);
         }
 
-        String lastToken = null;
-        Deque<String> taskDefinitions = new LinkedList<String>();
-        do {
-            ListTaskDefinitionsResult listTaskDefinitions = client.listTaskDefinitions(new ListTaskDefinitionsRequest()
-                    .withFamilyPrefix(familyName)
-                    .withMaxResults(100)
-                    .withNextToken(lastToken));
-            taskDefinitions.addAll(listTaskDefinitions.getTaskDefinitionArns());
-            lastToken = listTaskDefinitions.getNextToken();
-        } while(lastToken != null);
+        TaskDefinition currentTaskDefinition = findTaskDefinition(familyName);
 
         boolean templateMatchesExistingContainerDefinition = false;
         boolean templateMatchesExistingVolumes = false;
         boolean templateMatchesExistingTaskRole = false;
 
-        DescribeTaskDefinitionResult describeTaskDefinition = null;
-
-        if(taskDefinitions.size() > 0) {
-            describeTaskDefinition = client.describeTaskDefinition(new DescribeTaskDefinitionRequest().withTaskDefinition(taskDefinitions.getLast()));
-        
-            templateMatchesExistingContainerDefinition = def.equals(describeTaskDefinition.getTaskDefinition().getContainerDefinitions().get(0));
+        if (currentTaskDefinition != null) {
+            templateMatchesExistingContainerDefinition = def.equals(currentTaskDefinition.getContainerDefinitions().get(0));
             LOGGER.log(Level.INFO, "Match on container definition: {0}", new Object[] {templateMatchesExistingContainerDefinition});
-            LOGGER.log(Level.FINE, "Match on container definition: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingContainerDefinition, def, describeTaskDefinition.getTaskDefinition().getContainerDefinitions().get(0)});
-            
-            templateMatchesExistingVolumes = ObjectUtils.equals(template.getVolumeEntries(), describeTaskDefinition.getTaskDefinition().getVolumes());
-            LOGGER.log(Level.INFO, "Match on volumes: {0}", new Object[] {templateMatchesExistingVolumes});
-            LOGGER.log(Level.FINE, "Match on volumes: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingVolumes, template.getVolumeEntries(), describeTaskDefinition.getTaskDefinition().getVolumes()});
+            LOGGER.log(Level.FINE, "Match on container definition: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingContainerDefinition, def, currentTaskDefinition.getContainerDefinitions().get(0)});
 
-            templateMatchesExistingTaskRole = template.getTaskrole() == null || template.getTaskrole().equals(describeTaskDefinition.getTaskDefinition().getTaskRoleArn());
+            templateMatchesExistingVolumes = ObjectUtils.equals(template.getVolumeEntries(), currentTaskDefinition.getVolumes());
+            LOGGER.log(Level.INFO, "Match on volumes: {0}", new Object[] {templateMatchesExistingVolumes});
+            LOGGER.log(Level.FINE, "Match on volumes: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingVolumes, template.getVolumeEntries(), currentTaskDefinition.getVolumes()});
+
+            templateMatchesExistingTaskRole = template.getTaskrole() == null || template.getTaskrole().equals(currentTaskDefinition.getTaskRoleArn());
             LOGGER.log(Level.INFO, "Match on task role: {0}", new Object[] {templateMatchesExistingTaskRole});
-            LOGGER.log(Level.FINE, "Match on task role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingTaskRole, template.getTaskrole(), describeTaskDefinition.getTaskDefinition().getTaskRoleArn()});
+            LOGGER.log(Level.FINE, "Match on task role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingTaskRole, template.getTaskrole(), currentTaskDefinition.getTaskRoleArn()});
         }
         
         if(templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole) {
-            LOGGER.log(Level.FINE, "Task Definition already exists: {0}", new Object[]{describeTaskDefinition.getTaskDefinition().getTaskDefinitionArn()});
-            return describeTaskDefinition.getTaskDefinition().getTaskDefinitionArn();
+            LOGGER.log(Level.FINE, "Task Definition already exists: {0}", new Object[]{currentTaskDefinition.getTaskDefinitionArn()});
+            return currentTaskDefinition;
         } else {
             final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()                
                     .withFamily(familyName)
@@ -242,10 +227,30 @@ class ECSService {
                 request.withTaskRoleArn(template.getTaskrole());
             }            
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(request);
-            String taskDefinitionArn = result.getTaskDefinition().getTaskDefinitionArn();
-            LOGGER.log(Level.FINE, "Created Task Definition {0}: {1}", new Object[]{taskDefinitionArn, request});
-            LOGGER.log(Level.INFO, "Created Task Definition: {0}", new Object[] { taskDefinitionArn });
-            return taskDefinitionArn;
+            LOGGER.log(Level.FINE, "Created Task Definition {0}: {1}", new Object[]{result.getTaskDefinition(), request});
+            LOGGER.log(Level.INFO, "Created Task Definition: {0}", new Object[]{result.getTaskDefinition()});
+            return result.getTaskDefinition();
+        }
+    }
+
+    /**
+     * Finds the task definition for the specified family or ARN, or null if none is found.
+     * The parameter may be a task definition family, family with revision, or full task definition ARN.
+     */
+    TaskDefinition findTaskDefinition(String familyOrArn) {
+        AmazonECSClient client = getAmazonECSClient();
+
+        try {
+            DescribeTaskDefinitionResult result = client.describeTaskDefinition(
+                    new DescribeTaskDefinitionRequest()
+                            .withTaskDefinition(familyOrArn));
+
+            return result.getTaskDefinition();
+        } catch (ClientException e) {
+            LOGGER.log(Level.FINE, "No existing task definition found for family or ARN: " + familyOrArn, e);
+            LOGGER.log(Level.INFO, "No existing task definition found for family or ARN: " + familyOrArn);
+
+            return null;
         }
     }
 
@@ -253,9 +258,9 @@ class ECSService {
         return cloud.getDisplayName().replaceAll("\\s+","") + '-' + template.getTemplateName();
     }
 
-    String runEcsTask(final ECSSlave slave, final ECSTaskTemplate template, String clusterArn, Collection<String> command, String taskDefinitionArn) throws IOException, AbortException {
+    String runEcsTask(final ECSSlave slave, String clusterArn, Collection<String> command, TaskDefinition taskDefinition) throws IOException, AbortException {
         AmazonECSClient client = getAmazonECSClient();
-        slave.setTaskDefinitonArn(taskDefinitionArn);
+        slave.setTaskDefinitonArn(taskDefinition.getTaskDefinitionArn());
 
         KeyValuePair envNodeName = new KeyValuePair();
         envNodeName.setName("SLAVE_NODE_NAME");
@@ -265,11 +270,18 @@ class ECSService {
         envNodeSecret.setName("SLAVE_NODE_SECRET");
         envNodeSecret.setValue(slave.getComputer().getJnlpMac());
 
+        // by convention, we assume the jenkins slave container is the first container in the task definition. ECS requires
+        // all task definitions to contain at least one container, and all containers to have a name, so we do not need
+        // to null- or bounds-check for the presence of a container definition.
+        String slaveContainerName = taskDefinition.getContainerDefinitions().get(0).getName();
+
+        LOGGER.log(Level.FINE, "Found container definition with {0} container(s). Assuming first container is the Jenkins slave: {1}", new Object[]{taskDefinition.getContainerDefinitions().size(), slaveContainerName});
+
         final RunTaskResult runTaskResult = client.runTask(new RunTaskRequest()
-          .withTaskDefinition(taskDefinitionArn)
+          .withTaskDefinition(taskDefinition.getTaskDefinitionArn())
           .withOverrides(new TaskOverride()
             .withContainerOverrides(new ContainerOverride()
-              .withName(fullQualifiedTemplateName(slave.getCloud(), template))
+              .withName(slaveContainerName)
               .withCommand(command)
               .withEnvironment(envNodeName)
               .withEnvironment(envNodeSecret)))
@@ -277,7 +289,7 @@ class ECSService {
         );
 
         if (!runTaskResult.getFailures().isEmpty()) {
-            LOGGER.log(Level.WARNING, "Slave {0} - Failure to run task with definition {1} on ECS cluster {2}", new Object[]{slave.getNodeName(), taskDefinitionArn, clusterArn});
+            LOGGER.log(Level.WARNING, "Slave {0} - Failure to run task with definition {1} on ECS cluster {2}", new Object[]{slave.getNodeName(), taskDefinition.getTaskDefinitionArn(), clusterArn});
             for (Failure failure : runTaskResult.getFailures()) {
                 LOGGER.log(Level.WARNING, "Slave {0} - Failure reason={1}, arn={2}", new Object[]{slave.getNodeName(), failure.getReason(), failure.getArn()});
             }
