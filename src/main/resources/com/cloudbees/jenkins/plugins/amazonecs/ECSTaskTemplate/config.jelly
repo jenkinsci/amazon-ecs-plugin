@@ -25,11 +25,14 @@
   -->
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-  <f:entry title="${%Template Name}" field="templateName">
+  <f:entry title="Label" field="label" description="The label used to identify this slave in Jenkins.">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="${%Template Name}" field="templateName" description="The name that will be appended to the ECS cluster name when creating task definitions. Cannot be used with a Task Definition Override.">
       <f:textbox />
     </f:entry>
-  <f:entry title="Label" field="label">
-    <f:textbox />
+  <f:entry title="${%Task Definition Override}" field="taskDefinitionOverride" description="Externally-managed ECS task definition to use, instead of creating task definitions using the Template Name. This value takes precedence over all other container settings.">
+      <f:textbox />
   </f:entry>
   <f:entry title="${%Docker Image}" field="image">
     <f:textbox default="jenkinsci/jnlp-slave" />

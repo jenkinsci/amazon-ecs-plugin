@@ -41,6 +41,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.servlet.ServletException;
 
+import com.amazonaws.services.ecs.model.TaskDefinition;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -251,8 +252,24 @@ public class ECSCloud extends Cloud {
                 LOGGER.log(Level.INFO, "Created Slave: {0}", slave.getNodeName());
 
                 try {
-                    String taskDefintionArn = getEcsService().registerTemplate(slave.getCloud(), template, cluster);
-                    String taskArn = getEcsService().runEcsTask(slave, template, cluster, getDockerRunCommand(slave), taskDefintionArn);
+                    TaskDefinition taskDefinition;
+
+                    if (template.getTaskDefinitionOverride() == null) {
+                        taskDefinition = getEcsService().registerTemplate(slave.getCloud(), template);
+                    } else {
+                        LOGGER.log(Level.FINE, "Attempting to find task definition family or ARN: {0}", template.getTaskDefinitionOverride());
+
+                        taskDefinition = getEcsService().findTaskDefinition(template.getTaskDefinitionOverride());
+                        if (taskDefinition == null) {
+                            throw new RuntimeException("Could not find task definition family or ARN: " + template.getTaskDefinitionOverride());
+                        }
+
+                        LOGGER.log(Level.FINE, "Found task definition: {0}", taskDefinition.getTaskDefinitionArn());
+                    }
+
+                    LOGGER.log(Level.INFO, "Running task definition {0} on slave {1}", new Object[]{taskDefinition.getTaskDefinitionArn(), slave.getNodeName()});
+
+                    String taskArn = getEcsService().runEcsTask(slave, cluster, getDockerRunCommand(slave), taskDefinition);
                     LOGGER.log(Level.INFO, "Slave {0} - Slave Task Started : {1}",
                             new Object[] { slave.getNodeName(), taskArn });
                     slave.setTaskArn(taskArn);

@@ -71,6 +71,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      */
     @CheckForNull
     private final String label;
+
+    /**
+     * Task Definition Override to use, instead of a Jenkins-managed Task definition. May be a family name or an ARN.
+     */
+    @CheckForNull
+    private final String taskDefinitionOverride;
+
     /**
      * Docker image
      * @see ContainerDefinition#withImage(String)
@@ -194,6 +201,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     @DataBoundConstructor
     public ECSTaskTemplate(@Nonnull String templateName,
                            @Nullable String label,
+                           @Nullable String taskDefinitionOverride,
                            @Nonnull String image,
                            @Nullable String remoteFSRoot,
                            int memory,
@@ -206,10 +214,20 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nullable List<ExtraHostEntry> extraHosts,
                            @Nullable List<MountPointEntry> mountPoints,
                            @Nullable List<PortMappingEntry> portMappings) {
-        // If the template name is empty we will add a default name and a
-        // random element that will help to find it later when we want to delete it.
-        this.templateName = templateName.isEmpty() ?
-                "jenkinsTask-" + UUID.randomUUID().toString() : templateName;
+        // if the user enters a task definition override, always prefer to use it, rather than the jenkins template.
+        if (taskDefinitionOverride != null && !taskDefinitionOverride.trim().isEmpty()) {
+            this.taskDefinitionOverride = taskDefinitionOverride.trim();
+            // Always set the template name to the empty string if we are using a task definition override,
+            // since we don't want Jenkins to touch our definitions.
+            this.templateName = "";
+        } else {
+            // If the template name is empty we will add a default name and a
+            // random element that will help to find it later when we want to delete it.
+            this.templateName = templateName.isEmpty() ?
+                    "jenkinsTask-" + UUID.randomUUID().toString() : templateName;
+            // Make sure we don't have both a template name and a task definition override.
+            this.taskDefinitionOverride = null;
+        }
         this.label = label;
         this.image = image;
         this.remoteFSRoot = remoteFSRoot;
@@ -257,6 +275,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     public String getLabel() {
         return label;
+    }
+
+    public String getTaskDefinitionOverride() {
+        return taskDefinitionOverride;
     }
 
     public String getImage() {
