@@ -318,7 +318,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.dnsSearchDomains = StringUtils.trimToNull(dnsSearchDomains);
     }
 
-    public boolean isFargate() { return launchType.equals("FARGATE"); }
+    public boolean isFargate() {
+        if (StringUtils.isEmpty(launchType)) {
+            return false;
+        }
+        return launchType.equals("FARGATE");
+    }
 
     public String getLabel() {
         return label;
