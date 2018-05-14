@@ -241,7 +241,10 @@ public class ECSCloud extends Cloud {
             Date timeout = new Date(now.getTime() + 1000 * slaveTimoutInSeconds);
 
             synchronized (cluster) {
-                getEcsService().waitForSufficientClusterResources(timeout, template, cluster);
+                if (!template.isFargate()){
+                    getEcsService().waitForSufficientClusterResources(timeout, template, cluster);
+                }
+
 
                 String uniq = Long.toHexString(System.nanoTime());
                 slave = new ECSSlave(ECSCloud.this, name + "-" + uniq, template.getRemoteFSRoot(),
@@ -271,7 +274,7 @@ public class ECSCloud extends Cloud {
 
                     LOGGER.log(Level.INFO, "Running task definition {0} on slave {1}", new Object[]{taskDefinition.getTaskDefinitionArn(), slave.getNodeName()});
 
-                    String taskArn = getEcsService().runEcsTask(slave, cluster, getDockerRunCommand(slave), taskDefinition);
+                    String taskArn = getEcsService().runEcsTask(slave, template, cluster, getDockerRunCommand(slave), taskDefinition);
                     LOGGER.log(Level.INFO, "Slave {0} - Slave Task Started : {1}",
                             new Object[] { slave.getNodeName(), taskArn });
                     slave.setTaskArn(taskArn);

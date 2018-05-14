@@ -25,14 +25,17 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
+import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.HostEntry;
 import com.amazonaws.services.ecs.model.PortMapping;
 import com.amazonaws.services.ecs.model.Volume;
 import com.amazonaws.services.ecs.model.HostVolumeProperties;
-import com.amazonaws.services.ecs.model.MountPoint;
 import com.amazonaws.services.ecs.model.KeyValuePair;
+import com.amazonaws.services.ecs.model.LaunchType;
+import com.amazonaws.services.ecs.model.MountPoint;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.Volume;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -41,6 +44,7 @@ import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 
+import hudson.util.ListBoxModel;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -130,6 +134,27 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private final int cpu;
 
     /**
+     * Subnets to be assigned on the awsvpc network when using Fargate
+     *
+     * @see AwsVpcConfiguration#setSubnets(Collection)
+     */
+    private String subnets;
+
+    /**
+     * Security groups to be assigned on the awsvpc network when using Fargate
+     *
+     * @see AwsVpcConfiguration#setSecurityGroups(Collection)
+     */
+    private String securityGroups;
+
+    /**
+     * Assign a public Ip to instance on awsvpc network when using Fargate
+     *
+     * @see AwsVpcConfiguration#setAssignPublicIp(String)
+     */
+    private boolean assignPublicIp;
+
+    /**
      * Space delimited list of Docker dns search domains
      *
      * @see ContainerDefinition#withDnsSearchDomains(Collection)
@@ -162,6 +187,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
       Container mount points, imported from volumes
      */
     private List<MountPointEntry> mountPoints;
+
+    /**
+     * Task launch type
+     */
+    @Nonnull
+    private final String launchType;
 
     /**
      * Indicates whether the container should run in privileged mode
@@ -203,10 +234,14 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nullable String label,
                            @Nullable String taskDefinitionOverride,
                            @Nonnull String image,
+                           @Nonnull String launchType,
                            @Nullable String remoteFSRoot,
                            int memory,
                            int memoryReservation,
                            int cpu,
+                           @Nullable String subnets,
+                           @Nullable String securityGroups,
+                           boolean assignPublicIp,
                            boolean privileged,
                            @Nullable String containerUser,
                            @Nullable List<LogDriverOption> logDriverOptions,
@@ -234,6 +269,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.memory = memory;
         this.memoryReservation = memoryReservation;
         this.cpu = cpu;
+        this.launchType = launchType;
+        this.subnets = subnets;
+        this.securityGroups = securityGroups;
+        this.assignPublicIp = assignPublicIp;
         this.privileged = privileged;
         this.containerUser = StringUtils.trimToNull(containerUser);
         this.logDriverOptions = logDriverOptions;
@@ -269,9 +308,17 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     @DataBoundSetter
+    public void setSubnets(String subnets) { this.subnets = StringUtils.trimToNull(subnets); }
+
+    @DataBoundSetter
+    public void setSecurityGroups(String securityGroups) { this.securityGroups = StringUtils.trimToNull(securityGroups); }
+
+    @DataBoundSetter
     public void setDnsSearchDomains(String dnsSearchDomains) {
         this.dnsSearchDomains = StringUtils.trimToNull(dnsSearchDomains);
     }
+
+    public boolean isFargate() { return launchType.equals("FARGATE"); }
 
     public String getLabel() {
         return label;
@@ -301,6 +348,18 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return cpu;
     }
 
+    public String getSubnets() {
+        return subnets;
+    }
+
+    public String getSecurityGroups() {
+        return securityGroups;
+    }
+
+    public boolean getAssignPublicIp() {
+        return assignPublicIp;
+    }
+
     public String getDnsSearchDomains() {
         return dnsSearchDomains;
     }
@@ -323,6 +382,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     public String getContainerUser() {
         return containerUser;
+    }
+
+    public String getLaunchType() {
+        return launchType;
     }
 
     public String getLogDriver() {
@@ -578,7 +641,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                 options.add("UDP", "udp");
                 return options;
             }
-            
+
             @Override
             public String getDisplayName() {
                 return "PortMappingEntry";
@@ -604,11 +667,26 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             return Messages.Template();
         }
 
+        public ListBoxModel doFillLaunchTypeItems() {
+            final ListBoxModel options = new ListBoxModel();
+            for (LaunchType launchType: LaunchType.values()) {
+                options.add(launchType.toString());
+            }
+            return options;
+        }
+
         public FormValidation doCheckTemplateName(@QueryParameter String value) throws IOException, ServletException {
             if (value.length() > 0 && value.length() <= 127 && value.matches(TEMPLATE_NAME_PATTERN)) {
                 return FormValidation.ok();
             }
             return FormValidation.error("Up to 127 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed");
+        }
+
+        public FormValidation doCheckSubnets(@QueryParameter("subnets") String subnets, @QueryParameter("launchType") String launchType) throws IOException, ServletException {
+            if (launchType.equals("FARGATE") && subnets.isEmpty()) {
+                return FormValidation.error("Subnets need to be set, when using FARGATE");
+            }
+            return FormValidation.ok();
         }
 
         /* we validate both memory and memoryReservation fields to the same rules */
