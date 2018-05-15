@@ -269,7 +269,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.memory = memory;
         this.memoryReservation = memoryReservation;
         this.cpu = cpu;
-        this.launchType = launchType;
+        this.launchType = StringUtils.defaultIfEmpty(launchType, LaunchType.EC2.toString());
         this.subnets = subnets;
         this.securityGroups = securityGroups;
         this.assignPublicIp = assignPublicIp;
@@ -319,10 +319,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     public boolean isFargate() {
-        if (StringUtils.isEmpty(launchType)) {
-            return false;
-        }
-        return launchType.equals("FARGATE");
+        return launchType.equals(LaunchType.FARGATE.toString());
     }
 
     public String getLabel() {
