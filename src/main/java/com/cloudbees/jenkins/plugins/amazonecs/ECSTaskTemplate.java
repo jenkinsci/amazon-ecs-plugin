@@ -263,13 +263,14 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             // Make sure we don't have both a template name and a task definition override.
             this.taskDefinitionOverride = null;
         }
+
         this.label = label;
         this.image = image;
         this.remoteFSRoot = remoteFSRoot;
         this.memory = memory;
         this.memoryReservation = memoryReservation;
         this.cpu = cpu;
-        this.launchType = StringUtils.defaultIfEmpty(launchType, LaunchType.EC2.toString());
+        this.launchType = launchType;
         this.subnets = subnets;
         this.securityGroups = securityGroups;
         this.assignPublicIp = assignPublicIp;
@@ -319,7 +320,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     public boolean isFargate() {
-        return launchType.equals(LaunchType.FARGATE.toString());
+        return StringUtils.trimToNull(this.launchType) != null && launchType.equals(LaunchType.FARGATE.toString());
     }
 
     public String getLabel() {
@@ -387,6 +388,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     public String getLaunchType() {
+        if (StringUtils.trimToNull(this.launchType) == null) {
+            return LaunchType.EC2.toString();
+        }
         return launchType;
     }
 
