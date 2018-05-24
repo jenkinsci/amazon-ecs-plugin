@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15
+- Feature - Allow using externally-managed task definitions #50
+- Feature - [JENKINS-49020] Add support for Fargate #51
+- BUG - Allow multiple slaves to run with the same template #48
+- BUG - Fix NPE if templates is null #52
+- BUG - Fixing null launchType usage #61
+
 ## 1.14
 - BUG - Treat empty username as null #59
 
