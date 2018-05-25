@@ -62,6 +62,7 @@ import java.util.*;
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
+    public static final String DEFAULT_ECS_TASK_EXECUTION_IAM_ROLE_NAME = "ecsTaskExecutionRole";
 
     /**
      * Template Name
@@ -177,6 +178,15 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      */
     @CheckForNull
     private String taskrole;
+
+    /**
+     * ARN of the IAM role to use for the slave ECS task
+     *
+     * @see RegisterTaskDefinitionRequest#withExecutionRoleArn(String)
+     */
+    @CheckForNull
+    private String executionRole;
+
     /**
       JVM arguments to start slave.jar
      */
@@ -289,6 +299,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     @DataBoundSetter
+    public void setExecutionRole(String executionRole) {
+        this.executionRole = StringUtils.trimToNull(executionRole);
+    }
+
+    @DataBoundSetter
     public void setEntrypoint(String entrypoint) {
         this.entrypoint = StringUtils.trimToNull(entrypoint);
     }
@@ -373,6 +388,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     public String getTaskrole() {
         return taskrole;
+    }
+
+    public String getExecutionRole() {
+        return executionRole;
     }
 
     public String getJvmArgs() {

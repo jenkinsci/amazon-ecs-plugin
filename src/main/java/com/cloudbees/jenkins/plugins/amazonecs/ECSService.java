@@ -243,6 +243,12 @@ class ECSService {
                         .withNetworkMode("awsvpc")
                         .withMemory(String.valueOf(template.getMemoryConstraint()))
                         .withCpu(String.valueOf(template.getCpu()));
+                String executionRole = template.getExecutionRole();
+                if(StringUtils.isEmpty(executionRole)){
+                    executionRole = ECSTaskTemplate.DEFAULT_ECS_TASK_EXECUTION_IAM_ROLE_NAME;
+                    LOGGER.log(Level.FINE, "executionRole was not provided, falling back to default: {0}", executionRole);
+                }
+                request.withExecutionRoleArn(executionRole);
             }
             if (template.getTaskrole() != null) {
                 request.withTaskRoleArn(template.getTaskrole());
