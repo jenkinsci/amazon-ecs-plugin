@@ -35,6 +35,7 @@ import javax.annotation.concurrent.GuardedBy;
 
 import hudson.model.Descriptor;
 import hudson.model.TaskListener;
+import hudson.node_monitors.ResponseTimeMonitor;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
 import hudson.slaves.ComputerLauncher;
@@ -96,6 +97,19 @@ public class ECSSlave extends AbstractCloudSlave {
             // the node.
             if(c.isIdle() && !c.isAcceptingTasks() && node != null) {
                 LOGGER.log(Level.FINE, "Computer is idle and not accepting tasks; terminating it.");
+                try {
+                    node.terminate();
+                } catch (InterruptedException e) {
+                    LOGGER.log(Level.WARNING, "Failed to terminate " + c.getName(), e);
+                } catch (IOException e) {
+                    LOGGER.log(Level.WARNING, "Failed to terminate " + c.getName(), e);
+                }
+            }
+
+            // If the Response Time Monitor has marked this computer as not responding, then
+            // we are going to terminate the node to free up resources.
+            if (c.getOfflineCause() instanceof ResponseTimeMonitor.Data && node != null) {
+                LOGGER.log(Level.FINE, "Computer is not responding; terminating it");
                 try {
                     node.terminate();
                 } catch (InterruptedException e) {
