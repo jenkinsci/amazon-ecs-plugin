@@ -62,8 +62,6 @@ import java.util.*;
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
-    public static final String DEFAULT_ECS_TASK_EXECUTION_IAM_ROLE_NAME = "ecsTaskExecutionRole";
-
     /**
      * Template Name
      */

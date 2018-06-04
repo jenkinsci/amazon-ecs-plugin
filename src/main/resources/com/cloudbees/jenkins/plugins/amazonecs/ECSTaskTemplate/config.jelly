@@ -69,7 +69,7 @@
       <f:textbox />
     </f:entry>
     <f:entry title="${%Task Execution Role ARN}" field="executionRole">
-      <f:textbox />
+      <f:textbox default="ecsTaskExecutionRole"/>
     </f:entry>
     <f:entry title="${%Override entrypoint}" field="entrypoint">
       <f:textbox />
