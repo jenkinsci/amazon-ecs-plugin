@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.16
+- Feature - Added executionRole field for fargate support #62
+- BUG - JENKINS-37597 Remove Tasks which are not responding #63
+
 ## 1.15
 - Feature - Allow using externally-managed task definitions #50
 - Feature - [JENKINS-49020] Add support for Fargate #51
