@@ -303,6 +303,7 @@ public class ECSCloud extends Cloud {
                 final String msg = MessageFormat.format("ECS Slave {0} (ecs task {1}) not connected since {2} seconds",
                         slave.getNodeName(), slave.getTaskArn(), now);
                 LOGGER.log(Level.WARNING, msg);
+                deleteTask(slave.getTaskArn(), slave.getClusterArn());
                 Jenkins.getInstance().removeNode(slave);
                 throw new IllegalStateException(msg);
             }
