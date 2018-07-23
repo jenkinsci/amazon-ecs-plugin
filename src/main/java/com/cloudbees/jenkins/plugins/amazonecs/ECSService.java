@@ -27,9 +27,7 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -162,6 +160,8 @@ class ECSService {
      * If no, register a new task definition with desired parameters and returns the new TaskDefinition.
      */
     TaskDefinition registerTemplate(final ECSCloud cloud, final ECSTaskTemplate template) {
+        Collection<ContainerDefinition> containerDefinitions = new ArrayList<ContainerDefinition>();
+
         final AmazonECSClient client = getAmazonECSClient();
         
         String familyName = fullQualifiedTemplateName(cloud, template);
@@ -175,6 +175,36 @@ class ECSService {
                 .withCpu(template.getCpu())
                 .withPrivileged(template.getPrivileged())
                 .withEssential(true);
+
+
+        containerDefinitions.add(def);
+
+        if(template.getServiceContainers().size() > 0) {
+            ContainerDefinition serviceDef;
+            Iterator<ECSTaskTemplate.ServiceContainerEntry> serviceContainerIterator = template.getServiceContainers().iterator();
+            ArrayList<String> links = new ArrayList<String>();
+
+            while(serviceContainerIterator.hasNext()) {
+                ECSTaskTemplate.ServiceContainerEntry serviceEntry = serviceContainerIterator.next();
+                serviceDef = new ContainerDefinition()
+                        .withName(serviceEntry.getName())
+                        .withImage(serviceEntry.getImage())
+                        .withMountPoints(template.getMountPointEntries())
+                        .withCpu(serviceEntry.cpu)
+                        .withEssential(true);
+
+                if (serviceEntry.memoryReservation > 0) /* this is the soft limit */
+                    serviceDef.withMemoryReservation(serviceEntry.getMemoryReservation());
+
+                if (serviceEntry.memory > 0) /* this is the hard limit */
+                    serviceDef.withMemory(serviceEntry.getMemory());
+
+                links.add(serviceEntry.name);
+                containerDefinitions.add(serviceDef);
+            }
+
+            def.withLinks(links);
+        }
 
         /*
             at least one of memory or memoryReservation has to be set
@@ -220,6 +250,10 @@ class ECSService {
             LOGGER.log(Level.INFO, "Match on container definition: {0}", new Object[] {templateMatchesExistingContainerDefinition});
             LOGGER.log(Level.FINE, "Match on container definition: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingContainerDefinition, def, currentTaskDefinition.getContainerDefinitions().get(0)});
 
+            templateMatchesExistingContainerDefinition = currentTaskDefinition.getContainerDefinitions().containsAll(containerDefinitions);
+            LOGGER.log(Level.INFO, "Match on container defintion: {0}", new Object[] {templateMatchesExistingContainerDefinition});
+            LOGGER.log(Level.FINE, "Match on container defintion: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingContainerDefinition, containerDefinitions, currentTaskDefinition.getContainerDefinitions()});
+            
             templateMatchesExistingVolumes = ObjectUtils.equals(template.getVolumeEntries(), currentTaskDefinition.getVolumes());
             LOGGER.log(Level.INFO, "Match on volumes: {0}", new Object[] {templateMatchesExistingVolumes});
             LOGGER.log(Level.FINE, "Match on volumes: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingVolumes, template.getVolumeEntries(), currentTaskDefinition.getVolumes()});
@@ -240,8 +274,8 @@ class ECSService {
             final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()                
                     .withFamily(familyName)
                     .withVolumes(template.getVolumeEntries())
-                    .withContainerDefinitions(def);
-
+                    .withContainerDefinitions(containerDefinitions);
+            
             if (template.isFargate()) {
                 request
                         .withRequiresCompatibilities(template.getLaunchType())
@@ -363,10 +397,10 @@ class ECSService {
                     }
                 }
 
-                LOGGER.log(Level.INFO, "Instance {0} has {1}mb of free memory. {2}mb are required", new Object[]{ instance.getContainerInstanceArn(), memoryResource.getIntegerValue(), template.getMemoryConstraint()});
-                LOGGER.log(Level.INFO, "Instance {0} has {1} units of free cpu. {2} units are required", new Object[]{ instance.getContainerInstanceArn(), cpuResource.getIntegerValue(), template.getCpu()});
-                if(memoryResource.getIntegerValue() >= template.getMemoryConstraint()
-                        && cpuResource.getIntegerValue() >= template.getCpu()) {
+                LOGGER.log(Level.INFO, "Instance {0} has {1}mb of free memory. {2}mb are required", new Object[]{ instance.getContainerInstanceArn(), memoryResource.getIntegerValue(), template.getTotalMemoryConstraint()});
+                LOGGER.log(Level.INFO, "Instance {0} has {1} units of free cpu. {2} units are required", new Object[]{ instance.getContainerInstanceArn(), cpuResource.getIntegerValue(), template.getTotalCpu()});
+                if(memoryResource.getIntegerValue() >= template.getTotalMemoryConstraint()
+                        && cpuResource.getIntegerValue() >= template.getTotalCpu()) {
                     hasEnoughResources = true;
                     break WHILE;
                 }
@@ -377,7 +411,7 @@ class ECSService {
         } while(!hasEnoughResources && timeout.after(new Date()));
 
         if(!hasEnoughResources) {
-            final String msg = MessageFormat.format("Timeout while waiting for sufficient resources: {0} cpu units, {1}mb free memory", template.getCpu(), template.getMemoryConstraint());
+            final String msg = MessageFormat.format("Timeout while waiting for sufficient resources: {0} cpu units, {1}mb free memory", template.getTotalCpu(), template.getTotalMemoryConstraint());
             LOGGER.log(Level.WARNING, msg);
             throw new AbortException(msg);
         }
