@@ -27,27 +27,23 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-
-
-import com.amazonaws.services.ecs.model.ClientException;
-import com.amazonaws.services.ecs.model.TaskDefinition;
-import org.apache.commons.lang.ObjectUtils;
-import org.apache.commons.lang.StringUtils;
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECSClient;
 import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
+import com.amazonaws.services.ecs.model.ClientException;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.ContainerInstance;
 import com.amazonaws.services.ecs.model.ContainerOverride;
@@ -58,6 +54,8 @@ import com.amazonaws.services.ecs.model.DescribeTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.LaunchType;
+import com.amazonaws.services.ecs.model.ListClustersRequest;
+import com.amazonaws.services.ecs.model.ListClustersResult;
 import com.amazonaws.services.ecs.model.ListContainerInstancesRequest;
 import com.amazonaws.services.ecs.model.ListContainerInstancesResult;
 import com.amazonaws.services.ecs.model.LogConfiguration;
@@ -68,17 +66,13 @@ import com.amazonaws.services.ecs.model.Resource;
 import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
+import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.amazonaws.services.ecs.model.TaskOverride;
-import org.apache.commons.lang.ObjectUtils;
-import org.apache.commons.lang.StringUtils;
-
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.RegionUtils;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.ecs.AmazonECSClient;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
+
+import org.apache.commons.lang.ObjectUtils;
+import org.apache.commons.lang.StringUtils;
 
 import hudson.AbortException;
 import hudson.ProxyConfiguration;
@@ -90,7 +84,7 @@ import jenkins.model.Jenkins;
  * @author Jan Roehrich <jan@roehrich.info>
  *
  */
-class ECSService {
+public class ECSService {
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
 
     private String credentialsId;
@@ -103,10 +97,10 @@ class ECSService {
         this.regionName = regionName;
     }
 
-    AmazonECSClient getAmazonECSClient() {
+    private AmazonECSClient getAmazonECSClient() {
         final AmazonECSClient client;
 
-        ProxyConfiguration proxy = Jenkins.getInstance().proxy;
+        ProxyConfiguration proxy = Jenkins.get().proxy;
         ClientConfiguration clientConfiguration = new ClientConfiguration();
         if(proxy != null) {
             clientConfiguration.setProxyHost(proxy.name);
@@ -126,6 +120,7 @@ class ECSService {
                 String obfuscatedAccessKeyId = StringUtils.left(awsAccessKeyId, 4) + StringUtils.repeat("*", awsAccessKeyId.length() - (2 * 4)) + StringUtils.right(awsAccessKeyId, 4);
                 LOGGER.log(Level.FINE, "Connect to Amazon ECS with IAM Access Key {1}", new Object[]{obfuscatedAccessKeyId});
             }
+            // client = AmazonESCClientBuilder.withClientConfiguration(credentials, clientConfiguration);
             client = new AmazonECSClient(credentials, clientConfiguration);
         }
         client.setRegion(getRegion(regionName));
@@ -133,7 +128,7 @@ class ECSService {
         return client;
     }
 
-    Region getRegion(String regionName) {
+    private Region getRegion(String regionName) {
         if (StringUtils.isNotEmpty(regionName)) {
             return RegionUtils.getRegion(regionName);
         } else {
@@ -143,10 +138,10 @@ class ECSService {
 
     @CheckForNull
     private AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
-        return AWSCredentialsHelper.getCredentials(credentialsId, Jenkins.getActiveInstance());
+        return AWSCredentialsHelper.getCredentials(credentialsId, Jenkins.get());
     }
 
-    void deleteTask(String taskArn, String clusterArn) {
+    public void deleteTask(String taskArn, String clusterArn) {
         final AmazonECSClient client = getAmazonECSClient();
 
         LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
@@ -161,7 +156,7 @@ class ECSService {
      * Looks whether the latest task definition matches the desired one. If yes, returns the full TaskDefinition of the existing one.
      * If no, register a new task definition with desired parameters and returns the new TaskDefinition.
      */
-    TaskDefinition registerTemplate(final ECSCloud cloud, final ECSTaskTemplate template) {
+    public TaskDefinition registerTemplate(final ECSCloud cloud, final ECSTaskTemplate template) {
         final AmazonECSClient client = getAmazonECSClient();
         
         String familyName = fullQualifiedTemplateName(cloud, template);
@@ -267,7 +262,7 @@ class ECSService {
      * Finds the task definition for the specified family or ARN, or null if none is found.
      * The parameter may be a task definition family, family with revision, or full task definition ARN.
      */
-    TaskDefinition findTaskDefinition(String familyOrArn) {
+    public TaskDefinition findTaskDefinition(String familyOrArn) {
         AmazonECSClient client = getAmazonECSClient();
 
         try {
@@ -288,7 +283,7 @@ class ECSService {
         return cloud.getDisplayName().replaceAll("\\s+","") + '-' + template.getTemplateName();
     }
 
-    String runEcsTask(final ECSSlave slave, final ECSTaskTemplate template, String clusterArn, Collection<String> command, TaskDefinition taskDefinition) throws IOException, AbortException {
+    public String runEcsTask(final ECSSlave slave, final ECSTaskTemplate template, String clusterArn, Collection<String> command, TaskDefinition taskDefinition) throws IOException, AbortException {
         AmazonECSClient client = getAmazonECSClient();
         slave.setTaskDefinitonArn(taskDefinition.getTaskDefinitionArn());
 
@@ -342,7 +337,7 @@ class ECSService {
         return runTaskResult.getTasks().get(0).getTaskArn();
     }
 
-    void waitForSufficientClusterResources(Date timeout, ECSTaskTemplate template, String clusterArn) throws InterruptedException, AbortException {
+    public void waitForSufficientClusterResources(Date timeout, ECSTaskTemplate template, String clusterArn) throws InterruptedException, AbortException {
         AmazonECSClient client = getAmazonECSClient();
 
         boolean hasEnoughResources = false;
@@ -382,4 +377,17 @@ class ECSService {
             throw new AbortException(msg);
         }
     }
+
+	public List<String> listClusters() {
+        final AmazonECSClient client = getAmazonECSClient();
+        final List<String> allClusterArns = new ArrayList<String>();
+        String lastToken = null;
+        do {
+            ListClustersResult result = client.listClusters(new ListClustersRequest().withNextToken(lastToken));
+            allClusterArns.addAll(result.getClusterArns());
+            lastToken = result.getNextToken();
+        } while (lastToken != null);
+
+        return allClusterArns;
+	}
 }
