@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -313,13 +315,26 @@ public class ECSCloud extends Cloud {
         }
     }
 
+    private String expandTunnelString(String tunnel) {
+        if(tunnel.contains("{MASTER_IP}")) {
+
+            try {
+                tunnel = tunnel.replace("{MASTER_IP}", InetAddress.getLocalHost().getHostAddress() );
+            }
+            catch(UnknownHostException e) {
+                LOGGER.log(Level.WARNING, "Failed to resolve address of master host for tunnel.", e);
+            }
+        }
+        return tunnel;
+    }
+
     private Collection<String> getDockerRunCommand(ECSSlave slave) {
         Collection<String> command = new ArrayList<String>();
         command.add("-url");
         command.add(jenkinsUrl);
         if (StringUtils.isNotBlank(tunnel)) {
             command.add("-tunnel");
-            command.add(tunnel);
+            command.add( expandTunnelString(tunnel) );
         }
         command.add(slave.getComputer().getJnlpMac());
         command.add(slave.getComputer().getName());
