@@ -242,7 +242,7 @@ class ECSService {
                     .withVolumes(template.getVolumeEntries())
                     .withContainerDefinitions(def);
 
-            if (template.isFargate()) {
+            if (template.isFargate() || template.getAwsVpcNetworkMode()) {
                 request
                         .withRequiresCompatibilities(template.getLaunchType())
                         .withNetworkMode("awsvpc")
@@ -318,7 +318,7 @@ class ECSService {
                                 .withEnvironment(envNodeSecret)))
                 .withCluster(clusterArn);
 
-        if (template.isFargate()) {
+        if (template.isFargate() || template.getAwsVpcNetworkMode()) {
             AwsVpcConfiguration awsVpcConfiguration = new AwsVpcConfiguration();
             awsVpcConfiguration.setAssignPublicIp(template.getAssignPublicIp() ? "ENABLED" : "DISABLED");
             awsVpcConfiguration.setSecurityGroups(Arrays.asList(template.getSecurityGroups().split(",")));

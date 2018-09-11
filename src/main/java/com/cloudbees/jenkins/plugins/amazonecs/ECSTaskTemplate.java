@@ -203,6 +203,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private final String launchType;
 
     /**
+     * Indicates whether the task should run in awsvpc network mode
+     */
+    private final boolean awsVpcNetworkMode;
+
+    /**
      * Indicates whether the container should run in privileged mode
      */
     private final boolean privileged;
@@ -250,6 +255,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nullable String subnets,
                            @Nullable String securityGroups,
                            boolean assignPublicIp,
+                           boolean awsVpcNetworkMode,
                            boolean privileged,
                            @Nullable String containerUser,
                            @Nullable List<LogDriverOption> logDriverOptions,
@@ -282,6 +288,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.subnets = subnets;
         this.securityGroups = securityGroups;
         this.assignPublicIp = assignPublicIp;
+        this.awsVpcNetworkMode = awsVpcNetworkMode;
         this.privileged = privileged;
         this.containerUser = StringUtils.trimToNull(containerUser);
         this.logDriverOptions = logDriverOptions;
@@ -334,6 +341,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
     public boolean isFargate() {
         return StringUtils.trimToNull(this.launchType) != null && launchType.equals(LaunchType.FARGATE.toString());
+    }
+
+    public boolean getAwsVpcNetworkMode() {
+        return awsVpcNetworkMode;
     }
 
     public String getLabel() {
