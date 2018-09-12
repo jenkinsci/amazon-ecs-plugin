@@ -103,13 +103,13 @@ public class ECSCloud extends Cloud {
 
     private int slaveTimoutInSeconds;
 
-    private boolean exceedingClusterResourcesAllowed;
+    private String insufficientResourcesCloudWatchAlarm;
 
     private ECSService ecsService;
 
     @DataBoundConstructor
     public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId,
-            String cluster, String regionName, String jenkinsUrl, int slaveTimoutInSeconds, boolean exceedingClusterResourcesAllowed) throws InterruptedException{
+            String cluster, String regionName, String jenkinsUrl, int slaveTimoutInSeconds, String insufficientResourcesCloudWatchAlarm) throws InterruptedException{
         super(name);
         this.credentialsId = credentialsId;
         this.cluster = cluster;
@@ -129,7 +129,7 @@ public class ECSCloud extends Cloud {
             this.slaveTimoutInSeconds = DEFAULT_SLAVE_TIMEOUT;
         }
 
-        this.exceedingClusterResourcesAllowed = exceedingClusterResourcesAllowed;
+        this.insufficientResourcesCloudWatchAlarm = insufficientResourcesCloudWatchAlarm;
     }
 
     synchronized ECSService getEcsService() {
@@ -229,12 +229,12 @@ public class ECSCloud extends Cloud {
         this.slaveTimoutInSeconds = slaveTimoutInSeconds;
     }
 
-    public boolean getExceedingClusterResourcesAllowed() {
-        return exceedingClusterResourcesAllowed;
+    public String getInsufficientResourcesCloudWatchAlarm() {
+        return insufficientResourcesCloudWatchAlarm;
     }
 
-    public void setExceedingClusterResourcesAllowed(boolean exceedingClusterResourcesAllowed) {
-        this.exceedingClusterResourcesAllowed = exceedingClusterResourcesAllowed;
+    public void setInsufficientResourcesCloudWatchAlarm(String insufficientResourcesCloudWatchAlarm) {
+        this.insufficientResourcesCloudWatchAlarm = insufficientResourcesCloudWatchAlarm;
     }
 
 
@@ -256,8 +256,8 @@ public class ECSCloud extends Cloud {
             Date timeout = new Date(now.getTime() + 1000 * slaveTimoutInSeconds);
 
             synchronized (cluster) {
-                if (!exceedingClusterResourcesAllowed && !template.isFargate()){
-                    getEcsService().waitForSufficientClusterResources(timeout, template, cluster);
+                if (!template.isFargate()){
+                    getEcsService().waitForSufficientClusterResources(timeout, template, cluster, insufficientResourcesCloudWatchAlarm);
                 }
 
 

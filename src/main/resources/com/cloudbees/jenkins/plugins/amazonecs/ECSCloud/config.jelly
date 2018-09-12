@@ -51,8 +51,8 @@
     <f:entry field="slaveTimoutInSeconds" title="${%ECS task creation timeout}" description="Timeout (in second) for ECS task to be created, usefull if you use large docker slave image, because the host will take more time to pull the docker image">
       <f:textbox />
     </f:entry>
-    <f:entry field="exceedingClusterResourcesAllowed" title="${%Exceeding cluster resources is allowed}" description="If enabled then Jenkins will not wait until the cluster has sufficient free resources before scheduling new tasks. It is recommended to enable this if your cluster auto scales based on CPU or memory reservation. Has no effect for Fargate tasks.">
-      <f:checkbox />
+    <f:entry field="insufficientResourcesCloudWatchAlarm" title="${%CloudWatch alarm for insufficient ECS cluster resources}" description="Name of a CloudWatch alarm to signal when the ECS cluster does not have enough free resources to handle all scheduled tasks. This is never signalled for ECS clusters of the Fargate type.">
+      <f:textbox />
     </f:entry>
   </f:advanced>
 
