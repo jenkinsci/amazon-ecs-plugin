@@ -33,6 +33,7 @@ import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.List;
+import java.time.Instant;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -370,15 +371,50 @@ class ECSService {
         return runTaskResult.getTasks().get(0).getTaskArn();
     }
 
-    void waitForSufficientClusterResources(Date timeout, ECSTaskTemplate template, String clusterArn) throws InterruptedException, AbortException {
-        waitForSufficientClusterResources(timeout, template, clusterArn, "");
+    void performedInsufficientResourcesAction(String action)
+    {
+        int     sepIndex = action.indexOf(':');
+        String  type;
+        String  value;
+        if(sepIndex!=-1) {
+            type = action.substring(0, sepIndex);
+            value = action.substring(sepIndex+1);
+        } else {
+            type = "";
+            value = "";
+        }
+
+        if(type=="CloudWatchAlarm") {
+            try {
+                SetAlarmStateRequest alarmRequest = new SetAlarmStateRequest();
+                alarmRequest.setAlarmName(value);
+                alarmRequest.setStateReason("Jenkins master detected insufficient cluster resources.");
+                alarmRequest.setStateValue(StateValue.ALARM);
+
+                getAmazonCloudWatchClient().setAlarmState( alarmRequest );        
+
+                LOGGER.log(Level.INFO, "Signalled CloudWatch alarm: " + value);                    
+            }
+            catch(Exception e) {
+                LOGGER.log(Level.SEVERE, "Couldn't signal CloudWatch alarm " + value + ": " + e.getMessage(), e);                    
+            }
+        } else {
+            LOGGER.log(Level.SEVERE, "Unknown action type '"+type+"' in action: "+action);                    
+        }
     }
 
-    void waitForSufficientClusterResources(Date timeout, ECSTaskTemplate template, String clusterArn, String insufficientResourcesCloudWatchAlarm) throws InterruptedException, AbortException {
+
+
+    void waitForSufficientClusterResources(Date timeout, ECSTaskTemplate template, String clusterArn) throws InterruptedException, AbortException {
+        waitForSufficientClusterResources(timeout, template, clusterArn, -1, "");
+    }
+
+    void waitForSufficientClusterResources(Date timeout, ECSTaskTemplate template, String clusterArn, int insufficientResourcesSeconds, String insufficientResourcesAction) throws InterruptedException, AbortException {
         AmazonECSClient client = getAmazonECSClient();
 
         boolean hasEnoughResources = false;
-        boolean didSignalAlarm = false;
+        boolean performedInsufficientAction = false;
+        Instant insufficientActionTime = null;
         WHILE:
         do {
             ListContainerInstancesResult listContainerInstances = client.listContainerInstances(new ListContainerInstancesRequest().withCluster(clusterArn));
@@ -410,22 +446,20 @@ class ECSService {
                 }
             }
 
-            if( StringUtils.isNotEmpty(insufficientResourcesCloudWatchAlarm) && !didSignalAlarm) {
+            if( StringUtils.isNotEmpty(insufficientResourcesAction) && insufficientResourcesSeconds>=0 && !performedInsufficientAction) {
 
-                LOGGER.log(Level.INFO, "ECS cluster has insufficient resources. Signalling CloudWatch alarm: "+insufficientResourcesCloudWatchAlarm);
+                if(insufficientActionTime==null)
+                    insufficientActionTime = Instant.now().plusSeconds(insufficientResourcesSeconds);
 
-                try {
-                    SetAlarmStateRequest alarmRequest = new SetAlarmStateRequest();
-                    alarmRequest.setAlarmName(insufficientResourcesCloudWatchAlarm);
-                    alarmRequest.setStateReason("Jenkins master detected insufficient cluster resources.");
-                    alarmRequest.setStateValue(StateValue.ALARM);
+                LOGGER.log(Level.INFO, "ECS cluster has insufficient resources.");
 
-                    getAmazonCloudWatchClient().setAlarmState( alarmRequest );        
+                if( ! Instant.now().isBefore(insufficientActionTime) )
+                {
+                    LOGGER.log(Level.INFO, "Resources were insufficient for at least {0} seconds. Performing action: {1}.", new Object[]{ insufficientResourcesSeconds, insufficientResourcesAction});
 
-                    didSignalAlarm = true;
-                }
-                catch(Exception e) {
-                    LOGGER.log(Level.SEVERE, "Couldn't signal CloudWatch alarm " + insufficientResourcesCloudWatchAlarm + ": " + e.getMessage(), e);                    
+                    performedInsufficientResourcesAction(insufficientResourcesAction);
+
+                    performedInsufficientAction = true;
                 }
             }
 

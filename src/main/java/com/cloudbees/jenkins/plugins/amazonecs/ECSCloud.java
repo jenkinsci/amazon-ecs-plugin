@@ -103,13 +103,14 @@ public class ECSCloud extends Cloud {
 
     private int slaveTimoutInSeconds;
 
-    private String insufficientResourcesCloudWatchAlarm;
+    private int insufficientResourcesSeconds;
+    private String insufficientResourcesAction;
 
     private ECSService ecsService;
 
     @DataBoundConstructor
     public ECSCloud(String name, List<ECSTaskTemplate> templates, @Nonnull String credentialsId,
-            String cluster, String regionName, String jenkinsUrl, int slaveTimoutInSeconds, String insufficientResourcesCloudWatchAlarm) throws InterruptedException{
+            String cluster, String regionName, String jenkinsUrl, int slaveTimoutInSeconds, int insufficientResourcesSeconds, String insufficientResourcesAction) throws InterruptedException{
         super(name);
         this.credentialsId = credentialsId;
         this.cluster = cluster;
@@ -129,7 +130,8 @@ public class ECSCloud extends Cloud {
             this.slaveTimoutInSeconds = DEFAULT_SLAVE_TIMEOUT;
         }
 
-        this.insufficientResourcesCloudWatchAlarm = insufficientResourcesCloudWatchAlarm;
+        this.insufficientResourcesSeconds = insufficientResourcesSeconds;
+        this.insufficientResourcesAction = insufficientResourcesAction;
     }
 
     synchronized ECSService getEcsService() {
@@ -229,12 +231,20 @@ public class ECSCloud extends Cloud {
         this.slaveTimoutInSeconds = slaveTimoutInSeconds;
     }
 
-    public String getInsufficientResourcesCloudWatchAlarm() {
-        return insufficientResourcesCloudWatchAlarm;
+    public int getInsufficientResourcesSeconds() {
+        return insufficientResourcesSeconds;
     }
 
-    public void setInsufficientResourcesCloudWatchAlarm(String insufficientResourcesCloudWatchAlarm) {
-        this.insufficientResourcesCloudWatchAlarm = insufficientResourcesCloudWatchAlarm;
+    public void setInsufficientResourcesSeconds(int actions) {
+        this.insufficientResourcesSeconds = insufficientResourcesSeconds;
+    }
+
+    public String getInsufficientResourcesAction() {
+        return insufficientResourcesAction;
+    }
+
+    public void setInsufficientResourcesAction(String actions) {
+        this.insufficientResourcesAction = insufficientResourcesAction;
     }
 
 
@@ -257,7 +267,7 @@ public class ECSCloud extends Cloud {
 
             synchronized (cluster) {
                 if (!template.isFargate()){
-                    getEcsService().waitForSufficientClusterResources(timeout, template, cluster, insufficientResourcesCloudWatchAlarm);
+                    getEcsService().waitForSufficientClusterResources(timeout, template, cluster, insufficientResourcesSeconds, insufficientResourcesAction);
                 }
 
 
