@@ -384,7 +384,7 @@ class ECSService {
             value = "";
         }
 
-        if(type=="CloudWatchAlarm") {
+        if(type.equals("CloudWatchAlarm") ) {
             try {
                 SetAlarmStateRequest alarmRequest = new SetAlarmStateRequest();
                 alarmRequest.setAlarmName(value);
