@@ -32,6 +32,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.List;
+import java.time.Instant;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -69,6 +71,9 @@ import com.amazonaws.services.ecs.model.RunTaskRequest;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.StopTaskRequest;
 import com.amazonaws.services.ecs.model.TaskOverride;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchClient;
+import com.amazonaws.services.cloudwatch.model.SetAlarmStateRequest;
+import com.amazonaws.services.cloudwatch.model.StateValue;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -130,6 +135,30 @@ class ECSService {
         }
         client.setRegion(getRegion(regionName));
         LOGGER.log(Level.FINE, "Selected Region: {0}", regionName);
+        return client;
+    }
+
+    AmazonCloudWatchClient getAmazonCloudWatchClient() {
+        final AmazonCloudWatchClient client;
+
+        ProxyConfiguration proxy = Jenkins.getInstance().proxy;
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        if(proxy != null) {
+            clientConfiguration.setProxyHost(proxy.name);
+            clientConfiguration.setProxyPort(proxy.port);
+            clientConfiguration.setProxyUsername(proxy.getUserName());
+            clientConfiguration.setProxyPassword(proxy.getPassword());
+        }
+
+        AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
+        if (credentials == null) {
+            // no credentials provided, rely on com.amazonaws.auth.DefaultAWSCredentialsProviderChain
+            // to use IAM Role define at the EC2 instance level ...
+            client = new AmazonCloudWatchClient(clientConfiguration);
+        } else {
+            client = new AmazonCloudWatchClient(credentials, clientConfiguration);
+        }
+        client.setRegion(getRegion(regionName));
         return client;
     }
 
@@ -342,35 +371,98 @@ class ECSService {
         return runTaskResult.getTasks().get(0).getTaskArn();
     }
 
+    void performedInsufficientResourcesAction(String action)
+    {
+        int     sepIndex = action.indexOf(':');
+        String  type;
+        String  value;
+        if(sepIndex!=-1) {
+            type = action.substring(0, sepIndex);
+            value = action.substring(sepIndex+1);
+        } else {
+            type = "";
+            value = "";
+        }
+
+        if(type.equals("CloudWatchAlarm") ) {
+            try {
+                SetAlarmStateRequest alarmRequest = new SetAlarmStateRequest();
+                alarmRequest.setAlarmName(value);
+                alarmRequest.setStateReason("Jenkins master detected insufficient cluster resources.");
+                alarmRequest.setStateValue(StateValue.ALARM);
+
+                getAmazonCloudWatchClient().setAlarmState( alarmRequest );        
+
+                LOGGER.log(Level.INFO, "Signalled CloudWatch alarm: " + value);                    
+            }
+            catch(Exception e) {
+                LOGGER.log(Level.SEVERE, "Couldn't signal CloudWatch alarm " + value + ": " + e.getMessage(), e);                    
+            }
+        } else {
+            LOGGER.log(Level.SEVERE, "Unknown action type '"+type+"' in action: "+action);                    
+        }
+    }
+
+
+
     void waitForSufficientClusterResources(Date timeout, ECSTaskTemplate template, String clusterArn) throws InterruptedException, AbortException {
+        waitForSufficientClusterResources(timeout, template, clusterArn, -1, "");
+    }
+
+    void waitForSufficientClusterResources(Date timeout, ECSTaskTemplate template, String clusterArn, int insufficientResourcesSeconds, String insufficientResourcesAction) throws InterruptedException, AbortException {
         AmazonECSClient client = getAmazonECSClient();
 
         boolean hasEnoughResources = false;
+        boolean performedInsufficientAction = false;
+        Instant insufficientActionTime = null;
         WHILE:
         do {
             ListContainerInstancesResult listContainerInstances = client.listContainerInstances(new ListContainerInstancesRequest().withCluster(clusterArn));
-            DescribeContainerInstancesResult containerInstancesDesc = client.describeContainerInstances(new DescribeContainerInstancesRequest().withContainerInstances(listContainerInstances.getContainerInstanceArns()).withCluster(clusterArn));
-            LOGGER.log(Level.INFO, "Found {0} instances", containerInstancesDesc.getContainerInstances().size());
-            for(ContainerInstance instance : containerInstancesDesc.getContainerInstances()) {
-                LOGGER.log(Level.INFO, "Resources found in instance {1}: {0}", new Object[] {instance.getRemainingResources(), instance.getContainerInstanceArn()});
-                Resource memoryResource = null;
-                Resource cpuResource = null;
-                for(Resource resource : instance.getRemainingResources()) {
-                    if("MEMORY".equals(resource.getName())) {
-                        memoryResource = resource;
-                    } else if("CPU".equals(resource.getName())) {
-                        cpuResource = resource;
+            List<String> instanceArns = listContainerInstances.getContainerInstanceArns();
+            if(instanceArns.isEmpty()) {
+                LOGGER.log(Level.INFO, "Found no instances.");
+            } else {
+                DescribeContainerInstancesResult containerInstancesDesc = client.describeContainerInstances(new DescribeContainerInstancesRequest().withContainerInstances(instanceArns).withCluster(clusterArn));
+                LOGGER.log(Level.INFO, "Found {0} instances", containerInstancesDesc.getContainerInstances().size());
+                for(ContainerInstance instance : containerInstancesDesc.getContainerInstances()) {
+                    LOGGER.log(Level.INFO, "Resources found in instance {1}: {0}", new Object[] {instance.getRemainingResources(), instance.getContainerInstanceArn()});
+                    Resource memoryResource = null;
+                    Resource cpuResource = null;
+                    for(Resource resource : instance.getRemainingResources()) {
+                        if("MEMORY".equals(resource.getName())) {
+                            memoryResource = resource;
+                        } else if("CPU".equals(resource.getName())) {
+                            cpuResource = resource;
+                        }
+                    }
+
+                    LOGGER.log(Level.INFO, "Instance {0} has {1}mb of free memory. {2}mb are required", new Object[]{ instance.getContainerInstanceArn(), memoryResource.getIntegerValue(), template.getMemoryConstraint()});
+                    LOGGER.log(Level.INFO, "Instance {0} has {1} units of free cpu. {2} units are required", new Object[]{ instance.getContainerInstanceArn(), cpuResource.getIntegerValue(), template.getCpu()});
+                    if(memoryResource.getIntegerValue() >= template.getMemoryConstraint()
+                            && cpuResource.getIntegerValue() >= template.getCpu()) {
+                        hasEnoughResources = true;
+                        break WHILE;
                     }
                 }
+            }
 
-                LOGGER.log(Level.INFO, "Instance {0} has {1}mb of free memory. {2}mb are required", new Object[]{ instance.getContainerInstanceArn(), memoryResource.getIntegerValue(), template.getMemoryConstraint()});
-                LOGGER.log(Level.INFO, "Instance {0} has {1} units of free cpu. {2} units are required", new Object[]{ instance.getContainerInstanceArn(), cpuResource.getIntegerValue(), template.getCpu()});
-                if(memoryResource.getIntegerValue() >= template.getMemoryConstraint()
-                        && cpuResource.getIntegerValue() >= template.getCpu()) {
-                    hasEnoughResources = true;
-                    break WHILE;
+            if( StringUtils.isNotEmpty(insufficientResourcesAction) && insufficientResourcesSeconds>=0 && !performedInsufficientAction) {
+
+                if(insufficientActionTime==null)
+                    insufficientActionTime = Instant.now().plusSeconds(insufficientResourcesSeconds);
+
+                LOGGER.log(Level.INFO, "ECS cluster has insufficient resources.");
+
+                if( ! Instant.now().isBefore(insufficientActionTime) )
+                {
+                    LOGGER.log(Level.INFO, "Resources were insufficient for at least {0} seconds. Performing action: {1}.", new Object[]{ insufficientResourcesSeconds, insufficientResourcesAction});
+
+                    performedInsufficientResourcesAction(insufficientResourcesAction);
+
+                    performedInsufficientAction = true;
                 }
             }
+
 
             // sleep 10s and check memory again
             Thread.sleep(10000);

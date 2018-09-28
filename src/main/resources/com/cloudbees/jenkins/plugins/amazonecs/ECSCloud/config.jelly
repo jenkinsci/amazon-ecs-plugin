@@ -51,6 +51,14 @@
     <f:entry field="slaveTimoutInSeconds" title="${%ECS task creation timeout}" description="Timeout (in second) for ECS task to be created, usefull if you use large docker slave image, because the host will take more time to pull the docker image">
       <f:textbox />
     </f:entry>
+    <f:entry field="insufficientResourcesSeconds" title="${%When insufficient resources for seconds}" description="When there are not enough resources in the ECS cluster to handle a build then Jenkins waits for this number of seconds before it triggers the action indicated below. This has no effect for clusters with the Fargate launch type.">
+      <f:textbox />
+    </f:entry>
+    <f:entry field="insufficientResourcesAction" title="${%then do this action}" description="Describes an action to perform when Jenkins has been waiting for sufficient ECS cluster resources for the amount of time specified above. Right now the action can only be 'CloudWatchAlarm:ALARMNAME' (which triggers the CloudWatch alarm with the specified name).">
+      <f:textbox />
+    </f:entry>
+    
+    
   </f:advanced>
 
   <f:entry title="${%ECS slave templates}">
