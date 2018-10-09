@@ -23,6 +23,8 @@
   ~
   -->
 
-Allocates an Elastic Network Interface to the task. If using the <b>Fargate</b> launch type, this is implied.
-
-See <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-networking.html" target="_blank">Task Networking with the awsvpc Network Mode</a> for details.
+The network mode to apply to the task. See <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#network_mode" target="_blank">Network Mode</a> for more details.</br>
+</br>
+If using <b>awsvpc</b>, you must specify <b>Subnets</b> and can optionally specify <b>Security Groups</b> and <b>Assign Public IP</b>.<br>
+<br>
+Using the <b>none</b> mode will result in your slave having no network connectivity.

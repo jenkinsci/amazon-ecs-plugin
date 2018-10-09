@@ -25,16 +25,7 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
-import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
-import com.amazonaws.services.ecs.model.ContainerDefinition;
-import com.amazonaws.services.ecs.model.HostEntry;
-import com.amazonaws.services.ecs.model.PortMapping;
-import com.amazonaws.services.ecs.model.Volume;
-import com.amazonaws.services.ecs.model.HostVolumeProperties;
-import com.amazonaws.services.ecs.model.KeyValuePair;
-import com.amazonaws.services.ecs.model.LaunchType;
-import com.amazonaws.services.ecs.model.MountPoint;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.*;
 import com.amazonaws.services.ecs.model.Volume;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
@@ -203,9 +194,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private final String launchType;
 
     /**
-     * Indicates whether the task should run in awsvpc network mode
+     * Task network mode
      */
-    private final boolean awsVpcNetworkMode;
+    @Nonnull
+    private final String networkMode;
 
     /**
      * Indicates whether the container should run in privileged mode
@@ -248,6 +240,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nullable String taskDefinitionOverride,
                            @Nonnull String image,
                            @Nonnull String launchType,
+                           @Nonnull String networkMode,
                            @Nullable String remoteFSRoot,
                            int memory,
                            int memoryReservation,
@@ -255,7 +248,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nullable String subnets,
                            @Nullable String securityGroups,
                            boolean assignPublicIp,
-                           boolean awsVpcNetworkMode,
                            boolean privileged,
                            @Nullable String containerUser,
                            @Nullable List<LogDriverOption> logDriverOptions,
@@ -285,10 +277,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.memoryReservation = memoryReservation;
         this.cpu = cpu;
         this.launchType = launchType;
+        this.networkMode = networkMode;
         this.subnets = subnets;
         this.securityGroups = securityGroups;
         this.assignPublicIp = assignPublicIp;
-        this.awsVpcNetworkMode = awsVpcNetworkMode;
         this.privileged = privileged;
         this.containerUser = StringUtils.trimToNull(containerUser);
         this.logDriverOptions = logDriverOptions;
@@ -343,8 +335,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return StringUtils.trimToNull(this.launchType) != null && launchType.equals(LaunchType.FARGATE.toString());
     }
 
-    public boolean getAwsVpcNetworkMode() {
-        return awsVpcNetworkMode;
+    public boolean isAwsVpcNetworkMode() {
+        return launchType.equals(LaunchType.FARGATE.toString()) || networkMode.equals(NetworkMode.Awsvpc.toString());
     }
 
     public String getLabel() {
@@ -420,6 +412,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             return LaunchType.EC2.toString();
         }
         return launchType;
+    }
+
+    public String getNetworkMode() {
+        if (StringUtils.trimToNull(this.networkMode) == null) {
+            return NetworkMode.Bridge.toString();
+        }
+        return networkMode;
     }
 
     public String getLogDriver() {
@@ -709,6 +708,14 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             return options;
         }
 
+        public ListBoxModel doFillNetworkModeItems() {
+            final ListBoxModel options = new ListBoxModel();
+            for (NetworkMode networkMode: NetworkMode.values()) {
+                options.add(networkMode.toString());
+            }
+            return options;
+        }
+
         public FormValidation doCheckTemplateName(@QueryParameter String value) throws IOException, ServletException {
             if (value.length() > 0 && value.length() <= 127 && value.matches(TEMPLATE_NAME_PATTERN)) {
                 return FormValidation.ok();
@@ -716,9 +723,16 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             return FormValidation.error("Up to 127 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed");
         }
 
-        public FormValidation doCheckSubnets(@QueryParameter("subnets") String subnets, @QueryParameter("launchType") String launchType) throws IOException, ServletException {
-            if (launchType.equals("FARGATE") && subnets.isEmpty()) {
+        public FormValidation doCheckSubnetsLaunchType(@QueryParameter("subnets") String subnets, @QueryParameter("launchType") String launchType) throws IOException, ServletException {
+            if (launchType.contentEquals(LaunchType.FARGATE.toString())) {
                 return FormValidation.error("Subnets need to be set, when using FARGATE");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckSubnetsNetworkMode(@QueryParameter("subnets") String subnets, @QueryParameter("networkMode") String networkMode) throws IOException, ServletException {
+            if (networkMode.equals(NetworkMode.Awsvpc.toString()) && subnets.isEmpty()) {
+                return FormValidation.error("Subnets need to be set when using awsvpc network mode");
             }
             return FormValidation.ok();
         }
