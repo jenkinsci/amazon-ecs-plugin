@@ -160,7 +160,6 @@ class ECSService {
         if (template.getMemoryReservation() > 0) /* this is the soft limit */
             def.withMemoryReservation(template.getMemoryReservation());
 
-
         if (template.getMemory() > 0) /* this is the hard limit */
             def.withMemory(template.getMemory());
 
@@ -191,6 +190,7 @@ class ECSService {
         boolean templateMatchesExistingVolumes = false;
         boolean templateMatchesExistingTaskRole = false;
         boolean templateMatchesExistingExecutionRole = false;
+        boolean templateMatchesExistingNetworkMode = false;
 
         if (currentTaskDefinition != null) {
             templateMatchesExistingContainerDefinition = def.equals(currentTaskDefinition.getContainerDefinitions().get(0));
@@ -208,9 +208,13 @@ class ECSService {
             templateMatchesExistingExecutionRole = template.getExecutionRole() == null || template.getExecutionRole().equals(currentTaskDefinition.getExecutionRoleArn());
             LOGGER.log(Level.INFO, "Match on execution role: {0}", new Object[] {templateMatchesExistingExecutionRole});
             LOGGER.log(Level.FINE, "Match on execution role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingExecutionRole, template.getExecutionRole(), currentTaskDefinition.getExecutionRoleArn()});
+
+            templateMatchesExistingNetworkMode = template.getNetworkMode() == null || template.getNetworkMode().equals(currentTaskDefinition.getNetworkMode());
+            LOGGER.log(Level.INFO, "Match on network mode: {0}", new Object[] {templateMatchesExistingNetworkMode});
+            LOGGER.log(Level.FINE, "Match on network mode: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingNetworkMode, template.getNetworkMode(), currentTaskDefinition.getNetworkMode()});
         }
         
-        if(templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole && templateMatchesExistingExecutionRole) {
+        if(templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole && templateMatchesExistingExecutionRole && templateMatchesExistingNetworkMode) {
             LOGGER.log(Level.FINE, "Task Definition already exists: {0}", new Object[]{currentTaskDefinition.getTaskDefinitionArn()});
             return currentTaskDefinition;
         } else {
