@@ -37,8 +37,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 
-import com.amazonaws.services.ecs.model.ClientException;
-import com.amazonaws.services.ecs.model.TaskDefinition;
+import com.amazonaws.services.ecs.model.*;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -47,28 +46,6 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECSClient;
-import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
-import com.amazonaws.services.ecs.model.ContainerDefinition;
-import com.amazonaws.services.ecs.model.ContainerInstance;
-import com.amazonaws.services.ecs.model.ContainerOverride;
-import com.amazonaws.services.ecs.model.DescribeContainerInstancesRequest;
-import com.amazonaws.services.ecs.model.DescribeContainerInstancesResult;
-import com.amazonaws.services.ecs.model.DescribeTaskDefinitionRequest;
-import com.amazonaws.services.ecs.model.DescribeTaskDefinitionResult;
-import com.amazonaws.services.ecs.model.Failure;
-import com.amazonaws.services.ecs.model.KeyValuePair;
-import com.amazonaws.services.ecs.model.LaunchType;
-import com.amazonaws.services.ecs.model.ListContainerInstancesRequest;
-import com.amazonaws.services.ecs.model.ListContainerInstancesResult;
-import com.amazonaws.services.ecs.model.LogConfiguration;
-import com.amazonaws.services.ecs.model.NetworkConfiguration;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
-import com.amazonaws.services.ecs.model.Resource;
-import com.amazonaws.services.ecs.model.RunTaskRequest;
-import com.amazonaws.services.ecs.model.RunTaskResult;
-import com.amazonaws.services.ecs.model.StopTaskRequest;
-import com.amazonaws.services.ecs.model.TaskOverride;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -183,7 +160,6 @@ class ECSService {
         if (template.getMemoryReservation() > 0) /* this is the soft limit */
             def.withMemoryReservation(template.getMemoryReservation());
 
-
         if (template.getMemory() > 0) /* this is the hard limit */
             def.withMemory(template.getMemory());
 
@@ -214,6 +190,7 @@ class ECSService {
         boolean templateMatchesExistingVolumes = false;
         boolean templateMatchesExistingTaskRole = false;
         boolean templateMatchesExistingExecutionRole = false;
+        boolean templateMatchesExistingNetworkMode = false;
 
         if (currentTaskDefinition != null) {
             templateMatchesExistingContainerDefinition = def.equals(currentTaskDefinition.getContainerDefinitions().get(0));
@@ -231,14 +208,19 @@ class ECSService {
             templateMatchesExistingExecutionRole = template.getExecutionRole() == null || template.getExecutionRole().equals(currentTaskDefinition.getExecutionRoleArn());
             LOGGER.log(Level.INFO, "Match on execution role: {0}", new Object[] {templateMatchesExistingExecutionRole});
             LOGGER.log(Level.FINE, "Match on execution role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingExecutionRole, template.getExecutionRole(), currentTaskDefinition.getExecutionRoleArn()});
+
+            templateMatchesExistingNetworkMode = template.getNetworkMode() == null || template.getNetworkMode().equals(currentTaskDefinition.getNetworkMode());
+            LOGGER.log(Level.INFO, "Match on network mode: {0}", new Object[] {templateMatchesExistingNetworkMode});
+            LOGGER.log(Level.FINE, "Match on network mode: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingNetworkMode, template.getNetworkMode(), currentTaskDefinition.getNetworkMode()});
         }
         
-        if(templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole && templateMatchesExistingExecutionRole) {
+        if(templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole && templateMatchesExistingExecutionRole && templateMatchesExistingNetworkMode) {
             LOGGER.log(Level.FINE, "Task Definition already exists: {0}", new Object[]{currentTaskDefinition.getTaskDefinitionArn()});
             return currentTaskDefinition;
         } else {
             final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()                
                     .withFamily(familyName)
+                    .withNetworkMode(template.getNetworkMode())
                     .withVolumes(template.getVolumeEntries())
                     .withContainerDefinitions(def);
 
@@ -318,7 +300,7 @@ class ECSService {
                                 .withEnvironment(envNodeSecret)))
                 .withCluster(clusterArn);
 
-        if (template.isFargate()) {
+        if (template.isAwsVpcNetworkMode() || taskDefinition.getNetworkMode().equals("awsvpc")) {
             AwsVpcConfiguration awsVpcConfiguration = new AwsVpcConfiguration();
             awsVpcConfiguration.setAssignPublicIp(template.getAssignPublicIp() ? "ENABLED" : "DISABLED");
             awsVpcConfiguration.setSecurityGroups(Arrays.asList(template.getSecurityGroups().split(",")));
