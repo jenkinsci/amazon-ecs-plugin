@@ -93,6 +93,11 @@
 			<artifactId>aws-credentials</artifactId>
 			<version>1.23</version>
 		</dependency>
+		<dependency> <!-- OnceRetentionStrategy -->
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>durable-task</artifactId>
+			<version>1.16</version>
+		</dependency>
 	</dependencies>
 
 </project>
