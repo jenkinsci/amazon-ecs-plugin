@@ -201,15 +201,15 @@ class ECSService {
             LOGGER.log(Level.INFO, "Match on volumes: {0}", new Object[] {templateMatchesExistingVolumes});
             LOGGER.log(Level.FINE, "Match on volumes: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingVolumes, template.getVolumeEntries(), currentTaskDefinition.getVolumes()});
 
-            templateMatchesExistingTaskRole = template.getTaskrole() == null || template.getTaskrole().equals(currentTaskDefinition.getTaskRoleArn());
+            templateMatchesExistingTaskRole = StringUtils.equals(StringUtils.defaultString(template.getTaskrole()), StringUtils.defaultString(currentTaskDefinition.getTaskRoleArn()));
             LOGGER.log(Level.INFO, "Match on task role: {0}", new Object[] {templateMatchesExistingTaskRole});
             LOGGER.log(Level.FINE, "Match on task role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingTaskRole, template.getTaskrole(), currentTaskDefinition.getTaskRoleArn()});
 
-            templateMatchesExistingExecutionRole = template.getExecutionRole() == null || template.getExecutionRole().equals(currentTaskDefinition.getExecutionRoleArn());
+            templateMatchesExistingExecutionRole = StringUtils.equals(StringUtils.defaultString(template.getExecutionRole()), StringUtils.defaultString(currentTaskDefinition.getExecutionRoleArn()));
             LOGGER.log(Level.INFO, "Match on execution role: {0}", new Object[] {templateMatchesExistingExecutionRole});
             LOGGER.log(Level.FINE, "Match on execution role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingExecutionRole, template.getExecutionRole(), currentTaskDefinition.getExecutionRoleArn()});
 
-            templateMatchesExistingNetworkMode = template.getNetworkMode() == null || template.getNetworkMode().equals(currentTaskDefinition.getNetworkMode());
+            templateMatchesExistingNetworkMode = StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()), StringUtils.defaultString(currentTaskDefinition.getNetworkMode()));
             LOGGER.log(Level.INFO, "Match on network mode: {0}", new Object[] {templateMatchesExistingNetworkMode});
             LOGGER.log(Level.FINE, "Match on network mode: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingNetworkMode, template.getNetworkMode(), currentTaskDefinition.getNetworkMode()});
         }
