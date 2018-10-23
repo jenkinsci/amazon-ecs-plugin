@@ -29,7 +29,7 @@
 	<artifactId>amazon-ecs</artifactId>
 	<version>1.17-SNAPSHOT</version>
 	<packaging>hpi</packaging>
-	<name>Amazon EC2 Container Service plugin</name>
+	<name>Amazon Elastic Container Service plugin</name>
 	<description>Jenkins plugin to run dynamic slaves in a Amazon ECS/Docker environment</description>
 	<url>https://wiki.jenkins-ci.org/display/JENKINS/Amazon+EC2+Container+Service+Plugin</url>
 
@@ -86,7 +86,7 @@
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>aws-java-sdk</artifactId>
-			<version>1.11.264</version>
+			<version>1.11.403</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>

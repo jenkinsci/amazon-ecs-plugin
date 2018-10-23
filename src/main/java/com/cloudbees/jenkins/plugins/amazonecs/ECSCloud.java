@@ -202,7 +202,7 @@ public class ECSCloud extends Cloud {
 				LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{template.getDisplayName(), label} );
 
                 r.add(new NodeProvisioner.PlannedNode(template.getDisplayName(), Computer.threadPoolForRemoting
-                  .submit(new ProvisioningCallback(template, label)), 1));
+                .submit(new ProvisioningCallback(template, label)), 1));
             }
             return r;
         } catch (Exception e) {
@@ -211,7 +211,7 @@ public class ECSCloud extends Cloud {
         }
     }
 
-     void deleteTask(String taskArn, String clusterArn) {
+    void deleteTask(String taskArn, String clusterArn) {
         getEcsService().deleteTask(taskArn, clusterArn);
     }
 
