@@ -198,9 +198,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 	private String executionRole;
 
 	/**
-	 * ARN of the IAM role to use for the slave ECS task
+	 * ARN of the Secrets Manager to use for the slave ECS task
 	 *
-	 * @see RegisterTaskDefinitionRequest#withRepositoryCredentials(RepositoryCredentials)
+	 * @see ContainerDefinition#withRepositoryCredentials(RepositoryCredentials)
 	 */
 	@CheckForNull
 	private String secretManagerArn;
@@ -264,12 +264,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
 	@DataBoundConstructor
 	public ECSTaskTemplate(@Nonnull final String templateName, @Nullable final String label,
-			@Nullable final String taskDefinitionOverride, @Nonnull final String image, @Nullable final String secretManagerArn, 
-			@Nonnull final String launchType, @Nonnull final String networkMode, @Nullable final String remoteFSRoot, 
-			final int memory, final int memoryReservation, final int cpu, @Nullable final String subnets, 
-			@Nullable final String securityGroups, final boolean assignPublicIp, final boolean privileged, 
-			@Nullable final String containerUser, @Nullable final List<LogDriverOption> logDriverOptions, 
-			@Nullable final List<EnvironmentEntry> environments, @Nullable final List<ExtraHostEntry> extraHosts, 
+			@Nullable final String taskDefinitionOverride, @Nonnull final String image, @Nullable final String secretManagerArn,
+			@Nonnull final String launchType, @Nonnull final String networkMode, @Nullable final String remoteFSRoot,
+			final int memory, final int memoryReservation, final int cpu, @Nullable final String subnets,
+			@Nullable final String securityGroups, final boolean assignPublicIp, final boolean privileged,
+			@Nullable final String containerUser, @Nullable final List<LogDriverOption> logDriverOptions,
+			@Nullable final List<EnvironmentEntry> environments, @Nullable final List<ExtraHostEntry> extraHosts,
 			@Nullable final List<MountPointEntry> mountPoints, @Nullable final List<PortMappingEntry> portMappings) {
 		// if the user enters a task definition override, always prefer to use it,
 		// rather than the jenkins template.
