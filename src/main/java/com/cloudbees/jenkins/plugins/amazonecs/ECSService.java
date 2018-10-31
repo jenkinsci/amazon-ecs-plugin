@@ -177,8 +177,8 @@ class ECSService {
         if (template.getContainerUser() != null)
             def.withUser(template.getContainerUser());
         
-        if (template.getSecretManagerRole() != null)
-        	def.withRepositoryCredentials(new RepositoryCredentials().withCredentialsParameter(template.getSecretManagerRole()));
+        if (template.getSecretManagerArn() != null)
+        	def.withRepositoryCredentials(new RepositoryCredentials().withCredentialsParameter(template.getSecretManagerArn()));
         	
         if (template.getLogDriver() != null) {
             LogConfiguration logConfig = new LogConfiguration();

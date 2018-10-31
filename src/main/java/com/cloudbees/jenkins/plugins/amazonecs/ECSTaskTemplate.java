@@ -203,7 +203,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 	 * @see RegisterTaskDefinitionRequest#withRepositoryCredentials(RepositoryCredentials)
 	 */
 	@CheckForNull
-	private String secretManagerRole;
+	private String secretManagerArn;
 
 	/**
 	 * JVM arguments to start slave.jar
@@ -264,7 +264,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
 	@DataBoundConstructor
 	public ECSTaskTemplate(@Nonnull final String templateName, @Nullable final String label,
-			@Nullable final String taskDefinitionOverride, @Nonnull final String image, @Nullable final String secretManagerRole, 
+			@Nullable final String taskDefinitionOverride, @Nonnull final String image, @Nullable final String secretManagerArn, 
 			@Nonnull final String launchType, @Nonnull final String networkMode, @Nullable final String remoteFSRoot, 
 			final int memory, final int memoryReservation, final int cpu, @Nullable final String subnets, 
 			@Nullable final String securityGroups, final boolean assignPublicIp, final boolean privileged, 
@@ -289,7 +289,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
 		this.label = label;
 		this.image = image;
-		this.secretManagerRole = secretManagerRole;
+		this.secretManagerArn = secretManagerArn;
 		this.remoteFSRoot = remoteFSRoot;
 		this.memory = memory;
 		this.memoryReservation = memoryReservation;
@@ -319,8 +319,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 	}
 
 	@DataBoundSetter
-	public void setSecretManagerRole(final String secretManagerRole) {
-		this.secretManagerRole = StringUtils.trimToNull(secretManagerRole);
+	public void setSecretManagerArn(final String secretManagerArn) {
+		this.secretManagerArn = StringUtils.trimToNull(secretManagerArn);
 	}
 
 	@DataBoundSetter
@@ -422,8 +422,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 		return executionRole;
 	}
 
-	public String getSecretManagerRole() {
-		return secretManagerRole;
+	public String getSecretManagerArn() {
+		return secretManagerArn;
 	}
 
 	public String getJvmArgs() {
