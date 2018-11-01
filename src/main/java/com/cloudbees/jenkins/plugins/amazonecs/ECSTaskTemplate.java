@@ -35,7 +35,6 @@ import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 
-import hudson.util.ListBoxModel;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -175,6 +174,14 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      */
     @CheckForNull
     private String executionRole;
+    
+	/**
+	 * ARN of the Secrets Manager to use for the slave ECS task
+	 *
+	 * @see ContainerDefinition#withRepositoryCredentials(RepositoryCredentials)
+	 */
+	@CheckForNull
+	private String secretManagerArn;    
 
     /**
       JVM arguments to start slave.jar
@@ -239,6 +246,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nullable String label,
                            @Nullable String taskDefinitionOverride,
                            @Nonnull String image,
+                           @Nullable final String secretManagerArn,
                            @Nonnull String launchType,
                            @Nonnull String networkMode,
                            @Nullable String remoteFSRoot,
@@ -272,6 +280,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
         this.label = label;
         this.image = image;
+        this.secretManagerArn = StringUtils.trimToNull(secretManagerArn);
         this.remoteFSRoot = remoteFSRoot;
         this.memory = memory;
         this.memoryReservation = memoryReservation;
@@ -299,6 +308,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     public void setExecutionRole(String executionRole) {
         this.executionRole = StringUtils.trimToNull(executionRole);
     }
+
+	@DataBoundSetter
+	public void setSecretManagerArn(final String secretManagerArn) {
+		this.secretManagerArn = StringUtils.trimToNull(secretManagerArn);
+	}    
 
     @DataBoundSetter
     public void setEntrypoint(String entrypoint) {
@@ -395,6 +409,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return executionRole;
     }
 
+	public String getSecretManagerArn() {
+		return secretManagerArn;
+	}
+	
     public String getJvmArgs() {
         return jvmArgs;
     }

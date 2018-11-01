@@ -36,7 +36,6 @@ import java.util.logging.Logger;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
-
 import com.amazonaws.services.ecs.model.*;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
@@ -46,14 +45,7 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECSClient;
-import org.apache.commons.lang.ObjectUtils;
-import org.apache.commons.lang.StringUtils;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.RegionUtils;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.ecs.AmazonECSClient;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 
@@ -176,6 +168,9 @@ class ECSService {
         
         if (template.getContainerUser() != null)
             def.withUser(template.getContainerUser());
+        
+        if (template.getSecretManagerArn() != null)
+        	def.withRepositoryCredentials(new RepositoryCredentials().withCredentialsParameter(template.getSecretManagerArn()));
 
         if (template.getLogDriver() != null) {
             LogConfiguration logConfig = new LogConfiguration();
