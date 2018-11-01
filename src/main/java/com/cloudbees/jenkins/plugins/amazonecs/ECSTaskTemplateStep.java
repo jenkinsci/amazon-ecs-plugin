@@ -4,16 +4,20 @@ import com.amazonaws.services.ecs.model.*;
 
 import hudson.Extension;
 import hudson.util.ListBoxModel;
+import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.steps.*;
 
 import com.google.inject.Inject;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.servlet.ServletException;
 
 import java.util.*;
+import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
@@ -172,6 +176,8 @@ public class ECSTaskTemplateStep extends AbstractStepImpl {
     @Extension
     public static class DescriptorImpl extends AbstractStepDescriptorImpl {
 
+        private static String TEMPLATE_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
+
         @Override
         public String getFunctionName() {
             return "ecsCreateTaskTemplate";
@@ -207,6 +213,56 @@ public class ECSTaskTemplateStep extends AbstractStepImpl {
             options.add("TCP", "tcp");
             options.add("UDP", "udp");
             return options;
+        }
+
+        public FormValidation doCheckTemplateName(@QueryParameter String value) throws IOException, ServletException {
+            if (value.length() > 0 && value.length() <= 127 && value.matches(TEMPLATE_NAME_PATTERN)) {
+                return FormValidation.ok();
+            }
+            return FormValidation.error(
+                    "Up to 127 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed");
+        }
+
+        public FormValidation doCheckSubnetsLaunchType(@QueryParameter("subnets") String subnets,
+                @QueryParameter("launchType") String launchType) throws IOException, ServletException {
+            if (launchType.contentEquals(LaunchType.FARGATE.toString())) {
+                return FormValidation.error("Subnets need to be set, when using FARGATE");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckSubnetsNetworkMode(@QueryParameter("subnets") String subnets,
+                @QueryParameter("networkMode") String networkMode) throws IOException, ServletException {
+            if (networkMode.equals(NetworkMode.Awsvpc.toString()) && subnets.isEmpty()) {
+                return FormValidation.error("Subnets need to be set when using awsvpc network mode");
+            }
+            return FormValidation.ok();
+        }
+
+        /* we validate both memory and memoryReservation fields to the same rules */
+        public FormValidation doCheckMemory(@QueryParameter("memory") int memory,
+                @QueryParameter("memoryReservation") int memoryReservation) throws IOException, ServletException {
+            return validateMemorySettings(memory, memoryReservation);
+        }
+
+        public FormValidation doCheckMemoryReservation(@QueryParameter("memory") int memory,
+                @QueryParameter("memoryReservation") int memoryReservation) throws IOException, ServletException {
+            return validateMemorySettings(memory, memoryReservation);
+        }
+
+        private FormValidation validateMemorySettings(int memory, int memoryReservation) {
+            if (memory < 0 || memoryReservation < 0) {
+                return FormValidation.error("memory and/or memoryReservation must be 0 or a positive integer");
+            }
+            if (memory == 0 && memoryReservation == 0) {
+                return FormValidation.error("at least one of memory or memoryReservation are required to be > 0");
+            }
+            if (memory > 0 && memoryReservation > 0) {
+                if (memory <= memoryReservation) {
+                    return FormValidation.error("memory must be greater than memoryReservation if both are specified");
+                }
+            }
+            return FormValidation.ok();
         }
 
     }
