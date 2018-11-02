@@ -184,13 +184,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 	private String secretManagerArn;    
 
     /**
-      JVM arguments to start slave.jar
+     * JVM arguments to start slave.jar
      */
     @CheckForNull
     private String jvmArgs;
 
     /**
-      Container mount points, imported from volumes
+    * Container mount points, imported from volumes
      */
     private List<MountPointEntry> mountPoints;
 
@@ -715,7 +715,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
         @Override
         public String getDisplayName() {
-            return Messages.Template();
+            return Messages.template();
         }
 
         public ListBoxModel doFillLaunchTypeItems() {

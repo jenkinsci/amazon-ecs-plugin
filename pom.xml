@@ -21,17 +21,23 @@
 	<parent>
 		<groupId>org.jenkins-ci.plugins</groupId>
 		<artifactId>plugin</artifactId>
-		<version>1.609</version>
+		<version>3.25</version>
 		<relativePath />
 	</parent>
 
 	<groupId>com.cloudbees.jenkins.plugins</groupId>
 	<artifactId>amazon-ecs</artifactId>
-	<version>1.18-SNAPSHOT</version>
+	<version>1.18-beta-2-SNAPSHOT</version>
 	<packaging>hpi</packaging>
 	<name>Amazon Elastic Container Service plugin</name>
 	<description>Jenkins plugin to run dynamic slaves in a Amazon ECS/Docker environment</description>
 	<url>https://wiki.jenkins-ci.org/display/JENKINS/Amazon+EC2+Container+Service+Plugin</url>
+
+	<properties>
+		<jenkins.version>2.107.3</jenkins.version>
+		<java.level>8</java.level>
+        <mockito.version>2.0.2-beta</mockito.version>
+	</properties>
 
 	<developers>
 		<developer>
@@ -90,6 +96,11 @@
 		</dependency>
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>apache-httpcomponents-client-4-api</artifactId>
+			<version>4.5.5-3.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>aws-credentials</artifactId>
 			<version>1.23</version>
 		</dependency>
@@ -98,6 +109,48 @@
 			<artifactId>durable-task</artifactId>
 			<version>1.16</version>
 		</dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>${mockito.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>2.15.0</version>
+            <scope>test</scope>
+        </dependency>
 	</dependencies>
+
+  <!-- <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.jenkins-ci.plugins</groupId>
+        <artifactId>credentials</artifactId>
+        <version>2.1.11</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jenkins-ci.plugins</groupId>
+        <artifactId>credentials-binding</artifactId>
+        <version>1.12</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jenkins-ci.plugins</groupId>
+        <artifactId>structs</artifactId>
+        <version>1.6</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jenkins-ci.plugins</groupId>
+        <artifactId>ssh-credentials</artifactId>
+        <version>1.12</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd-core</artifactId>
+        <version>1.7.0</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement> -->
 
 </project>
