@@ -35,7 +35,6 @@ import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 
-import hudson.util.ListBoxModel;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -177,13 +176,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private String executionRole;
 
     /**
-      JVM arguments to start slave.jar
+     * JVM arguments to start slave.jar
      */
     @CheckForNull
     private String jvmArgs;
 
     /**
-      Container mount points, imported from volumes
+    * Container mount points, imported from volumes
      */
     private List<MountPointEntry> mountPoints;
 
@@ -697,7 +696,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
         @Override
         public String getDisplayName() {
-            return Messages.Template();
+            return Messages.template();
         }
 
         public ListBoxModel doFillLaunchTypeItems() {

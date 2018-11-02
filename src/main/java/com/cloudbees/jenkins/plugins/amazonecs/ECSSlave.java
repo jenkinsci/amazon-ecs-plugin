@@ -26,20 +26,39 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.text.MessageFormat;
+import java.time.Duration;
 import java.util.Collections;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+
+import com.amazonaws.services.ecs.model.AccessDeniedException;
+import com.amazonaws.services.ecs.model.ClientException;
+import com.amazonaws.services.ecs.model.ClusterNotFoundException;
+import com.amazonaws.services.ecs.model.DescribeTasksRequest;
+import com.amazonaws.services.ecs.model.DescribeTasksResult;
+import com.amazonaws.services.ecs.model.InvalidParameterException;
+import com.amazonaws.services.ecs.model.ServerException;
+import com.amazonaws.services.shield.model.InvalidOperationException;
 
 import org.jenkinsci.plugins.durabletask.executors.OnceRetentionStrategy;
+import org.jvnet.localizer.Localizable;
+import org.jvnet.localizer.ResourceBundleHolder;
 
+import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.TaskListener;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
 import hudson.slaves.ComputerLauncher;
+import hudson.slaves.OfflineCause;
 
 /**
  * This slave should only handle a single task and then be shutdown.
@@ -48,10 +67,13 @@ import hudson.slaves.ComputerLauncher;
  */
 public class ECSSlave extends AbstractCloudSlave {
 
-    private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ECSSlave.class.getName());
+    private static final ResourceBundleHolder HOLDER = ResourceBundleHolder.get(Messages.class);
 
     @Nonnull
     private final ECSCloud cloud;
+    @Nonnull
+    private final ECSTaskTemplate template;
 
     /**
      * AWS Resource Name (ARN) of the ECS Cluster.
@@ -67,9 +89,10 @@ public class ECSSlave extends AbstractCloudSlave {
     @CheckForNull
     private String taskArn;
 
-    public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, @Nullable String remoteFS, @Nullable String labelString, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
-        super(name, "ECS slave", remoteFS, 1, Mode.EXCLUSIVE, labelString, launcher, new OnceRetentionStrategy(5), Collections.EMPTY_LIST);
+    public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, ECSTaskTemplate template, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
+        super(name, "ECS slave", template.getRemoteFSRoot(), 1, Mode.EXCLUSIVE, template.getLabel(), launcher, new OnceRetentionStrategy(5), Collections.EMPTY_LIST);
         this.cloud = cloud;
+        this.template = template;
     }
 
     public String getClusterArn() {
@@ -82,6 +105,10 @@ public class ECSSlave extends AbstractCloudSlave {
 
     public String getTaskArn() {
         return taskArn;
+    }
+
+    public ECSTaskTemplate getTemplate() {
+        return template;
     }
 
     void setClusterArn(String clusterArn) {
@@ -97,18 +124,45 @@ public class ECSSlave extends AbstractCloudSlave {
     }
 
     @Override
-    public AbstractCloudComputer createComputer() {
+    public AbstractCloudComputer<ECSSlave> createComputer() {
         return new ECSComputer(this);
     }
 
     @Override
     protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
-        if (taskArn != null) {
-            cloud.deleteTask(taskArn, clusterArn);
+        LOGGER.log(Level.INFO, "[{0}]: Terminating ECS Task: {1}", new Object[]{this.getNodeName(), taskArn});
+
+        if (taskArn == null) {
+            throw new IllegalArgumentException("taskArn is null");
+        }
+        if (clusterArn == null) {
+            throw new IllegalArgumentException("clusterArn is null");
+        }
+
+        try {
+            LOGGER.log(Level.INFO, "[{0}]: Check for running task", new Object[]{this.getNodeName()});
+            LOGGER.log(Level.INFO, "[{0}]: TaskArn {1}, ClusterArn {2}", new Object[]{this.getNodeName(), clusterArn, taskArn});
+
+            cloud.getEcsService().stopTask(taskArn, clusterArn);
+
+        } catch (ServerException ex) {
+            LOGGER.log(Level.WARNING, MessageFormat.format("[{0}]: Failed to stop Task {1}", this.getNodeName(), taskArn), ex);
+        } catch (AccessDeniedException ex) {
+            LOGGER.log(Level.WARNING, MessageFormat.format("[{0}]: No permission to stop task {1}", this.getNodeName(), taskArn), ex);
+        } catch (ClientException ex) {
+            LOGGER.log(Level.WARNING, MessageFormat.format("[{0}]: Failed to stop Task {1} due {2}", this.getNodeName(), taskArn, ex.getErrorMessage()), ex);
+        } catch (InvalidParameterException ex) {
+            LOGGER.log(Level.WARNING, MessageFormat.format("[{0}]: Failed to stop Task {1}", this.getNodeName(), taskArn), ex);
+        } catch (ClusterNotFoundException ex) {
+            LOGGER.log(Level.WARNING, MessageFormat.format("[{0}]: Cluster {1} not found", this.getNodeName(), clusterArn));
         }
     }
 
-    public ECSCloud getCloud() {
-        return cloud;
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+    }
+
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
     }
 }
