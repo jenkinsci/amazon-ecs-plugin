@@ -27,7 +27,7 @@
 
 	<groupId>com.cloudbees.jenkins.plugins</groupId>
 	<artifactId>amazon-ecs</artifactId>
-	<version>1.18-SNAPSHOT</version>
+	<version>1.18-beta-1</version>
 	<packaging>hpi</packaging>
 	<name>Amazon Elastic Container Service plugin</name>
 	<description>Jenkins plugin to run dynamic slaves in a Amazon ECS/Docker environment</description>
