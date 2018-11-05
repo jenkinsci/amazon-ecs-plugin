@@ -118,7 +118,7 @@ public class ECSLauncher extends JNLPLauncher {
             while (System.currentTimeMillis() < timeout) {
 
                 // Wait while PENDING
-                task = ecsService.describeTask(task.getClusterArn(), task.getTaskArn());
+                task = ecsService.describeTask(task.getTaskArn(), task.getClusterArn());
 
                 if (task != null) {
                     String taskStatus = task.getLastStatus();
