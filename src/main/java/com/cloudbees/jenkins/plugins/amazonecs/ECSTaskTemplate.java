@@ -197,7 +197,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      */
     @Nonnull
     private final String networkMode;
-    
+
     /**
      * Indicates whether the container should run in privileged mode
      */
@@ -414,7 +414,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     public String getNetworkMode() {
-
         return networkMode;
     }
 
