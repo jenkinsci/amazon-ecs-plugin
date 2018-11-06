@@ -197,7 +197,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
      */
     @Nonnull
     private final String networkMode;
-
+    
     /**
      * Indicates whether the container should run in privileged mode
      */
@@ -414,9 +414,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     public String getNetworkMode() {
-        if (StringUtils.trimToNull(this.networkMode) == null) {
-            return NetworkMode.Bridge.toString();
-        }
+
         return networkMode;
     }
 
@@ -712,6 +710,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
             for (NetworkMode networkMode: NetworkMode.values()) {
                 options.add(networkMode.toString());
             }
+
+            //Need to support Windows Containers - Need to allow Null
+            options.add("");
             return options;
         }
 
