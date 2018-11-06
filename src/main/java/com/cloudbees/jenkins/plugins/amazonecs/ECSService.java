@@ -233,9 +233,9 @@ class ECSService {
             LOGGER.log(Level.FINE, "Match on execution role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingExecutionRole, template.getExecutionRole(), currentTaskDefinition.getExecutionRoleArn()});
 
             
-            if(!StringUtils.isEmpty(template.getNetworkMode())){
+            if(StringUtils.isEmpty(template.getNetworkMode())){
                 //Compare to null if it is empty.  Required for Windows Containers.
-                templateMatchesExistingNetworkMode = StringUtils.equals(null, StringUtils.defaultString(currentTaskDefinition.getNetworkMode())); 
+                templateMatchesExistingNetworkMode = null == currentTaskDefinition.getNetworkMode(); 
             }
             else{
                 templateMatchesExistingNetworkMode = StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()), StringUtils.defaultString(currentTaskDefinition.getNetworkMode()));     
