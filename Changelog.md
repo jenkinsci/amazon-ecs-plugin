@@ -1,9 +1,13 @@
 # Changelog
 
+## 1.18
+- Feature - Introduce ECSLauncher #72
+- Feature - Private repository authentication #74
+
 ## 1.17
 - Feature - Enabling use of awsvpc network mode with the EC2 launch type #68
 - Feature - Use [OnceRetentionStrategy](https://javadoc.jenkins.io/plugin/durable-task/org/jenkinsci/plugins/durabletask/executors/OnceRetentionStrategy.html) #71
-- Bug - [[JENKINS-51775](https://issues.jenkins-ci.org/browse/)] New ECS task definition created for each instance of an Agent requested #??
+- Bug - [[JENKINS-51775](https://issues.jenkins-ci.org/browse/)] New ECS task definition created for each instance of an Agent requested
 - BUG - Agent configuration page crashes #70
 
 ## 1.16
