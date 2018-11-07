@@ -12,7 +12,7 @@ import java.util.List;
 
 import com.amazonaws.services.ecs.model.ClientException;
 
-import org.junit.Assert;;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -60,6 +60,7 @@ public class ECSCloudTest {
             "label",
             "taskDefinitionOverride",
             "image",
+            "secret",
             "launchType",
             "networkMode",
             "remoteFSRoot",

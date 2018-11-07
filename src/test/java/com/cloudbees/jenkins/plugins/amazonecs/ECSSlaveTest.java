@@ -78,6 +78,7 @@ public class ECSSlaveTest {
             "label",
             "taskDefinitionOverride",
             "image",
+            "secret",
             "launchType",
             "networkMode",
             "remoteFSRoot",
