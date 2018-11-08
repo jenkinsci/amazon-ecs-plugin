@@ -706,12 +706,14 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
         public ListBoxModel doFillNetworkModeItems() {
             final ListBoxModel options = new ListBoxModel();
+
+            //Need to support Windows Containers - Need to allow Default which equal Null
+            options.add("default");
+
             for (NetworkMode networkMode: NetworkMode.values()) {
                 options.add(networkMode.toString());
             }
 
-            //Need to support Windows Containers - Need to allow Null
-            options.add("");
             return options;
         }
 

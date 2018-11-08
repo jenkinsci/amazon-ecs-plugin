@@ -232,17 +232,19 @@ class ECSService {
             LOGGER.log(Level.INFO, "Match on execution role: {0}", new Object[] {templateMatchesExistingExecutionRole});
             LOGGER.log(Level.FINE, "Match on execution role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingExecutionRole, template.getExecutionRole(), currentTaskDefinition.getExecutionRoleArn()});
 
-            
-            if(StringUtils.isEmpty(template.getNetworkMode())){
-                //Compare to null if it is empty.  Required for Windows Containers.
+            //Compare to null if it is default network mode is selected
+            String templateNetworkMode = "";
+            if(StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()),"default")){
                 templateMatchesExistingNetworkMode = null == currentTaskDefinition.getNetworkMode(); 
+                templateNetworkMode="null";
             }
             else{
-                templateMatchesExistingNetworkMode = StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()), StringUtils.defaultString(currentTaskDefinition.getNetworkMode()));     
+                templateMatchesExistingNetworkMode = StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()), StringUtils.defaultString(currentTaskDefinition.getNetworkMode()));
+                templateNetworkMode=template.getNetworkMode();
             }
 
             LOGGER.log(Level.INFO, "Match on network mode: {0}", new Object[] {templateMatchesExistingNetworkMode});
-            LOGGER.log(Level.FINE, "Match on network mode: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingNetworkMode, template.getNetworkMode(), currentTaskDefinition.getNetworkMode()});
+            LOGGER.log(Level.FINE, "Match on network mode: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingNetworkMode, templateNetworkMode, currentTaskDefinition.getNetworkMode()});
         }
         
         if(templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole && templateMatchesExistingExecutionRole && templateMatchesExistingNetworkMode) {
@@ -254,7 +256,8 @@ class ECSService {
                     .withVolumes(template.getVolumeEntries())
                     .withContainerDefinitions(def);
 
-            if(!StringUtils.isEmpty(template.getNetworkMode())){
+            //If network mode is default, that means Null in the request, so do not set.
+            if(!StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()),"default")){
                 request.withNetworkMode(template.getNetworkMode());
             }
 
