@@ -217,7 +217,6 @@ class ECSService {
         boolean templateMatchesExistingTaskRole = false;
         boolean templateMatchesExistingExecutionRole = false;
         boolean templateMatchesExistingNetworkMode = false;
-        boolean templateMatchesExistingRepositoryCredentials = false;
 
         if (currentTaskDefinition != null) {
             final ContainerDefinition currentContainerDefinition = currentTaskDefinition.getContainerDefinitions().get(0);
@@ -241,13 +240,9 @@ class ECSService {
             templateMatchesExistingNetworkMode = StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()), StringUtils.defaultString(currentTaskDefinition.getNetworkMode()));
             LOGGER.log(Level.INFO, "Match on network mode: {0}", new Object[] {templateMatchesExistingNetworkMode});
             LOGGER.log(Level.FINE, "Match on network mode: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingNetworkMode, template.getNetworkMode(), currentTaskDefinition.getNetworkMode()});
-            
-            templateMatchesExistingRepositoryCredentials = StringUtils.equals(StringUtils.defaultString(template.getRepositoryCredentials()), StringUtils.defaultString(currentContainerDefinition.getRepositoryCredentials().getCredentialsParameter()));
-            LOGGER.log(Level.INFO, "Match on repository credentials: {0}", new Object[] {templateMatchesExistingRepositoryCredentials});
-            LOGGER.log(Level.FINE, "Match on repository credentials: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingRepositoryCredentials, template.getRepositoryCredentials(), currentContainerDefinition.getRepositoryCredentials().getCredentialsParameter()});            
         }
-        
-        if(templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole && templateMatchesExistingExecutionRole && templateMatchesExistingNetworkMode && templateMatchesExistingRepositoryCredentials) {
+
+        if(templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole && templateMatchesExistingExecutionRole && templateMatchesExistingNetworkMode) {
             LOGGER.log(Level.FINE, "Task Definition already exists: {0}", new Object[]{currentTaskDefinition.getTaskDefinitionArn()});
             return currentTaskDefinition;
         } else {
