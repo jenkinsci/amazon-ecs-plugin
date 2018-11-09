@@ -129,6 +129,8 @@ public class ECSLauncher extends JNLPLauncher {
                         break;
                     }
                     if (taskStatus.equals("STOPPED")) {
+                        LOGGER.log(Level.WARNING, "[{0}]: ECS Task stopped: {1}", new Object[]{slave.getNodeName(), task.getStoppedReason()});
+                        logger.printf("ECS Task stopped: %1$s%n", task.getStoppedReason());
                         throw new IllegalStateException("Task stopped before coming online");
                     }
                 }
