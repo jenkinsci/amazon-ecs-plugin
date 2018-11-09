@@ -237,9 +237,19 @@ class ECSService {
             LOGGER.log(Level.INFO, "Match on execution role: {0}", new Object[] {templateMatchesExistingExecutionRole});
             LOGGER.log(Level.FINE, "Match on execution role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingExecutionRole, template.getExecutionRole(), currentTaskDefinition.getExecutionRoleArn()});
 
-            templateMatchesExistingNetworkMode = StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()), StringUtils.defaultString(currentTaskDefinition.getNetworkMode()));
+            //Compare to null if it is default network mode is selected
+            String templateNetworkMode = "";
+            if(StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()),"default")){
+                templateMatchesExistingNetworkMode = null == currentTaskDefinition.getNetworkMode(); 
+                templateNetworkMode="null";
+            }
+            else{
+                templateMatchesExistingNetworkMode = StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()), StringUtils.defaultString(currentTaskDefinition.getNetworkMode()));
+                templateNetworkMode=template.getNetworkMode();
+            }
+
             LOGGER.log(Level.INFO, "Match on network mode: {0}", new Object[] {templateMatchesExistingNetworkMode});
-            LOGGER.log(Level.FINE, "Match on network mode: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingNetworkMode, template.getNetworkMode(), currentTaskDefinition.getNetworkMode()});
+            LOGGER.log(Level.FINE, "Match on network mode: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingNetworkMode, templateNetworkMode, currentTaskDefinition.getNetworkMode()});
         }
 
         if(templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole && templateMatchesExistingExecutionRole && templateMatchesExistingNetworkMode) {
@@ -248,9 +258,21 @@ class ECSService {
         } else {
             final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()                
                     .withFamily(familyName)
-                    .withNetworkMode(template.getNetworkMode())
                     .withVolumes(template.getVolumeEntries())
                     .withContainerDefinitions(def);
+
+            //If network mode is default, that means Null in the request, so do not set.
+            if(!StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()),"default")){
+                request.withNetworkMode(template.getNetworkMode());
+            }
+
+            if(!StringUtils.isEmpty(template.getExecutionRole())){
+                request.withExecutionRoleArn(template.getExecutionRole());
+            }
+
+            if (!StringUtils.isEmpty(template.getTaskrole())) {
+                request.withTaskRoleArn(template.getTaskrole());
+            } 
 
             if (template.isFargate()) {
                 request
@@ -258,14 +280,8 @@ class ECSService {
                         .withNetworkMode("awsvpc")
                         .withMemory(String.valueOf(template.getMemoryConstraint()))
                         .withCpu(String.valueOf(template.getCpu()));
-                String executionRole = template.getExecutionRole();
-                if(!StringUtils.isEmpty(executionRole)){
-                    request.withExecutionRoleArn(executionRole);
-                }
             }
-            if (template.getTaskrole() != null) {
-                request.withTaskRoleArn(template.getTaskrole());
-            }            
+                       
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(request);
             LOGGER.log(Level.FINE, "Created Task Definition {0}: {1}", new Object[]{result.getTaskDefinition(), request});
             LOGGER.log(Level.INFO, "Created Task Definition: {0}", new Object[]{result.getTaskDefinition()});
@@ -328,7 +344,7 @@ class ECSService {
                                 .withEnvironment(envNodeSecret)))
                 .withCluster(clusterArn);
 
-        if (template.isAwsVpcNetworkMode() || taskDefinition.getNetworkMode().equals("awsvpc")) {
+        if (template.isAwsVpcNetworkMode() || (taskDefinition.getNetworkMode()!=null && taskDefinition.getNetworkMode().equals("awsvpc"))) {
             AwsVpcConfiguration awsVpcConfiguration = new AwsVpcConfiguration();
             awsVpcConfiguration.setAssignPublicIp(template.getAssignPublicIp() ? "ENABLED" : "DISABLED");
             awsVpcConfiguration.setSecurityGroups(Arrays.asList(template.getSecurityGroups().split(",")));

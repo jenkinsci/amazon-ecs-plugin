@@ -433,9 +433,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     public String getNetworkMode() {
-        if (StringUtils.trimToNull(this.networkMode) == null) {
-            return NetworkMode.Bridge.toString();
-        }
         return networkMode;
     }
 
@@ -728,9 +725,14 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
 
         public ListBoxModel doFillNetworkModeItems() {
             final ListBoxModel options = new ListBoxModel();
+
+            //Need to support Windows Containers - Need to allow Default which equal Null
+            options.add("default");
+
             for (NetworkMode networkMode: NetworkMode.values()) {
                 options.add(networkMode.toString());
             }
+
             return options;
         }
 
