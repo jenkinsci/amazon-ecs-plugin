@@ -25,7 +25,7 @@
 <p>
     Use an externally-managed task definition, rather than one created by Jenkins. Allows you to use a task definition
     created in the AWS Console, command line, or other tools. Specifying an explicit task definition will override all
-    other task definition options, and will prevent Jenkins from creating or modifying task definitions for this slave.
+    other task definition options, and will prevent Jenkins from creating or modifying task definitions for this agent.
     (You should still specify reasonable CPU and memory sizes in Jenkins. The values will not be used by ECS, but will be
     used by Jenkins to estimate cluster capacity.)
 </p>
@@ -43,6 +43,6 @@
 </p>
 <p>
     <b>Important:</b> If your externally-managed task definition contains multiple container definitions (sidecars), the
-    Jenkins slave container must be the first container defined in the task definition.
+    Jenkins agent container must be the first container defined in the task definition.
 </p>
 

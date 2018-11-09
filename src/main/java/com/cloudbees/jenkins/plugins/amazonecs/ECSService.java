@@ -149,7 +149,7 @@ class ECSService {
     public void stopTask(String taskArn, String clusterArn) {
         final AmazonECS client = getAmazonECSClient();
 
-        LOGGER.log(Level.INFO, "Delete ECS Slave task: {0}", taskArn);
+        LOGGER.log(Level.INFO, "Delete ECS agent task: {0}", taskArn);
         try {
             client.stopTask(new StopTaskRequest().withTask(taskArn).withCluster(clusterArn).withReason("Stopped by Jenkins Amazon ECS PlugIn"));
         } catch (Exception e) {
@@ -314,31 +314,31 @@ class ECSService {
         return cloud.getDisplayName().replaceAll("\\s+","") + '-' + template.getTemplateName();
     }
 
-    RunTaskResult runEcsTask(final ECSSlave slave, final ECSTaskTemplate template, String clusterArn, Collection<String> command, TaskDefinition taskDefinition) throws IOException, AbortException {
+    RunTaskResult runEcsTask(final ECSSlave agent, final ECSTaskTemplate template, String clusterArn, Collection<String> command, TaskDefinition taskDefinition) throws IOException, AbortException {
         AmazonECS client = getAmazonECSClient();
-        slave.setTaskDefinitonArn(taskDefinition.getTaskDefinitionArn());
+        agent.setTaskDefinitonArn(taskDefinition.getTaskDefinitionArn());
 
         KeyValuePair envNodeName = new KeyValuePair();
         envNodeName.setName("SLAVE_NODE_NAME");
-        envNodeName.setValue(slave.getComputer().getName());
+        envNodeName.setValue(agent.getComputer().getName());
 
         KeyValuePair envNodeSecret = new KeyValuePair();
         envNodeSecret.setName("SLAVE_NODE_SECRET");
-        envNodeSecret.setValue(slave.getComputer().getJnlpMac());
+        envNodeSecret.setValue(agent.getComputer().getJnlpMac());
 
-        // by convention, we assume the jenkins slave container is the first container in the task definition. ECS requires
+        // by convention, we assume the jenkins agent container is the first container in the task definition. ECS requires
         // all task definitions to contain at least one container, and all containers to have a name, so we do not need
         // to null- or bounds-check for the presence of a container definition.
-        String slaveContainerName = taskDefinition.getContainerDefinitions().get(0).getName();
+        String agentContainerName = taskDefinition.getContainerDefinitions().get(0).getName();
 
-        LOGGER.log(Level.FINE, "Found container definition with {0} container(s). Assuming first container is the Jenkins slave: {1}", new Object[]{taskDefinition.getContainerDefinitions().size(), slaveContainerName});
+        LOGGER.log(Level.FINE, "Found container definition with {0} container(s). Assuming first container is the Jenkins agent: {1}", new Object[]{taskDefinition.getContainerDefinitions().size(), agentContainerName});
 
         RunTaskRequest req = new RunTaskRequest()
                 .withTaskDefinition(taskDefinition.getTaskDefinitionArn())
                 .withLaunchType(LaunchType.fromValue(template.getLaunchType()))
                 .withOverrides(new TaskOverride()
                         .withContainerOverrides(new ContainerOverride()
-                                .withName(slaveContainerName)
+                                .withName(agentContainerName)
                                 .withCommand(command)
                                 .withEnvironment(envNodeName)
                                 .withEnvironment(envNodeSecret)))

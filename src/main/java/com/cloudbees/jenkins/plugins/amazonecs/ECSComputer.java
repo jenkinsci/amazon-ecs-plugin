@@ -68,6 +68,6 @@ public class ECSComputer extends AbstractCloudComputer<ECSSlave> {
 
     @Override
     public String toString() {
-        return String.format("ECSComputer name: %s slave: %s", getName(), getNode());
+        return String.format("ECSComputer name: %s agent: %s", getName(), getNode());
     }
 }

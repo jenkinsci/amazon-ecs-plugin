@@ -3,6 +3,8 @@
 ## 1.18
 - Feature - Introduce ECSLauncher #72
 - Feature - Private repository authentication #74
+- Feature - [JENKINS-52032] Replace slave occurrence by agent in the Amazon ECS plugin
+- BUG - [JENKINS-54473] Add support for Windows containers NetworkMode, which must be null. #76
 
 ## 1.17
 - Feature - Enabling use of awsvpc network mode with the EC2 launch type #68

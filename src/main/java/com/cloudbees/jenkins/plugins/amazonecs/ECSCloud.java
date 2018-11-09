@@ -180,7 +180,7 @@ public class ECSCloud extends Cloud {
     public synchronized Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
 
         try {
-			LOGGER.log(Level.INFO, "Asked to provision {0} slave(s) for: {1}", new Object[]{excessWorkload, label});
+			LOGGER.log(Level.INFO, "Asked to provision {0} agent(s) for: {1}", new Object[]{excessWorkload, label});
 
             Set<String> allInProvisioning = InProvisioning.getAllInProvisioning(label);
             LOGGER.log(Level.INFO, "In provisioning : " + allInProvisioning);
@@ -197,7 +197,7 @@ public class ECSCloud extends Cloud {
             }
             return r;
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to provision ECS slave", e);
+            LOGGER.log(Level.WARNING, "Failed to provision ECS agent", e);
             return Collections.emptyList();
         }
     }

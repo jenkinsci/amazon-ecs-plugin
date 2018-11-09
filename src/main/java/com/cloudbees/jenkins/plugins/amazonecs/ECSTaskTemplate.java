@@ -78,7 +78,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     @Nonnull
     private final String image;
     /**
-     * Slave remote FS
+     * Agent remote FS
      */
     @Nullable
     private final String remoteFSRoot;
@@ -160,7 +160,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private String entrypoint;
 
     /**
-     * ARN of the IAM role to use for the slave ECS task
+     * ARN of the IAM role to use for the agent ECS task
      *
      * @see RegisterTaskDefinitionRequest#withTaskRoleArn(String)
      */
@@ -168,7 +168,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private String taskrole;
 
     /**
-     * ARN of the IAM role to use for the slave ECS task
+     * ARN of the IAM role to use for the agent ECS task
      *
      * @see RegisterTaskDefinitionRequest#withExecutionRoleArn(String)
      */
@@ -176,7 +176,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private String executionRole;
     
 	/**
-	 * ARN of the Secrets Manager to use for the slave ECS task
+	 * ARN of the Secrets Manager to use for the agent ECS task
 	 *
 	 * @see ContainerDefinition#withRepositoryCredentials(RepositoryCredentials)
 	 */
@@ -702,7 +702,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     }
 
     public String getDisplayName() {
-        return "ECS Slave " + label;
+        return "ECS Agent " + label;
     }
 
     @Extension
