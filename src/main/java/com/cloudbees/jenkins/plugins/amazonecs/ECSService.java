@@ -344,7 +344,7 @@ class ECSService {
                                 .withEnvironment(envNodeSecret)))
                 .withCluster(clusterArn);
 
-        if (template.isAwsVpcNetworkMode() || (taskDefinition.getNetworkMode()!=null && taskDefinition.getNetworkMode().equals("awsvpc"))) {
+        if (taskDefinition.getNetworkMode()!=null && taskDefinition.getNetworkMode().equals("awsvpc")) {
             AwsVpcConfiguration awsVpcConfiguration = new AwsVpcConfiguration();
             awsVpcConfiguration.setAssignPublicIp(template.getAssignPublicIp() ? "ENABLED" : "DISABLED");
             awsVpcConfiguration.setSecurityGroups(Arrays.asList(template.getSecurityGroups().split(",")));

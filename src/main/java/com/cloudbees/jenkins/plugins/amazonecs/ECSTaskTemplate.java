@@ -349,10 +349,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return StringUtils.trimToNull(this.launchType) != null && launchType.equals(LaunchType.FARGATE.toString());
     }
 
-    public boolean isAwsVpcNetworkMode() {
-        return getLaunchType().equals(LaunchType.FARGATE.toString()) || getNetworkMode().equals(NetworkMode.Awsvpc.toString());
-    }
-
     public String getLabel() {
         return label;
     }
