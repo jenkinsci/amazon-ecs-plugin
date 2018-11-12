@@ -180,7 +180,7 @@ public class ECSCloud extends Cloud {
     public synchronized Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
 
         try {
-			LOGGER.log(Level.INFO, "Asked to provision {0} agent(s) for: {1}", new Object[]{excessWorkload, label});
+            LOGGER.log(Level.INFO, "Asked to provision {0} agent(s) for: {1}", new Object[]{excessWorkload, label});
 
             Set<String> allInProvisioning = InProvisioning.getAllInProvisioning(label);
             LOGGER.log(Level.INFO, "In provisioning : " + allInProvisioning);
@@ -191,7 +191,7 @@ public class ECSCloud extends Cloud {
             final ECSTaskTemplate template = getTemplate(label);
 
             for (int i = 1; i <= toBeProvisioned; i++) {
-				LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{template.getDisplayName(), label} );
+            LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{template.getDisplayName(), label} );
 
                 r.add(new NodeProvisioner.PlannedNode(template.getDisplayName(), Computer.threadPoolForRemoting.submit(new ProvisioningCallback(template)), 1));
             }

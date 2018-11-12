@@ -201,7 +201,7 @@ class ECSService {
             def.withUser(template.getContainerUser());
         
         if (template.getRepositoryCredentials() != null)
-        	def.withRepositoryCredentials(new RepositoryCredentials().withCredentialsParameter(template.getRepositoryCredentials()));
+            def.withRepositoryCredentials(new RepositoryCredentials().withCredentialsParameter(template.getRepositoryCredentials()));
 
         if (template.getLogDriver() != null) {
             LogConfiguration logConfig = new LogConfiguration();
@@ -220,7 +220,7 @@ class ECSService {
 
         if (currentTaskDefinition != null) {
             final ContainerDefinition currentContainerDefinition = currentTaskDefinition.getContainerDefinitions().get(0);
-        	
+
             templateMatchesExistingContainerDefinition = def.equals(currentContainerDefinition);
             LOGGER.log(Level.INFO, "Match on container definition: {0}", new Object[] {templateMatchesExistingContainerDefinition});
             LOGGER.log(Level.FINE, "Match on container definition: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingContainerDefinition, def, currentContainerDefinition});
