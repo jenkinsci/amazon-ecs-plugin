@@ -75,7 +75,8 @@ public class ECSCloud extends Cloud {
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
 
     private static final int DEFAULT_SLAVE_TIMEOUT = 900;
-
+    /** Default timeout for idle workers that don't correctly indicate exit. */
+    private static final int DEFAULT_RETENTION_TIMEOUT_MINUTES = 5;
 
     private final List<ECSTaskTemplate> templates;
     @Nonnull
@@ -85,6 +86,7 @@ public class ECSCloud extends Cloud {
     @CheckForNull
     private String tunnel;
     private String jenkinsUrl;
+    private int retentionTimeout = DEFAULT_RETENTION_TIMEOUT_MINUTES;
     private int slaveTimoutInSeconds;
     private ECSService ecsService;
 
@@ -95,7 +97,8 @@ public class ECSCloud extends Cloud {
                     String cluster, 
                     String regionName, 
                     String jenkinsUrl, 
-                    int slaveTimoutInSeconds) throws InterruptedException {
+                    int slaveTimoutInSeconds,
+                    int retentionTimeout) throws InterruptedException {
 
         super(name);
         this.credentialsId = credentialsId;
@@ -114,6 +117,11 @@ public class ECSCloud extends Cloud {
             }
         }
 
+        if (retentionTimeout > 0) {
+            this.retentionTimeout = retentionTimeout;
+        } else {
+            this.retentionTimeout = DEFAULT_RETENTION_TIMEOUT_MINUTES;
+        }
         if(slaveTimoutInSeconds > 0) {
             this.slaveTimoutInSeconds = slaveTimoutInSeconds;
         } else {
@@ -208,6 +216,15 @@ public class ECSCloud extends Cloud {
 
     public void setSlaveTimoutInSeconds(int slaveTimoutInSeconds) {
         this.slaveTimoutInSeconds = slaveTimoutInSeconds;
+    }
+
+    public int getRetentionTimeout() {
+        return retentionTimeout;
+    }
+
+    @DataBoundSetter
+    public void setRetentionTimeout(int retentionTimeout) {
+        this.retentionTimeout = retentionTimeout;
     }
 
     private class ProvisioningCallback implements Callable<Node> {

@@ -90,7 +90,7 @@ public class ECSSlave extends AbstractCloudSlave {
     private String taskArn;
 
     public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, ECSTaskTemplate template, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
-        super(name, "ECS Agent", template.getRemoteFSRoot(), 1, Mode.EXCLUSIVE, template.getLabel(), launcher, new OnceRetentionStrategy(5), Collections.EMPTY_LIST);
+        super(name, "ECS Agent", template.getRemoteFSRoot(), 1, Mode.EXCLUSIVE, template.getLabel(), launcher, new OnceRetentionStrategy(cloud.getRetentionTimeout()), Collections.EMPTY_LIST);
         this.cloud = cloud;
         this.template = template;
     }

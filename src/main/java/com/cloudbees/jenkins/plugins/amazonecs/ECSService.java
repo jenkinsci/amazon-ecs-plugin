@@ -281,7 +281,7 @@ class ECSService {
                         .withMemory(String.valueOf(template.getMemoryConstraint()))
                         .withCpu(String.valueOf(template.getCpu()));
             }
-                       
+
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(request);
             LOGGER.log(Level.FINE, "Created Task Definition {0}: {1}", new Object[]{result.getTaskDefinition(), request});
             LOGGER.log(Level.INFO, "Created Task Definition: {0}", new Object[]{result.getTaskDefinition()});
