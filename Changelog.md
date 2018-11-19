@@ -2,8 +2,10 @@
 
 ## 1.18
 - Feature - Introduce ECSLauncher #72
-- Feature - Private repository authentication #74
+- Feature - [JENKINS-54380] Private repository authentication #74
 - Feature - [JENKINS-52032] Replace slave occurrence by agent in the Amazon ECS plugin
+- Feature - New setting for retention timeout
+- Feature - [JENKINS-54473] Rename to agents where possible
 - BUG - [JENKINS-54473] Add support for Windows containers NetworkMode, which must be null. #76
 
 ## 1.17
