@@ -141,7 +141,7 @@ public class ECSSlave extends AbstractCloudSlave {
 
         try {
             LOGGER.log(Level.INFO, "[{0}]: Check for running task", new Object[]{this.getNodeName()});
-            LOGGER.log(Level.INFO, "[{0}]: TaskArn {1}, ClusterArn {2}", new Object[]{this.getNodeName(), clusterArn, taskArn});
+            LOGGER.log(Level.INFO, "[{0}]: TaskArn {1}, ClusterArn {2}", new Object[]{this.getNodeName(), taskArn, clusterArn});
 
             cloud.getEcsService().stopTask(taskArn, clusterArn);
 
