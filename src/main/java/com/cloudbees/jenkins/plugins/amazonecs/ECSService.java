@@ -289,6 +289,23 @@ class ECSService {
         }
     }
 
+    void removeTemplate(final ECSCloud cloud, final ECSTaskTemplate template) {
+        // TODO finish implementation
+        // AmazonECSClient client = getAmazonECSClient();
+        //
+        // String familyName = fullQualifiedTemplateName(cloud, template);
+        //
+        // try {
+        //     DeregisterTaskDefinitionResult result = client.deregisterTaskDefinition(
+        //             new DeregisterTaskDefinitionRequest()
+        //                     .withTaskDefinition(findTaskDefinition(familyName)));
+        //
+        // } catch (ClientException e) {
+        //     LOGGER.log(Level.FINE, "No existing task definition found for family or ARN: " + familyName, e);
+        //     LOGGER.log(Level.INFO, "No existing task definition found for family or ARN: " + familyName);
+        // }
+    }
+
     /**
      * Finds the task definition for the specified family or ARN, or null if none is found.
      * The parameter may be a task definition family, family with revision, or full task definition ARN.

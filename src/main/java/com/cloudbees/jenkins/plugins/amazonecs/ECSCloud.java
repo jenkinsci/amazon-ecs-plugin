@@ -94,6 +94,12 @@ public class ECSCloud extends Cloud {
         this.cluster = cluster;
     }
 
+    public static @Nonnull ECSCloud getByName(@Nonnull String name) throws IllegalArgumentException {
+        Cloud cloud = Jenkins.getInstance().clouds.getByName(name);
+        if (cloud instanceof ECSCloud) return (ECSCloud) cloud;
+        throw new IllegalArgumentException("'" + name + "' is not an ECS cloud but " + cloud);
+        }
+
     synchronized ECSService getEcsService() {
         if (ecsService == null) {
             ecsService = new ECSService(credentialsId, regionName);
@@ -109,6 +115,15 @@ public class ECSCloud extends Cloud {
     @DataBoundSetter
     public void setTemplates(List<ECSTaskTemplate> templates) {
         this.templates = templates;
+    }
+
+    public void registerTemplate(ECSTaskTemplate template) {
+        templates.add(template);
+    }
+
+    public void removeTemplate(ECSTaskTemplate template) {
+        getEcsService().removeTemplate(this, template);
+        templates.remove(template);
     }
 
     public String getCredentialsId() {
@@ -142,6 +157,10 @@ public class ECSCloud extends Cloud {
         return getTemplate(label) != null;
     }
 
+    public boolean canProvision(String label) {
+        return getTemplate(label) != null;
+    }
+
     private ECSTaskTemplate getTemplate(Label label) {
         if (label == null) {
             return null;
@@ -154,6 +173,17 @@ public class ECSCloud extends Cloud {
         return null;
     }
 
+    private ECSTaskTemplate getTemplate(String label) {
+        if (label == null) {
+            return null;
+        }
+        for (ECSTaskTemplate t : getTemplates()) {
+            if (label.matches(t.getLabel())) {
+                return t;
+            }
+        }
+        return null;
+    }
 
     @Override
     public synchronized Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
@@ -168,17 +198,19 @@ public class ECSCloud extends Cloud {
 
             List<NodeProvisioner.PlannedNode> r = new ArrayList<NodeProvisioner.PlannedNode>();
             final ECSTaskTemplate template = getTemplate(label);
+            String parentLabel = template.getInheritFrom();
+            final ECSTaskTemplate combined = template.combine(getTemplate(parentLabel));
 
             for (int i = 1; i <= toBeProvisioned; i++) {
-            LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{template.getDisplayName(), label} );
+            LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{combined.getDisplayName(), label} );
 
-                r.add(new NodeProvisioner.PlannedNode(template.getDisplayName(), Computer.threadPoolForRemoting.submit(new ProvisioningCallback(template)), 1));
+                r.add(new NodeProvisioner.PlannedNode(template.getDisplayName(), Computer.threadPoolForRemoting.submit(new ProvisioningCallback(combined)), 1));
             }
             return r;
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Failed to provision ECS agent", e);
-            return Collections.emptyList();
         }
+        return Collections.emptyList();
     }
 
     public int getSlaveTimeoutInSeconds() {
