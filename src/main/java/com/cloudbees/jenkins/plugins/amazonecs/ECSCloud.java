@@ -37,7 +37,6 @@ import java.util.logging.Logger;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.servlet.ServletException;
 
 import com.amazonaws.AmazonClientException;
@@ -74,11 +73,7 @@ public class ECSCloud extends Cloud {
 
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
 
-    private static final int DEFAULT_SLAVE_TIMEOUT = 900;
-    /** Default timeout for idle workers that don't correctly indicate exit. */
-    private static final int DEFAULT_RETENTION_TIMEOUT_MINUTES = 5;
-
-    private final List<ECSTaskTemplate> templates;
+    private List<ECSTaskTemplate> templates;
     @Nonnull
     private final String credentialsId;
     private final String cluster;
@@ -86,47 +81,17 @@ public class ECSCloud extends Cloud {
     @CheckForNull
     private String tunnel;
     private String jenkinsUrl;
-    private int retentionTimeout = DEFAULT_RETENTION_TIMEOUT_MINUTES;
-    private int slaveTimoutInSeconds;
+    private int retentionTimeout = DescriptorImpl.DEFAULT_RETENTION_TIMEOUT;
+    private int slaveTimeoutInSeconds = DescriptorImpl.DEFAULT_SLAVE_TIMEOUT_IN_SECONDS;
     private ECSService ecsService;
 
     @DataBoundConstructor
-    public ECSCloud(String name, 
-                    List<ECSTaskTemplate> templates, 
+    public ECSCloud(String name,
                     @Nonnull String credentialsId,
-                    String cluster, 
-                    String regionName, 
-                    String jenkinsUrl, 
-                    int slaveTimoutInSeconds,
-                    int retentionTimeout) throws InterruptedException {
-
+                    String cluster) throws InterruptedException {
         super(name);
         this.credentialsId = credentialsId;
         this.cluster = cluster;
-        this.templates = templates;
-        this.regionName = regionName;
-
-        LOGGER.log(Level.INFO, "Create cloud {0} on ECS cluster {1} on the region {2}", new Object[]{name, cluster, regionName});
-
-        if(StringUtils.isNotBlank(jenkinsUrl)) {
-            this.jenkinsUrl = jenkinsUrl;
-        } else {
-            JenkinsLocationConfiguration config = JenkinsLocationConfiguration.get();
-            if (config != null) {
-                this.jenkinsUrl = config.getUrl();
-            }
-        }
-
-        if (retentionTimeout > 0) {
-            this.retentionTimeout = retentionTimeout;
-        } else {
-            this.retentionTimeout = DEFAULT_RETENTION_TIMEOUT_MINUTES;
-        }
-        if(slaveTimoutInSeconds > 0) {
-            this.slaveTimoutInSeconds = slaveTimoutInSeconds;
-        } else {
-            this.slaveTimoutInSeconds = DEFAULT_SLAVE_TIMEOUT;
-        }
     }
 
     synchronized ECSService getEcsService() {
@@ -141,6 +106,11 @@ public class ECSCloud extends Cloud {
         return templates != null ? templates : Collections.<ECSTaskTemplate> emptyList();
     }
 
+    @DataBoundSetter
+    public void setTemplates(List<ECSTaskTemplate> templates) {
+        this.templates = templates;
+    }
+
     public String getCredentialsId() {
         return credentialsId;
     }
@@ -153,6 +123,7 @@ public class ECSCloud extends Cloud {
         return regionName;
     }
 
+    @DataBoundSetter
     public void setRegionName(String regionName) {
         this.regionName = regionName;
     }
@@ -210,22 +181,38 @@ public class ECSCloud extends Cloud {
         }
     }
 
-    public int getSlaveTimoutInSeconds() {
-        return slaveTimoutInSeconds;
+    public int getSlaveTimeoutInSeconds() {
+        // this is only needed for edge cases, where in the config was nothing set
+        // and then 0 is assumed as default which breaks things.
+
+        if (this.slaveTimeoutInSeconds == 0) {
+            return DescriptorImpl.DEFAULT_SLAVE_TIMEOUT_IN_SECONDS;
+        } else {
+            return this.slaveTimeoutInSeconds;
+        }
     }
 
-    public void setSlaveTimoutInSeconds(int slaveTimoutInSeconds) {
-        this.slaveTimoutInSeconds = slaveTimoutInSeconds;
+    @DataBoundSetter
+    public void setSlaveTimeoutInSeconds(int slaveTimeoutInSeconds) {
+        this.slaveTimeoutInSeconds = slaveTimeoutInSeconds;
     }
 
     public int getRetentionTimeout() {
-        return retentionTimeout;
+        // this is only needed for edge cases, where in the config was nothing set
+        // and then 0 is assumed as default which breaks things.
+
+        if (this.retentionTimeout == 0) {
+            return DescriptorImpl.DEFAULT_RETENTION_TIMEOUT;
+        } else {
+            return this.retentionTimeout;
+        }
     }
 
     @DataBoundSetter
     public void setRetentionTimeout(int retentionTimeout) {
         this.retentionTimeout = retentionTimeout;
     }
+
 
     private class ProvisioningCallback implements Callable<Node> {
 
@@ -253,13 +240,22 @@ public class ECSCloud extends Cloud {
         return jenkinsUrl;
     }
 
+    @DataBoundSetter
     public void setJenkinsUrl(String jenkinsUrl) {
-        this.jenkinsUrl = jenkinsUrl;
+        if(StringUtils.isNotBlank(jenkinsUrl)) {
+            this.jenkinsUrl = jenkinsUrl;
+        } else {
+            JenkinsLocationConfiguration config = JenkinsLocationConfiguration.get();
+            if (config != null) {
+                this.jenkinsUrl = config.getUrl();
+            }
+        }
     }
 
     @Extension
     public static class DescriptorImpl extends Descriptor<Cloud> {
-
+        public static final int DEFAULT_RETENTION_TIMEOUT = 5;
+        public static final int DEFAULT_SLAVE_TIMEOUT_IN_SECONDS= 900;
         private static String CLOUD_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
 
         @Override
@@ -314,5 +310,12 @@ public class ECSCloud extends Cloud {
             return FormValidation.error("Up to 127 letters (uppercase and lowercase), numbers, hyphens, and underscores are allowed");
         }
 
-    }    
+        public FormValidation doCheckRetentionTimeout(@QueryParameter Integer value) throws IOException, ServletException {
+           if (value > 0) {
+                return FormValidation.ok();
+            }
+            return FormValidation.error("Needs to be greater than 0");
+        }
+
+    }
 }

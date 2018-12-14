@@ -130,8 +130,6 @@ public class ECSSlave extends AbstractCloudSlave {
 
     @Override
     protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
-        LOGGER.log(Level.INFO, "[{0}]: Terminating ECS Task: {1}", new Object[]{this.getNodeName(), taskArn});
-
         if (taskArn == null) {
             throw new IllegalArgumentException("taskArn is null");
         }
@@ -140,8 +138,7 @@ public class ECSSlave extends AbstractCloudSlave {
         }
 
         try {
-            LOGGER.log(Level.INFO, "[{0}]: Check for running task", new Object[]{this.getNodeName()});
-            LOGGER.log(Level.INFO, "[{0}]: TaskArn {1}, ClusterArn {2}", new Object[]{this.getNodeName(), taskArn, clusterArn});
+            LOGGER.log(Level.INFO, "[{0}]: Stopping: TaskArn {1}, ClusterArn {2}", new Object[]{this.getNodeName(), taskArn, clusterArn});
 
             cloud.getEcsService().stopTask(taskArn, clusterArn);
 

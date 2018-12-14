@@ -112,7 +112,7 @@ public class ECSLauncher extends JNLPLauncher {
             LOGGER.log(INFO, "[{0}]: ClusterArn: {1}", new Object[]{agent.getNodeName(), task.getClusterArn()});
             LOGGER.log(INFO, "[{0}]: ContainerInstanceArn: {1}", new Object[]{agent.getNodeName(), task.getContainerInstanceArn()});
 
-            long timeout = System.currentTimeMillis() + Duration.ofSeconds(cloud.getSlaveTimoutInSeconds()).toMillis();
+            long timeout = System.currentTimeMillis() + Duration.ofSeconds(cloud.getSlaveTimeoutInSeconds()).toMillis();
 
             boolean taskRunning = false;
             while (System.currentTimeMillis() < timeout) {
@@ -131,7 +131,7 @@ public class ECSLauncher extends JNLPLauncher {
                     if (taskStatus.equals("STOPPED")) {
                         LOGGER.log(Level.WARNING, "[{0}]: ECS Task stopped: {1}", new Object[]{agent.getNodeName(), task.getStoppedReason()});
                         logger.printf("ECS Task stopped: %1$s%n", task.getStoppedReason());
-                        throw new IllegalStateException("Task stopped before coming online");
+                        throw new IllegalStateException("Task stopped before coming online. TaskARN: " + task.getTaskArn());
                     }
                 }
 

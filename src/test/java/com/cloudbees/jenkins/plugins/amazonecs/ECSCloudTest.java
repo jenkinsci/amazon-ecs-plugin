@@ -36,7 +36,12 @@ public class ECSCloudTest {
         List<ECSTaskTemplate> templates = new ArrayList<ECSTaskTemplate>();
         templates.add(getTaskTemplate());
 
-        ECSCloud sut = new ECSCloud("mycloud", templates, "", "mycluster", "eu-west-1", "http://jenkins.local", 5, 5);
+        ECSCloud sut = new ECSCloud("mycloud", "", "mycluster");
+        sut.setTemplates(templates);
+        sut.setRegionName("eu-west-1");
+        sut.setJenkinsUrl("http://jenkins.local");
+        sut.setSlaveTimeoutInSeconds(5);
+        sut.setRetentionTimeout(5);
         Collection<PlannedNode> plannedNodes = sut.provision(new LabelAtom("label"), 1);
 
         Assert.assertEquals(1, plannedNodes.size());
@@ -47,7 +52,12 @@ public class ECSCloudTest {
 
         List<ECSTaskTemplate> templates = new ArrayList<ECSTaskTemplate>();
 
-        ECSCloud sut = new ECSCloud("mycloud", templates, "", "mycluster", "eu-west-1", "http://jenkins.local", 5, 5);
+        ECSCloud sut = new ECSCloud("mycloud", "", "mycluster");
+        sut.setTemplates(templates);
+        sut.setRegionName("eu-west-1");
+        sut.setJenkinsUrl("http://jenkins.local");
+        sut.setSlaveTimeoutInSeconds(5);
+        sut.setRetentionTimeout(5);
 
         boolean canProvision = sut.canProvision(new LabelAtom("unknownLabel"));
 
