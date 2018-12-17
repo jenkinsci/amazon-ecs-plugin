@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.19
+- BUG - [JENKINS-54898] ECS Plugin 1.18 cannot launch slaves #77
+- BUG - [JENKINS-55078] No longer able to start ECS slaves #78
+
+BREAKING: Fix type in config: `slaveTimoutInSeconds` -> `slaveTimeoutInSeconds`
+
+
 ## 1.18
 - Feature - Introduce ECSLauncher #72
 - Feature - [JENKINS-54380] Private repository authentication #74
