@@ -4,7 +4,7 @@
 - BUG - [JENKINS-54898] ECS Plugin 1.18 cannot launch slaves #77
 - BUG - [JENKINS-55078] No longer able to start ECS slaves #78
 
-BREAKING: Fix type in config: `slaveTimoutInSeconds` -> `slaveTimeoutInSeconds`
+BREAKING: Fixed typo in config: `slaveTimoutInSeconds` is now `slaveTimeoutInSeconds`
 
 
 ## 1.18
