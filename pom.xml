@@ -184,34 +184,16 @@
       </dependency>
     </dependencies>
   </dependencyManagement> -->
+
   <build>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
+        <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <systemPropertyVariables>
-            <hudson.slaves.NodeProvisioner.initialDelay>0</hudson.slaves.NodeProvisioner.initialDelay>
-            <hudson.slaves.NodeProvisioner.MARGIN>50</hudson.slaves.NodeProvisioner.MARGIN>
-            <hudson.slaves.NodeProvisioner.MARGIN0>0.85</hudson.slaves.NodeProvisioner.MARGIN0>
-            <!-- listen in this interface for connections from ECS slaves -->
-            <connectorHost>${connectorHost}</connectorHost>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.jenkins-ci.tools</groupId>
-        <artifactId>maven-hpi-plugin</artifactId>
-        <configuration>
-          <!-- with the default setting seems that an older version of jackson from core is used java.lang.NoSuchMethodError: com.fasterxml.jackson.core.JsonFactory.requiresPropertyOrdering()Z at
-          com.fasterxml.jackson.databind.ObjectMapper.<init>(ObjectMapper.java:549) at com.fasterxml.jackson.databind.ObjectMapper.<init>(ObjectMapper.java:460) at io.fabric8.kubernetes.client.utils.Serializa
-tion.<clinit>(Serialization.java:37) -->
-          <pluginFirstClassLoader>true</pluginFirstClassLoader>
-          <systemProperties>
-            <hudson.slaves.NodeProvisioner.initialDelay>0</hudson.slaves.NodeProvisioner.initialDelay>
-            <hudson.slaves.NodeProvisioner.MARGIN>50</hudson.slaves.NodeProvisioner.MARGIN>
-            <hudson.slaves.NodeProvisioner.MARGIN0>0.85</hudson.slaves.NodeProvisioner.MARGIN0>
-          </systemProperties>
+          <compilerArgs>
+            <arg>-Xlint:all</arg>
+          </compilerArgs>
         </configuration>
       </plugin>
     </plugins>
