@@ -198,9 +198,9 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     @OptionalExtension(requirePlugins = "pipeline-model-extensions")
     @Symbol("ecs")
     public static class DescriptorImpl extends DeclarativeAgentDescriptor<ECSDeclarativeAgent> {
-      @Override
-      public String getDisplayName() {
-          return "ECS Agent";
-      }
+        @Override
+        public String getDisplayName() {
+            return "ECS Agent";
+        }
     }
 }

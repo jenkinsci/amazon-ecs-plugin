@@ -19,7 +19,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(ECSTaskTemplateStep.class.getName());
 
-    private String DEFAULT_CLOUD = "a";
+    private final String DEFAULT_CLOUD = "cloud-default";
     private final String label;
     private final String name;
     private String cloud = DEFAULT_CLOUD;
@@ -44,7 +44,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     public ECSTaskTemplateStep(String label, String name) {
 
         this.label = label;
-        this.name = name == null ? "jenkins-slave" : name;
+        this.name = name == null ? "jenkins-agent" : name;
     }
 
     public String getLabel() {
@@ -210,8 +210,8 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
 
     @Override
     public StepExecution start(StepContext stepContext) throws Exception {
-        LOGGER.log(Level.INFO, "In ECSTaskTemplateStep start. label: {0}", label);
-        LOGGER.log(Level.INFO, "In ECSTaskTemplateStep start. cloud: {0}", cloud);
+        LOGGER.log(Level.FINE, "In ECSTaskTemplateStep start. label: {0}", label);
+        LOGGER.log(Level.FINE, "In ECSTaskTemplateStep start. cloud: {0}", cloud);
         return new ECSTaskTemplateStepExecution(this, stepContext);
     }
 

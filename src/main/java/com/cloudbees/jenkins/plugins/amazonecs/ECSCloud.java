@@ -95,7 +95,7 @@ public class ECSCloud extends Cloud {
     }
 
     public static @Nonnull ECSCloud getByName(@Nonnull String name) throws IllegalArgumentException {
-        Cloud cloud = Jenkins.getInstance().clouds.getByName(name);
+        Cloud cloud = Jenkins.get().clouds.getByName(name);
         if (cloud instanceof ECSCloud) return (ECSCloud) cloud;
         throw new IllegalArgumentException("'" + name + "' is not an ECS cloud but " + cloud);
         }
@@ -296,7 +296,7 @@ public class ECSCloud extends Cloud {
         }
 
         public ListBoxModel doFillCredentialsIdItems() {
-            return AWSCredentialsHelper.doFillCredentialsIdItems(Jenkins.getInstance());
+            return AWSCredentialsHelper.doFillCredentialsIdItems(Jenkins.get());
         }
 
         public ListBoxModel doFillRegionNameItems() {

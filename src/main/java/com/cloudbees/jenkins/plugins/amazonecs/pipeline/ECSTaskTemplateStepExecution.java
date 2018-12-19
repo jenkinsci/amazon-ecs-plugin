@@ -2,6 +2,7 @@ package com.cloudbees.jenkins.plugins.amazonecs.pipeline;
 
 import jenkins.model.Jenkins;
 import hudson.slaves.Cloud;
+import hudson.AbortException;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -34,26 +35,36 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
 
     @Override
     public boolean start() throws Exception {
-        LOGGER.log(Level.INFO, "In ECSTaskTemplateExecution run()");
-        LOGGER.log(Level.INFO, "cloud: {0}", this.cloudName);
-        LOGGER.log(Level.INFO, "label: {0}", label);
+        LOGGER.log(Level.FINE, "In ECSTaskTemplateExecution run()");
+        LOGGER.log(Level.FINE, "cloud: {0}", this.cloudName);
+        LOGGER.log(Level.FINE, "label: {0}", label);
         String randString = RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
         String name = String.format(NAME_FORMAT, step.getName(), randString);
 
         Cloud cloud = null;
         String parentLabel = step.getInheritFrom();
         if (parentLabel != null) {
-            for (Cloud c: Jenkins.getInstance().clouds) {
+            for (Cloud c: Jenkins.get().clouds) {
                 if (c instanceof ECSCloud) {
                     ECSCloud ecsCloud = (ECSCloud)c;
                     if (ecsCloud.canProvision(parentLabel)){
                         cloud = c;
                         cloudName = cloud.name;
+                        break;
                     }
                 }
             }
         } else {
-            cloud = Jenkins.getInstance().getCloud(this.cloudName);
+            cloud = Jenkins.get().getCloud(this.cloudName);
+        }
+
+        if (cloud == null) {
+            throw new AbortException(String.format("Cloud does not exist: %s", cloudName));
+        }
+
+        if (!(cloud instanceof ECSCloud)) {
+            throw new AbortException(String.format("Cloud is not an ECS cloud: %s (%s)", cloudName,
+                    cloud.getClass().getName()));
         }
 
         ECSCloud ecsCloud = (ECSCloud) cloud;
@@ -97,7 +108,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
     @Override
     public void onResume() {
         super.onResume();
-        Cloud c = Jenkins.getInstance().getCloud(cloudName);
+        Cloud c = Jenkins.get().getCloud(cloudName);
         if (c == null) {
             throw new RuntimeException(String.format("Cloud does not exist: %s", cloudName));
         }
@@ -124,7 +135,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
          * Remove the template after step is done
          */
         protected void finished(StepContext context) throws Exception {
-            Cloud c = Jenkins.getInstance().getCloud(cloudName);
+            Cloud c = Jenkins.get().getCloud(cloudName);
             if (c == null) {
                 LOGGER.log(Level.WARNING, "Cloud {0} no longer exists, cannot delete task template {1}",
                         new Object[] { cloudName, taskTemplate.getTemplateName() });
