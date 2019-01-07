@@ -27,10 +27,20 @@ To run locally, execute the following command and open the browser [http://local
 ```
 
 ## Maintainers
-Philipp Garbe ([GitHub](https://github.com/pgarbe), [Twitter](https://twitter.com/pgarbe))
-Douglas Manley ([GitHub](https://github.com/tekkamanendless))
-Jan Roehrich ([GitHub](https://github.com/roehrijn))
+Philipp Garbe ([GitHub](https://github.com/pgarbe), [Twitter](https://twitter.com/pgarbe))  
+Douglas Manley ([GitHub](https://github.com/tekkamanendless))  
+Jan Roehrich ([GitHub](https://github.com/roehrijn))  
 
 ## Documentation and Installation
 
 Please find the documentation on the [Jenkins Wiki page Amazon EC2 Container Service Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Amazon+EC2+Container+Service+Plugin).
+
+## FAQ
+### My paralle jobs don't start at the same time
+Actually, there can be multiple reasons:
+
+* The plugin creates a new agent only when the stage contains an `agent` [definition](https://jenkins.io/doc/book/pipeline/syntax/#agent). If this is missing, the stage inherits the agent definition from the level above and also re-use the instance. 
+
+* Also, parallel stages sometimes don't really start at the same time. Especially, when the provided label of the `agent` definition is the same. The reason is that Jenkins tries to guess how many instances are really needed and tells the plugin to start n instances of the agent with label x. This number is likely smaller than the number of parallel stages that you've declared in your Jenkinsfile. Jenkins calls the ECS plugin multiple times to get the total number of agents running.
+
+* If launching of the agents takes long, and Jenkins calls the plugin in the meantime again to start n instances, the ECS plugin doesn't know if this instances are really needed or just requested because of the slow start. That's why the ECS plugin subtracts the number of launching agents from the number of requested agents (for a specific label). This can mean for parallel stages that some of the agents are launched after the previous bunch of agents becomes online.
