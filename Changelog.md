@@ -1,8 +1,8 @@
 # Changelog
 
 ## 1.19
-- BUG - [JENKINS-54898] ECS Plugin 1.18 cannot launch slaves #77
-- BUG - [JENKINS-55078] No longer able to start ECS slaves #78
+- BUG - [JENKINS-54898] ECS Plugin 1.18 cannot launch agents #77
+- BUG - [JENKINS-55078] No longer able to start ECS agents #78
 
 BREAKING: Fixed typo in config: `slaveTimoutInSeconds` is now `slaveTimeoutInSeconds`
 
