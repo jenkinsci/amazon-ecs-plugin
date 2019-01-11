@@ -31,15 +31,14 @@
   <f:entry title="Label" field="label" description="The label used to identify this slave in Jenkins.">
     <f:textbox />
   </f:entry>
-  <f:entry field="inheritFrom" title="${%Task template to inherit from}"
-    help="/plugin/amazon-ecs/help/inheritFrom.html">
-  <f:textbox/>
+  <f:entry field="inheritFrom" title="${%Task template to inherit from}">
+    <f:textbox/>
   </f:entry>
   <f:entry title="${%Template Name}" field="templateName" description="The name that will be appended to the ECS cluster name when creating task definitions. Cannot be used with a Task Definition Override.">
-      <f:textbox />
-    </f:entry>
+    <f:textbox />
+  </f:entry>
   <f:entry title="${%Task Definition Override}" field="taskDefinitionOverride"
-    help="/plugin/amazon-ecs/help/externalTaskDefinition.html"
+    help="/descriptor/com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate/help/externalTaskDefinition"
     description="Externally-managed ECS task definition to use, instead of creating task definitions using the Template Name. This value takes precedence over all other container settings.">
       <f:textbox />
   </f:entry>

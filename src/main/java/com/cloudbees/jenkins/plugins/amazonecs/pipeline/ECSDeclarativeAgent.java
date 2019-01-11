@@ -69,9 +69,17 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         this.cloud = cloud;
     }
 
+    public String getTaskDefinitionOverride() {
+        return taskDefinitionOverride;
+    }
+
     @DataBoundSetter
     public void setTaskDefinitionOverride(String taskDefinitionOverride) {
         this.taskDefinitionOverride = taskDefinitionOverride;
+    }
+
+    public String getImage() {
+        return image;
     }
 
     @DataBoundSetter
@@ -79,9 +87,17 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         this.image = image;
     }
 
+    public String getLaunchType() {
+        return launchType;
+    }
+
     @DataBoundSetter
     public void setLaunchType(String launchType) {
         this.launchType = launchType;
+    }
+
+    public String getRemoteFSRoot() {
+        return remoteFSRoot;
     }
 
     @DataBoundSetter
@@ -89,9 +105,17 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         this.remoteFSRoot = remoteFSRoot;
     }
 
+    public int getMemory() {
+        return memory;
+    }
+
     @DataBoundSetter
     public void setMemory(int memory) {
         this.memory = memory;
+    }
+
+    public int getMemoryReservation() {
+        return memoryReservation;
     }
 
     @DataBoundSetter
@@ -99,9 +123,17 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         this.memoryReservation = memoryReservation;
     }
 
+    public int getCpu() {
+        return cpu;
+    }
+
     @DataBoundSetter
     public void setCpu(int cpu) {
         this.cpu = cpu;
+    }
+
+    public String getSubnets() {
+        return subnets;
     }
 
     @DataBoundSetter
@@ -109,9 +141,17 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         this.subnets = subnets;
     }
 
+    public String getSecurityGroups() {
+        return securityGroups;
+    }
+
     @DataBoundSetter
     public void setSecurityGroups(String securityGroups) {
         this.securityGroups = securityGroups;
+    }
+
+    public boolean getAssignPublicIp() {
+        return assignPublicIp;
     }
 
     @DataBoundSetter
@@ -119,9 +159,17 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         this.assignPublicIp = assignPublicIp;
     }
 
+    public boolean getPrivileged() {
+        return privileged;
+    }
+
     @DataBoundSetter
     public void setPrivileged(boolean privileged) {
         this.privileged = privileged;
+    }
+
+    public String getContainerUser() {
+        return containerUser;
     }
 
     @DataBoundSetter
@@ -129,9 +177,17 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         this.containerUser = containerUser;
     }
 
+    public String getTaskrole() {
+        return taskrole;
+    }
+
     @DataBoundSetter
     public void setTaskrole(String taskrole) {
         this.taskrole = taskrole;
+    }
+
+    public String getInheritFrom() {
+        return inheritFrom;
     }
 
     @DataBoundSetter
@@ -139,9 +195,17 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         this.inheritFrom = inheritFrom;
     }
 
+    public List<LogDriverOption> getLogDriverOptions() {
+        return logDriverOptions;
+    }
+
     @DataBoundSetter
     public void setLogDriverOptions(List<LogDriverOption> logDriverOptions) {
         this.logDriverOptions = logDriverOptions;
+    }
+
+    public List<EnvironmentEntry> getEnvironments() {
+        return environments;
     }
 
     @DataBoundSetter
@@ -149,14 +213,26 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         this.environments = environments;
     }
 
+    public List<ExtraHostEntry> getExtraHosts() {
+        return extraHosts;
+    }
+
     @DataBoundSetter
     public void setExtraHosts(List<ExtraHostEntry> extraHosts) {
         this.extraHosts = extraHosts;
     }
 
+    public List<MountPointEntry> getMountPoints() {
+        return mountPoints;
+    }
+
     @DataBoundSetter
     public void setMountPoints(List<MountPointEntry> mountPoints) {
         this.mountPoints = mountPoints;
+    }
+
+    public List<PortMappingEntry> getPortMappings() {
+        return portMappings;
     }
 
     @DataBoundSetter
@@ -227,23 +303,23 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
             argMap.put("inheritFrom", inheritFrom);
         }
 
-        if (logDriverOptions.size() > 0) {
+        if (logDriverOptions != null && logDriverOptions.size() > 0) {
             argMap.put("logDriverOptions", logDriverOptions);
         }
 
-        if (environments.size() > 0) {
+        if (environments != null && environments.size() > 0) {
             argMap.put("environments", environments);
         }
 
-        if (extraHosts.size() > 0) {
+        if (extraHosts != null && extraHosts.size() > 0) {
             argMap.put("extraHosts", extraHosts);
         }
 
-        if (mountPoints.size() > 0) {
+        if (extraHosts != null && mountPoints.size() > 0) {
             argMap.put("mountPoints", mountPoints);
         }
 
-        if (portMappings.size() > 0) {
+        if (extraHosts != null && portMappings.size() > 0) {
             argMap.put("portMappings", portMappings);
         }
 

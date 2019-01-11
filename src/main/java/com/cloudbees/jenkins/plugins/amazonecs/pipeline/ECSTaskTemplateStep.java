@@ -287,11 +287,11 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     public static final class DescriptorImpl extends StepDescriptor {
         @Override
         public String getFunctionName() {
-            return "taskTemplate";
+            return "ecsTaskTemplate";
         }
         @Override
         public String getDisplayName() {
-            return "Cloud instances provisioning for declarative pipeline";
+            return "Define a task template to use in the AWS ECS plugin";
         }
 
         @Override

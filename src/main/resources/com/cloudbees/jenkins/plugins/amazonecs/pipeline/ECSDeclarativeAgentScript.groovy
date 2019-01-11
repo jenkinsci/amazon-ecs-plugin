@@ -39,7 +39,7 @@ public class ECSDeclarativeAgentScript extends DeclarativeAgentScript<ECSDeclara
     public Closure run(Closure body) {
         return {
             try {
-                script.taskTemplate(describable.asArgs) {
+                script.ecsTaskTemplate(describable.asArgs) {
                     script.node(describable.label) {
                         body.call()
                     }
