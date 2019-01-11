@@ -44,6 +44,8 @@ import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
 import com.amazonaws.services.ecs.model.ClientException;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.ContainerOverride;
+import com.amazonaws.services.ecs.model.DeregisterTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.DeregisterTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.DescribeTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.DescribeTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.DescribeTasksRequest;
@@ -290,20 +292,21 @@ class ECSService {
     }
 
     void removeTemplate(final ECSCloud cloud, final ECSTaskTemplate template) {
-        // TODO finish implementation
-        // AmazonECSClient client = getAmazonECSClient();
-        //
-        // String familyName = fullQualifiedTemplateName(cloud, template);
-        //
-        // try {
-        //     DeregisterTaskDefinitionResult result = client.deregisterTaskDefinition(
-        //             new DeregisterTaskDefinitionRequest()
-        //                     .withTaskDefinition(findTaskDefinition(familyName)));
-        //
-        // } catch (ClientException e) {
-        //     LOGGER.log(Level.FINE, "No existing task definition found for family or ARN: " + familyName, e);
-        //     LOGGER.log(Level.INFO, "No existing task definition found for family or ARN: " + familyName);
-        // }
+        AmazonECS client = getAmazonECSClient();
+
+        String familyName = fullQualifiedTemplateName(cloud, template);
+
+        int revision = findTaskDefinition(familyName).getRevision();
+
+        try {
+            client.deregisterTaskDefinition(
+                    new DeregisterTaskDefinitionRequest()
+                            .withTaskDefinition(familyName + ":" + revision));
+
+        } catch (ClientException e) {
+            LOGGER.log(Level.FINE, "Error removing task definition: " + familyName + ":" + revision, e);
+            LOGGER.log(Level.INFO, "Error removing task definition: " + familyName + ":" + revision);
+        }
     }
 
     /**
