@@ -2,18 +2,36 @@ package com.cloudbees.jenkins.plugins.amazonecs.pipeline;
 
 import hudson.Extension;
 import hudson.model.TaskListener;
+import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
+
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Set;
+
+import com.amazonaws.services.ecs.model.LaunchType;
+import com.amazonaws.services.ecs.model.NetworkMode;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.EnvironmentEntry;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.ExtraHostEntry;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.LogDriverOption;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.MountPointEntry;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.PortMappingEntry;
 import com.google.common.collect.ImmutableSet;
 import hudson.model.Run;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.servlet.ServletException;
 
 public class ECSTaskTemplateStep extends Step implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -39,6 +57,11 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private String containerUser;
     private String taskrole;
     private String inheritFrom;
+    private List<LogDriverOption> logDriverOptions;
+    private List<EnvironmentEntry> environments;
+    private List<ExtraHostEntry> extraHosts;
+    private List<MountPointEntry> mountPoints;
+    private List<PortMappingEntry> portMappings;
 
     @DataBoundConstructor
     public ECSTaskTemplateStep(String label, String name) {
@@ -208,6 +231,51 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
         return inheritFrom;
     }
 
+    public List<LogDriverOption> getLogDriverOptions() {
+        return logDriverOptions;
+    }
+
+    @DataBoundSetter
+    public void setLogDriverOptions(List<LogDriverOption> logDriverOptions) {
+        this.logDriverOptions = logDriverOptions;
+    }
+
+    public List<EnvironmentEntry> getEnvironments() {
+        return environments;
+    }
+
+    @DataBoundSetter
+    public void setEnvironments(List<EnvironmentEntry> environments) {
+        this.environments = environments;
+    }
+
+    public List<ExtraHostEntry> getExtraHosts() {
+        return extraHosts;
+    }
+
+    @DataBoundSetter
+    public void setExtraHosts(List<ExtraHostEntry> extraHosts) {
+        this.extraHosts = extraHosts;
+    }
+
+    public List<MountPointEntry> getMountPoints() {
+        return mountPoints;
+    }
+
+    @DataBoundSetter
+    public void setMountPoints(List<MountPointEntry> mountPoints) {
+        this.mountPoints = mountPoints;
+    }
+
+    public List<PortMappingEntry> getPortMappings() {
+        return portMappings;
+    }
+
+    @DataBoundSetter
+    public void setPortMappings(List<PortMappingEntry> portMappings) {
+        this.portMappings = portMappings;
+    }
+
     @Override
     public StepExecution start(StepContext stepContext) throws Exception {
         LOGGER.log(Level.FINE, "In ECSTaskTemplateStep start. label: {0}", label);
@@ -240,6 +308,71 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
         public Set<? extends Class<?>> getRequiredContext() {
             return ImmutableSet.of(Run.class, TaskListener.class);
         }
+
+        public ListBoxModel doFillLaunchTypeItems() {
+            final ListBoxModel options = new ListBoxModel();
+            for (LaunchType launchType : LaunchType.values()) {
+                options.add(launchType.toString());
+            }
+            return options;
+        }
+
+        public ListBoxModel doFillNetworkModeItems() {
+            final ListBoxModel options = new ListBoxModel();
+            for (NetworkMode networkMode : NetworkMode.values()) {
+                options.add(networkMode.toString());
+            }
+            return options;
+        }
+
+        public ListBoxModel doFillProtocolItems() {
+            final ListBoxModel options = new ListBoxModel();
+            options.add("TCP", "tcp");
+            options.add("UDP", "udp");
+            return options;
+        }
+
+        public FormValidation doCheckSubnetsLaunchType(@QueryParameter("subnets") String subnets,
+                @QueryParameter("launchType") String launchType) throws IOException, ServletException {
+            if (launchType.contentEquals(LaunchType.FARGATE.toString())) {
+                return FormValidation.error("Subnets need to be set, when using FARGATE");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckSubnetsNetworkMode(@QueryParameter("subnets") String subnets,
+                @QueryParameter("networkMode") String networkMode) throws IOException, ServletException {
+            if (networkMode.equals(NetworkMode.Awsvpc.toString()) && subnets.isEmpty()) {
+                return FormValidation.error("Subnets need to be set when using awsvpc network mode");
+            }
+            return FormValidation.ok();
+        }
+
+        /* we validate both memory and memoryReservation fields to the same rules */
+        public FormValidation doCheckMemory(@QueryParameter("memory") int memory,
+                @QueryParameter("memoryReservation") int memoryReservation) throws IOException, ServletException {
+            return validateMemorySettings(memory, memoryReservation);
+        }
+
+        public FormValidation doCheckMemoryReservation(@QueryParameter("memory") int memory,
+                @QueryParameter("memoryReservation") int memoryReservation) throws IOException, ServletException {
+            return validateMemorySettings(memory, memoryReservation);
+        }
+
+        private FormValidation validateMemorySettings(int memory, int memoryReservation) {
+            if (memory < 0 || memoryReservation < 0) {
+                return FormValidation.error("memory and/or memoryReservation must be 0 or a positive integer");
+            }
+            if (memory == 0 && memoryReservation == 0) {
+                return FormValidation.error("at least one of memory or memoryReservation are required to be > 0");
+            }
+            if (memory > 0 && memoryReservation > 0) {
+                if (memory <= memoryReservation) {
+                    return FormValidation.error("memory must be greater than memoryReservation if both are specified");
+                }
+            }
+            return FormValidation.ok();
+        }
     }
 
     @Override
@@ -262,6 +395,11 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
                 "containerUser='" + containerUser + '\'' + '\n' +
                 "taskrole='" + taskrole + '\'' + '\n' +
                 "inheritFrom='" + inheritFrom + '\'' + '\n' +
+                "logDriverOptions'" + logDriverOptions + '\'' + '\n' +
+                "environments'" + environments + '\'' + '\n' +
+                "extraHosts'" + extraHosts + '\'' + '\n' +
+                "mountPoints'" + mountPoints + '\'' + '\n' +
+                "portMappings'" + portMappings + '\'' + '\n' +
                 '}';
     }
 }

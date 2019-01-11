@@ -10,6 +10,14 @@ import org.jenkinsci.plugins.variant.OptionalExtension;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.EnvironmentEntry;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.ExtraHostEntry;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.LogDriverOption;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.MountPointEntry;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.PortMappingEntry;
+
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -33,6 +41,11 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private String containerUser;
     private String taskrole;
     private String inheritFrom;
+    private List<LogDriverOption> logDriverOptions;
+    private List<EnvironmentEntry> environments;
+    private List<ExtraHostEntry> extraHosts;
+    private List<MountPointEntry> mountPoints;
+    private List<PortMappingEntry> portMappings;
 
     @DataBoundConstructor
     public ECSDeclarativeAgent() {
@@ -126,6 +139,30 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         this.inheritFrom = inheritFrom;
     }
 
+    @DataBoundSetter
+    public void setLogDriverOptions(List<LogDriverOption> logDriverOptions) {
+        this.logDriverOptions = logDriverOptions;
+    }
+
+    @DataBoundSetter
+    public void setEnvironments(List<EnvironmentEntry> environments) {
+        this.environments = environments;
+    }
+
+    @DataBoundSetter
+    public void setExtraHosts(List<ExtraHostEntry> extraHosts) {
+        this.extraHosts = extraHosts;
+    }
+
+    @DataBoundSetter
+    public void setMountPoints(List<MountPointEntry> mountPoints) {
+        this.mountPoints = mountPoints;
+    }
+
+    @DataBoundSetter
+    public void setPortMappings(List<PortMappingEntry> portMappings) {
+        this.portMappings = portMappings;
+    }
 
     public Map<String,Object> getAsArgs() {
         Map<String,Object> argMap = new TreeMap<String, Object>();
@@ -188,6 +225,26 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
 
         if (!StringUtils.isEmpty(inheritFrom)) {
             argMap.put("inheritFrom", inheritFrom);
+        }
+
+        if (logDriverOptions.size() > 0) {
+            argMap.put("logDriverOptions", logDriverOptions);
+        }
+
+        if (environments.size() > 0) {
+            argMap.put("environments", environments);
+        }
+
+        if (extraHosts.size() > 0) {
+            argMap.put("extraHosts", extraHosts);
+        }
+
+        if (mountPoints.size() > 0) {
+            argMap.put("mountPoints", mountPoints);
+        }
+
+        if (portMappings.size() > 0) {
+            argMap.put("portMappings", portMappings);
         }
 
         LOGGER.log(Level.INFO, "In getAsArgs. argMap: {0}", argMap.toString());
