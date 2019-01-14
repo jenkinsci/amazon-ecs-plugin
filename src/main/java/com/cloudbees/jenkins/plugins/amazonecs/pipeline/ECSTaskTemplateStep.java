@@ -20,7 +20,6 @@ import java.util.Set;
 
 import com.amazonaws.services.ecs.model.LaunchType;
 import com.amazonaws.services.ecs.model.NetworkMode;
-import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.EnvironmentEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.ExtraHostEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.LogDriverOption;

@@ -10,7 +10,6 @@ import org.jenkinsci.plugins.variant.OptionalExtension;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.EnvironmentEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.ExtraHostEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.LogDriverOption;

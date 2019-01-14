@@ -28,6 +28,7 @@ import org.jenkinsci.plugins.pipeline.modeldefinition.SyntheticStageNames
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.CheckoutScript
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgentScript
 import org.jenkinsci.plugins.workflow.cps.CpsScript
+import org.apache.commons.lang.RandomStringUtils;
 
 
 public class ECSDeclarativeAgentScript extends DeclarativeAgentScript<ECSDeclarativeAgent> {
@@ -39,6 +40,12 @@ public class ECSDeclarativeAgentScript extends DeclarativeAgentScript<ECSDeclara
     public Closure run(Closure body) {
         return {
             try {
+                if (describable.label == null || describable.label == "") {
+                    String projectName = script.getProperty("currentBuild").projectName.toLowerCase().replaceAll("[^a-z-]", "-")
+                    String number = script.getProperty("currentBuild").number
+                    String label = projectName + "-" + number + "-" + RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
+                    describable.setLabel(label)
+                }
                 script.ecsTaskTemplate(describable.asArgs) {
                     script.node(describable.label) {
                         body.call()

@@ -45,7 +45,6 @@ import com.amazonaws.services.ecs.model.ClientException;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.ContainerOverride;
 import com.amazonaws.services.ecs.model.DeregisterTaskDefinitionRequest;
-import com.amazonaws.services.ecs.model.DeregisterTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.DescribeTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.DescribeTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.DescribeTasksRequest;

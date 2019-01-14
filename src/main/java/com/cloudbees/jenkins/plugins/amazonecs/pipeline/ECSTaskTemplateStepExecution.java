@@ -92,6 +92,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getTaskrole(),
                                           step.getInheritFrom());
 
+        LOGGER.log(Level.INFO, "Registering task template with name {0}", new Object[] { newTemplate.getTemplateName() });
         ecsCloud.registerTemplate(newTemplate);
         getContext().newBodyInvoker().withContext(step).withCallback(new ECSTaskTemplateCallback(newTemplate)).start();
         return false;
