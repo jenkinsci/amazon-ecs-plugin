@@ -56,6 +56,7 @@ import com.google.common.base.Strings;
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> implements Serializable {
+    private static final long serialVersionUID = -426721853953018205L;
     /**
      * Template Name
      */
@@ -457,7 +458,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
     public String getTemplateName() {return templateName; }
 
-    public static class LogDriverOption extends AbstractDescribableImpl<LogDriverOption>{
+    public static class LogDriverOption extends AbstractDescribableImpl<LogDriverOption> implements Serializable {
+        private static final long serialVersionUID = 8585792353105873086L;
         public String name, value;
 
         @DataBoundConstructor
@@ -659,7 +661,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         return ports;
     }
 
-    public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> {
+    public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> implements Serializable {
+        private static final long serialVersionUID = 4195862080979262875L;
         public String name, value;
 
         @DataBoundConstructor
@@ -682,7 +685,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         }
     }
 
-    public static class ExtraHostEntry extends AbstractDescribableImpl<ExtraHostEntry> {
+    public static class ExtraHostEntry extends AbstractDescribableImpl<ExtraHostEntry> implements Serializable {
+        private static final long serialVersionUID = -23978859661031633L;
         public String ipAddress, hostname;
 
         @DataBoundConstructor
@@ -705,7 +709,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         }
     }
 
-    public static class MountPointEntry extends AbstractDescribableImpl<MountPointEntry> {
+    public static class MountPointEntry extends AbstractDescribableImpl<MountPointEntry> implements Serializable {
+        private static final long serialVersionUID = -5363412950753423854L;
         public String name, sourcePath, containerPath;
         public Boolean readOnly;
 
@@ -737,7 +742,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         }
     }
 
-    public static class PortMappingEntry extends AbstractDescribableImpl<PortMappingEntry> {
+    public static class PortMappingEntry extends AbstractDescribableImpl<PortMappingEntry> implements Serializable {
+        private static final long serialVersionUID = 8223725139080497839L;
         public Integer containerPort, hostPort;
         public String protocol;
 
