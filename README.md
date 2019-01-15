@@ -35,6 +35,32 @@ Jan Roehrich ([GitHub](https://github.com/roehrijn))
 
 Please find the documentation on the [Jenkins Wiki page Amazon EC2 Container Service Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Amazon+EC2+Container+Service+Plugin).
 
+## Declarative Pipeline
+Declarative Pipeline support requires Jenkins 2.66+  
+
+Declarative agents can be defined like shown below. You can also reuse pre-configured templates and override certain settings using `inheritFrom`.  
+
+```groovy
+pipeline {
+  agent none
+
+  stages {
+    stage('Test') {
+        agent {
+            ecs {
+                inheritFrom 'my-preconfigured-template'
+                cpu 2048
+                memory 4096
+            }
+        }
+        steps {
+            sh 'echo hello'
+        }
+    }
+  }
+}
+```
+
 ## FAQ
 ### My parallel jobs don't start at the same time
 Actually, there can be multiple reasons:
