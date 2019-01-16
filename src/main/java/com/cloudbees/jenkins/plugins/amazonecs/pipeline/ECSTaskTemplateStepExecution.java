@@ -96,7 +96,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getInheritFrom());
 
         LOGGER.log(Level.INFO, "Registering task template with name {0}", new Object[] { newTemplate.getTemplateName() });
-        ecsCloud.registerTemplate(newTemplate);
+        ecsCloud.addDynamicTemplate(newTemplate);
         getContext().newBodyInvoker().withContext(step).withCallback(new ECSTaskTemplateCallback(newTemplate)).start();
         return false;
     }
@@ -130,7 +130,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                     c.getClass().getName()));
         }
         ECSCloud ecsCloud = (ECSCloud) c;
-        ecsCloud.registerTemplate(newTemplate);
+        ecsCloud.addDynamicTemplate(newTemplate);
     }
 
     private class ECSTaskTemplateCallback extends BodyExecutionCallback.TailCall {
@@ -158,7 +158,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                 LOGGER.log(Level.INFO, "Removing task template {1} from cloud {0}",
                         new Object[] { c.name, taskTemplate.getTemplateName() });
                 ECSCloud ecsCloud = (ECSCloud) c;
-                ecsCloud.removeTemplate(taskTemplate);
+                ecsCloud.removeDynamicTemplate(taskTemplate);
             } else {
                 LOGGER.log(Level.WARNING, "Cloud is not an ECSCloud: {0} {1}",
                         new String[] { c.name, c.getClass().getName() });

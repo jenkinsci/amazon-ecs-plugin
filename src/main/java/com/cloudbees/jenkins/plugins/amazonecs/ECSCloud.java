@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -47,6 +48,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.model.ListClustersRequest;
 import com.amazonaws.services.ecs.model.ListClustersResult;
+import com.cloudbees.jenkins.plugins.amazonecs.pipeline.TaskTemplateMap;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 
 import org.apache.commons.lang.RandomStringUtils;
@@ -85,7 +87,7 @@ public class ECSCloud extends Cloud {
     private int retentionTimeout = DescriptorImpl.DEFAULT_RETENTION_TIMEOUT;
     private int slaveTimeoutInSeconds = DescriptorImpl.DEFAULT_SLAVE_TIMEOUT_IN_SECONDS;
     private ECSService ecsService;
-    private String allowedOverrides = DescriptorImpl.DEFAULT_ALLOWED_OVERRIDES;
+    private String allowedOverrides;
 
     @DataBoundConstructor
     public ECSCloud(String name,
@@ -112,6 +114,18 @@ public class ECSCloud extends Cloud {
     @Nonnull
     public List<ECSTaskTemplate> getTemplates() {
         return templates != null ? templates : Collections.<ECSTaskTemplate> emptyList();
+    }
+
+    @Nonnull
+    public List<ECSTaskTemplate> getAllTemplates() {
+        List<ECSTaskTemplate> dynamicTemplates = TaskTemplateMap.get().getTemplates(this);
+        List<ECSTaskTemplate> allTemplates = new CopyOnWriteArrayList<>();
+
+        allTemplates.addAll(dynamicTemplates);
+        if (templates != null) {
+            allTemplates.addAll(templates);
+        }
+        return allTemplates;
     }
 
     @DataBoundSetter
@@ -155,16 +169,17 @@ public class ECSCloud extends Cloud {
     }
 
     @DataBoundSetter
-    public void setAllowedOverrides(String allowedOverrides) {
-        this.allowedOverrides = allowedOverrides;
+    public void setAllowedOverrides(@Nonnull String allowedOverrides) {
+        this.allowedOverrides = allowedOverrides.equals(DescriptorImpl.DEFAULT_ALLOWED_OVERRIDES) ? null : allowedOverrides;
     }
 
+    @Nonnull
     public String getAllowedOverrides() {
-        return allowedOverrides;
+        return allowedOverrides == null ? DescriptorImpl.DEFAULT_ALLOWED_OVERRIDES : allowedOverrides;
     }
 
     public boolean isAllowedOverride(String override) {
-        List<String> allowedOverridesList = Arrays.asList(allowedOverrides.toLowerCase().replaceAll(" ", "").split(","));
+        List<String> allowedOverridesList = Arrays.asList(getAllowedOverrides().toLowerCase().replaceAll(" ", "").split(","));
         if (allowedOverridesList.contains("all")) return true;
         return allowedOverridesList.contains(override);
     }
@@ -182,7 +197,7 @@ public class ECSCloud extends Cloud {
         if (label == null) {
             return null;
         }
-        for (ECSTaskTemplate t : getTemplates()) {
+        for (ECSTaskTemplate t : getAllTemplates()) {
             if (label.matches(t.getLabelSet())) {
                 return t;
             }
@@ -194,7 +209,7 @@ public class ECSCloud extends Cloud {
         if (label == null) {
             return null;
         }
-        for (ECSTaskTemplate t : getTemplates()) {
+        for (ECSTaskTemplate t : getAllTemplates()) {
             if (label.matches(t.getLabel())) {
                 return t;
             }
@@ -299,6 +314,23 @@ public class ECSCloud extends Cloud {
                 this.jenkinsUrl = config.getUrl();
             }
         }
+    }
+
+    /**
+     * Add a dynamic task template. Won't be displayed in UI, and persisted separately from the cloud instance.
+     * @param t the template to add
+     */
+    public void addDynamicTemplate(ECSTaskTemplate t) {
+        TaskTemplateMap.get().addTemplate(this, t);
+    }
+
+    /**
+     * Remove a dynamic task template.
+     * @param t the template to remove
+     */
+    public void removeDynamicTemplate(ECSTaskTemplate t) {
+        getEcsService().removeTemplate(this, t);
+        TaskTemplateMap.get().removeTemplate(this, t);
     }
 
     @Extension
