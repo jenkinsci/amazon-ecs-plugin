@@ -62,6 +62,8 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private List<MountPointEntry> mountPoints;
     private List<PortMappingEntry> portMappings;
 
+    private List<String> overrides;
+
     @DataBoundConstructor
     public ECSTaskTemplateStep(String label, String name) {
 
@@ -273,6 +275,15 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     @DataBoundSetter
     public void setPortMappings(List<PortMappingEntry> portMappings) {
         this.portMappings = portMappings;
+    }
+
+    @DataBoundSetter
+    public void setOverrides(List<String> overrides) {
+        this.overrides = overrides;
+    }
+
+    public List<String> getOverrides() {
+        return overrides;
     }
 
     @Override

@@ -27,6 +27,7 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -84,6 +85,7 @@ public class ECSCloud extends Cloud {
     private int retentionTimeout = DescriptorImpl.DEFAULT_RETENTION_TIMEOUT;
     private int slaveTimeoutInSeconds = DescriptorImpl.DEFAULT_SLAVE_TIMEOUT_IN_SECONDS;
     private ECSService ecsService;
+    private String allowedOverrides = DescriptorImpl.DEFAULT_ALLOWED_OVERRIDES;
 
     @DataBoundConstructor
     public ECSCloud(String name,
@@ -150,6 +152,21 @@ public class ECSCloud extends Cloud {
     @DataBoundSetter
     public void setTunnel(String tunnel) {
         this.tunnel = tunnel;
+    }
+
+    @DataBoundSetter
+    public void setAllowedOverrides(String allowedOverrides) {
+        this.allowedOverrides = allowedOverrides;
+    }
+
+    public String getAllowedOverrides() {
+        return allowedOverrides;
+    }
+
+    public boolean isAllowedOverride(String override) {
+        List<String> allowedOverridesList = Arrays.asList(allowedOverrides.toLowerCase().replaceAll(" ", "").split(","));
+        if (allowedOverridesList.contains("all")) return true;
+        return allowedOverridesList.contains(override);
     }
 
     @Override
@@ -288,6 +305,7 @@ public class ECSCloud extends Cloud {
     public static class DescriptorImpl extends Descriptor<Cloud> {
         public static final int DEFAULT_RETENTION_TIMEOUT = 5;
         public static final int DEFAULT_SLAVE_TIMEOUT_IN_SECONDS= 900;
+        public static final String DEFAULT_ALLOWED_OVERRIDES = "all";
         private static String CLOUD_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
 
         @Override

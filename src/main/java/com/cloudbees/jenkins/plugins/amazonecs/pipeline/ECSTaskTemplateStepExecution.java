@@ -70,6 +70,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
         }
 
         ECSCloud ecsCloud = (ECSCloud) cloud;
+        checkAllowedOverrides(ecsCloud, step);
         newTemplate = new ECSTaskTemplate(name,
                                           step.getLabel(),
                                           step.getTaskDefinitionOverride(),
@@ -98,6 +99,15 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
         ecsCloud.registerTemplate(newTemplate);
         getContext().newBodyInvoker().withContext(step).withCallback(new ECSTaskTemplateCallback(newTemplate)).start();
         return false;
+    }
+
+    private void checkAllowedOverrides(ECSCloud cloud, ECSTaskTemplateStep step) throws AbortException {
+        for (String override : step.getOverrides()) {
+            if(!cloud.isAllowedOverride(override)) {
+                LOGGER.log(Level.FINE, "Override {0} is not allowed", new Object[] { override });
+                throw new AbortException(String.format("Not allowed to override %s. Allowed overrides are %s", override, cloud.getAllowedOverrides()));
+            }
+        }
     }
 
     @Override
