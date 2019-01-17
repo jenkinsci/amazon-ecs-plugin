@@ -71,6 +71,8 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
 
         ECSCloud ecsCloud = (ECSCloud) cloud;
         checkAllowedOverrides(ecsCloud, step);
+        checkResourceLimits(ecsCloud, step);
+
         newTemplate = new ECSTaskTemplate(name,
                                           step.getLabel(),
                                           step.getTaskDefinitionOverride(),
@@ -107,6 +109,27 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                 LOGGER.log(Level.FINE, "Override {0} is not allowed", new Object[] { override });
                 throw new AbortException(String.format("Not allowed to override %s. Allowed overrides are %s", override, cloud.getAllowedOverrides()));
             }
+        }
+    }
+
+    private void checkResourceLimits(ECSCloud cloud, ECSTaskTemplateStep step) throws AbortException {
+        LOGGER.log(Level.FINE, "Cloud maxCpu: {0}", cloud.getMaxCpu());
+        LOGGER.log(Level.FINE, "Cloud maxMemory: {0}", cloud.getMaxMemory());
+        LOGGER.log(Level.FINE, "Cloud maxMemoryReservation: {0}", cloud.getMaxMemoryReservation());
+        LOGGER.log(Level.FINE, "Step cpu: {0}", step.getCpu());
+        LOGGER.log(Level.FINE, "Step memory: {0}", step.getMemory());
+        LOGGER.log(Level.FINE, "Step memoryReservation: {0}", step.getMemoryReservation());
+
+        if(cloud.getMaxCpu() != 0 && cloud.getMaxCpu() < step.getCpu()) {
+            throw new AbortException("cpu is higher than maximum configured in cloud");
+        }
+
+        if(cloud.getMaxMemory() != 0 && cloud.getMaxMemory() < step.getMemory()) {
+            throw new AbortException("memory is higher than maximum configured in cloud");
+        }
+
+        if(cloud.getMaxMemoryReservation() != 0 && cloud.getMaxMemoryReservation() < step.getMemoryReservation()) {
+            throw new AbortException("memoryReservation is higher than maximum configured in cloud");
         }
     }
 

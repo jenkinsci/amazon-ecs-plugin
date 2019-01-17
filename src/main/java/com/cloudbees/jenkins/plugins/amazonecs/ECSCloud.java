@@ -88,6 +88,9 @@ public class ECSCloud extends Cloud {
     private int slaveTimeoutInSeconds = DescriptorImpl.DEFAULT_SLAVE_TIMEOUT_IN_SECONDS;
     private ECSService ecsService;
     private String allowedOverrides;
+    private int maxCpu;
+    private int maxMemory;
+    private int maxMemoryReservation;
 
     @DataBoundConstructor
     public ECSCloud(String name,
@@ -275,6 +278,33 @@ public class ECSCloud extends Cloud {
     @DataBoundSetter
     public void setRetentionTimeout(int retentionTimeout) {
         this.retentionTimeout = retentionTimeout;
+    }
+
+    public int getMaxCpu() {
+        return maxCpu;
+    }
+
+    @DataBoundSetter
+    public void setMaxCpu(int maxCpu) {
+        this.maxCpu = maxCpu;
+    }
+
+    public int getMaxMemory() {
+        return maxMemory;
+    }
+
+    @DataBoundSetter
+    public void setMaxMemory(int maxMemory) {
+        this.maxMemory = maxMemory;
+    }
+
+    public int getMaxMemoryReservation() {
+        return maxMemoryReservation;
+    }
+
+    @DataBoundSetter
+    public void setMaxMemoryReservation(int maxMemoryReservation) {
+        this.maxMemoryReservation = maxMemoryReservation;
     }
 
 
