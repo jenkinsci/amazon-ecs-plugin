@@ -120,7 +120,7 @@ public class ECSCloud extends Cloud {
     }
 
     @Nonnull
-    public List<ECSTaskTemplate> getAllTemplates() {
+    private List<ECSTaskTemplate> getAllTemplates() {
         List<ECSTaskTemplate> dynamicTemplates = TaskTemplateMap.get().getTemplates(this);
         List<ECSTaskTemplate> allTemplates = new CopyOnWriteArrayList<>();
 
@@ -134,15 +134,6 @@ public class ECSCloud extends Cloud {
     @DataBoundSetter
     public void setTemplates(List<ECSTaskTemplate> templates) {
         this.templates = templates;
-    }
-
-    public void registerTemplate(ECSTaskTemplate template) {
-        templates.add(template);
-    }
-
-    public void removeTemplate(ECSTaskTemplate template) {
-        getEcsService().removeTemplate(this, template);
-        templates.remove(template);
     }
 
     public String getCredentialsId() {
@@ -234,12 +225,12 @@ public class ECSCloud extends Cloud {
             List<NodeProvisioner.PlannedNode> r = new ArrayList<NodeProvisioner.PlannedNode>();
             final ECSTaskTemplate template = getTemplate(label);
             String parentLabel = template.getInheritFrom();
-            final ECSTaskTemplate combined = template.combine(getTemplate(parentLabel));
+            final ECSTaskTemplate merged = template.merge(getTemplate(parentLabel));
 
             for (int i = 1; i <= toBeProvisioned; i++) {
-            LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{combined.getDisplayName(), label} );
+            LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{merged.getDisplayName(), label} );
 
-                r.add(new NodeProvisioner.PlannedNode(template.getDisplayName(), Computer.threadPoolForRemoting.submit(new ProvisioningCallback(combined)), 1));
+                r.add(new NodeProvisioner.PlannedNode(template.getDisplayName(), Computer.threadPoolForRemoting.submit(new ProvisioningCallback(merged)), 1));
             }
             return r;
         } catch (Exception e) {

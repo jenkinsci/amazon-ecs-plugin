@@ -7,7 +7,7 @@ import org.apache.commons.lang.builder.EqualsBuilder;
 public class ECSTaskTemplateTest {
 
     @Test
-    public void shouldCombine() throws Exception {
+    public void shouldMerge() throws Exception {
 
         ECSTaskTemplate child = new ECSTaskTemplate(
             "child-name", "child-label",
@@ -28,7 +28,7 @@ public class ECSTaskTemplateTest {
             "child-containerUser", null, null, null, null, null, null, null);
 
 
-        ECSTaskTemplate result = child.combine(parent);
+        ECSTaskTemplate result = child.merge(parent);
 
         assertTrue(EqualsBuilder.reflectionEquals(expected, result));
     }
@@ -54,7 +54,7 @@ public class ECSTaskTemplateTest {
             0, 0, 0, null, null, false, false,
             "child-containerUser", null, null, null, null, null, null, null);
 
-        ECSTaskTemplate result = child.combine(parent);
+        ECSTaskTemplate result = child.merge(parent);
 
         assertTrue(EqualsBuilder.reflectionEquals(expected, result));
     }
@@ -74,7 +74,7 @@ public class ECSTaskTemplateTest {
             0, 0, 0, null, null, false, false,
             "child-containerUser", null, null, null, null, null, null, null);
 
-        ECSTaskTemplate result = child.combine(null);
+        ECSTaskTemplate result = child.merge(null);
 
         assertTrue(EqualsBuilder.reflectionEquals(expected, result));
     }

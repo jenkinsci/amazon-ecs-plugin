@@ -514,7 +514,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         return portMappings;
     }
 
-    public ECSTaskTemplate combine(ECSTaskTemplate parent) {
+    public ECSTaskTemplate merge(ECSTaskTemplate parent) {
         if(parent == null) {
             return this;
         }
@@ -546,7 +546,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
         String taskrole = Strings.isNullOrEmpty(this.taskrole) ? parent.getTaskrole() : this.taskrole;
 
-        ECSTaskTemplate combined = new ECSTaskTemplate(templateName,
+        ECSTaskTemplate merged = new ECSTaskTemplate(templateName,
                                                        label,
                                                        taskDefinitionOverride,
                                                        image,
@@ -569,9 +569,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        portMappings,
                                                        taskrole,
                                                        null);
-        combined.setLogDriver(logDriver);
+        merged.setLogDriver(logDriver);
 
-        return combined;
+        return merged;
     }
 
 
