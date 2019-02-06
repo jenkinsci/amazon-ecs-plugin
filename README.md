@@ -39,6 +39,7 @@ Please find the documentation on the [Jenkins Wiki page Amazon EC2 Container Ser
 Declarative Pipeline support requires Jenkins 2.66+  
 
 Declarative agents can be defined like shown below. You can also reuse pre-configured templates and override certain settings using `inheritFrom`.  
+_Note_: You have to configure list of settings to be allowed in the declarative pipeline first (see the Allowed Overrides setting). They are disabled by default for security reasons, to avoid non-privileged users to suddenly be able to change certain settings.
 
 ```groovy
 pipeline {

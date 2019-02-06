@@ -367,7 +367,7 @@ public class ECSCloud extends Cloud {
     public static class DescriptorImpl extends Descriptor<Cloud> {
         public static final int DEFAULT_RETENTION_TIMEOUT = 5;
         public static final int DEFAULT_SLAVE_TIMEOUT_IN_SECONDS= 900;
-        public static final String DEFAULT_ALLOWED_OVERRIDES = "all";
+        public static final String DEFAULT_ALLOWED_OVERRIDES = "";
         private static String CLOUD_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
 
         @Override

@@ -64,6 +64,24 @@ public class ECSCloudTest {
         Assert.assertFalse(canProvision);
     }
 
+
+    @Test
+    public void isAllowedOverride_empty_returnsFalse() throws Exception {
+
+        ECSCloud sut = new ECSCloud("mycloud", "", "mycluster");
+
+        Assert.assertFalse(sut.isAllowedOverride("label"));
+    }
+
+    @Test
+    public void isAllowedOverride_label_returnsTrue() throws Exception {
+
+        ECSCloud sut = new ECSCloud("mycloud", "", "mycluster");
+        sut.setAllowedOverrides("label");
+
+        Assert.assertTrue(sut.isAllowedOverride("label"));
+    }
+
     private ECSTaskTemplate getTaskTemplate() {
         return new ECSTaskTemplate(
             "templateName",
