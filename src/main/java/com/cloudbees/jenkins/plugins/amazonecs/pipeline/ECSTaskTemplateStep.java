@@ -56,6 +56,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private String containerUser;
     private String taskrole;
     private String inheritFrom;
+    private String logDriver;
     private List<LogDriverOption> logDriverOptions;
     private List<EnvironmentEntry> environments;
     private List<ExtraHostEntry> extraHosts;
@@ -232,6 +233,15 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
         return inheritFrom;
     }
 
+    public String getLogDriver() {
+        return logDriver;
+    }
+
+    @DataBoundSetter
+    public void setLogDriver(String logDriver) {
+        this.logDriver = logDriver;
+    }
+
     public List<LogDriverOption> getLogDriverOptions() {
         return logDriverOptions;
     }
@@ -405,6 +415,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
                 "containerUser='" + containerUser + '\'' + '\n' +
                 "taskrole='" + taskrole + '\'' + '\n' +
                 "inheritFrom='" + inheritFrom + '\'' + '\n' +
+                "logDriver='" + logDriver + '\'' + '\n' +
                 "logDriverOptions'" + logDriverOptions + '\'' + '\n' +
                 "environments'" + environments + '\'' + '\n' +
                 "extraHosts'" + extraHosts + '\'' + '\n' +

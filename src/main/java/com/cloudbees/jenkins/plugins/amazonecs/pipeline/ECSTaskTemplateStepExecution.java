@@ -96,6 +96,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getPortMappings(),
                                           step.getTaskrole(),
                                           step.getInheritFrom());
+        newTemplate.setLogDriver(step.getLogDriver());
 
         LOGGER.log(Level.INFO, "Registering task template with name {0}", new Object[] { newTemplate.getTemplateName() });
         ecsCloud.addDynamicTemplate(newTemplate);

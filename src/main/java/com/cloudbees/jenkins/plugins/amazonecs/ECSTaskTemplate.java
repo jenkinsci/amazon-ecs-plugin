@@ -535,6 +535,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         boolean assignPublicIp = this.assignPublicIp ? this.assignPublicIp : parent.getAssignPublicIp();
         boolean privileged = this.privileged ? this.privileged : parent.getPrivileged();
         String containerUser = Strings.isNullOrEmpty(this.containerUser) ? parent.getContainerUser() : this.containerUser;
+        String logDriver = Strings.isNullOrEmpty(this.logDriver) ? parent.getLogDriver() : this.logDriver;
 
         // TODO probably merge lists with parent instead of overriding them
         List<LogDriverOption> logDriverOptions = CollectionUtils.isEmpty(this.logDriverOptions) ? parent.getLogDriverOptions() : this.logDriverOptions;
@@ -568,6 +569,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        portMappings,
                                                        taskrole,
                                                        null);
+        combined.setLogDriver(logDriver);
 
         return combined;
     }

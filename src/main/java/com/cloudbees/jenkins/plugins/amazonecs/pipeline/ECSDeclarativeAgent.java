@@ -41,6 +41,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private String containerUser;
     private String taskrole;
     private String inheritFrom;
+    private String logDriver;
     private List<LogDriverOption> logDriverOptions;
     private List<EnvironmentEntry> environments;
     private List<ExtraHostEntry> extraHosts;
@@ -213,6 +214,16 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         overrides.add("inheritFrom");
     }
 
+    public String getLogDriver() {
+        return logDriver;
+    }
+
+    @DataBoundSetter
+    public void setLogDriver(String logDriver) {
+        this.logDriver = logDriver;
+        overrides.add("logDriver");
+    }
+
     public List<LogDriverOption> getLogDriverOptions() {
         return logDriverOptions;
     }
@@ -324,6 +335,10 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
 
         if (!StringUtils.isEmpty(inheritFrom)) {
             argMap.put("inheritFrom", inheritFrom);
+        }
+
+        if (!StringUtils.isEmpty(logDriver)) {
+            argMap.put("logDriver", logDriver);
         }
 
         if (logDriverOptions != null && logDriverOptions.size() > 0) {

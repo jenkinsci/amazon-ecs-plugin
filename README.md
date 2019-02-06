@@ -51,6 +51,8 @@ pipeline {
                 inheritFrom 'my-preconfigured-template'
                 cpu 2048
                 memory 4096
+                logDriver 'fluentd'
+                logDriverOptions([[name: 'foo', value:'bar'], [name: 'bar', value: 'foo']])
             }
         }
         steps {
