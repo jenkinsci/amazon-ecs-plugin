@@ -1,5 +1,10 @@
 # Changelog
 
+## vNext
+- Feature - Declarative agent configuration #79
+- BUG - Fixed typo in configuration (slaveTimoutInSeconds) wasn't saved properly
+
+
 ## 1.19
 - BUG - [JENKINS-54898] ECS Plugin 1.18 cannot launch agents #77
 - BUG - [JENKINS-55078] No longer able to start ECS agents #78
