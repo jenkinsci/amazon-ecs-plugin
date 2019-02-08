@@ -16,7 +16,7 @@ import hudson.ExtensionList;
 import hudson.util.CopyOnWriteMap;
 
 /**
- * A map of {@link ECSCloud} -&gt; List of {@link TaskTemplate} instances.
+ * A map of {@link ECSCloud} -&gt; List of {@link ECSTaskTemplate} instances.
  */
 @Extension
 public class TaskTemplateMap {
