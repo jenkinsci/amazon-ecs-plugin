@@ -27,11 +27,13 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -46,6 +48,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.model.ListClustersRequest;
 import com.amazonaws.services.ecs.model.ListClustersResult;
+import com.cloudbees.jenkins.plugins.amazonecs.pipeline.TaskTemplateMap;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 
 import org.apache.commons.lang.RandomStringUtils;
@@ -84,6 +87,10 @@ public class ECSCloud extends Cloud {
     private int retentionTimeout = DescriptorImpl.DEFAULT_RETENTION_TIMEOUT;
     private int slaveTimeoutInSeconds = DescriptorImpl.DEFAULT_SLAVE_TIMEOUT_IN_SECONDS;
     private ECSService ecsService;
+    private String allowedOverrides;
+    private int maxCpu;
+    private int maxMemory;
+    private int maxMemoryReservation;
 
     @DataBoundConstructor
     public ECSCloud(String name,
@@ -93,6 +100,12 @@ public class ECSCloud extends Cloud {
         this.credentialsId = credentialsId;
         this.cluster = cluster;
     }
+
+    public static @Nonnull ECSCloud getByName(@Nonnull String name) throws IllegalArgumentException {
+        Cloud cloud = Jenkins.get().clouds.getByName(name);
+        if (cloud instanceof ECSCloud) return (ECSCloud) cloud;
+        throw new IllegalArgumentException("'" + name + "' is not an ECS cloud but " + cloud);
+        }
 
     synchronized ECSService getEcsService() {
         if (ecsService == null) {
@@ -104,6 +117,18 @@ public class ECSCloud extends Cloud {
     @Nonnull
     public List<ECSTaskTemplate> getTemplates() {
         return templates != null ? templates : Collections.<ECSTaskTemplate> emptyList();
+    }
+
+    @Nonnull
+    private List<ECSTaskTemplate> getAllTemplates() {
+        List<ECSTaskTemplate> dynamicTemplates = TaskTemplateMap.get().getTemplates(this);
+        List<ECSTaskTemplate> allTemplates = new CopyOnWriteArrayList<>();
+
+        allTemplates.addAll(dynamicTemplates);
+        if (templates != null) {
+            allTemplates.addAll(templates);
+        }
+        return allTemplates;
     }
 
     @DataBoundSetter
@@ -137,8 +162,28 @@ public class ECSCloud extends Cloud {
         this.tunnel = tunnel;
     }
 
+    @DataBoundSetter
+    public void setAllowedOverrides(@Nonnull String allowedOverrides) {
+        this.allowedOverrides = allowedOverrides.equals(DescriptorImpl.DEFAULT_ALLOWED_OVERRIDES) ? null : allowedOverrides;
+    }
+
+    @Nonnull
+    public String getAllowedOverrides() {
+        return allowedOverrides == null ? DescriptorImpl.DEFAULT_ALLOWED_OVERRIDES : allowedOverrides;
+    }
+
+    public boolean isAllowedOverride(String override) {
+        List<String> allowedOverridesList = Arrays.asList(getAllowedOverrides().toLowerCase().replaceAll(" ", "").split(","));
+        if (allowedOverridesList.contains("all")) return true;
+        return allowedOverridesList.contains(override);
+    }
+
     @Override
     public boolean canProvision(Label label) {
+        return getTemplate(label) != null;
+    }
+
+    public boolean canProvision(String label) {
         return getTemplate(label) != null;
     }
 
@@ -146,7 +191,7 @@ public class ECSCloud extends Cloud {
         if (label == null) {
             return null;
         }
-        for (ECSTaskTemplate t : getTemplates()) {
+        for (ECSTaskTemplate t : getAllTemplates()) {
             if (label.matches(t.getLabelSet())) {
                 return t;
             }
@@ -154,6 +199,17 @@ public class ECSCloud extends Cloud {
         return null;
     }
 
+    private ECSTaskTemplate getTemplate(String label) {
+        if (label == null) {
+            return null;
+        }
+        for (ECSTaskTemplate t : getAllTemplates()) {
+            if (label.matches(t.getLabel())) {
+                return t;
+            }
+        }
+        return null;
+    }
 
     @Override
     public synchronized Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
@@ -168,17 +224,19 @@ public class ECSCloud extends Cloud {
 
             List<NodeProvisioner.PlannedNode> r = new ArrayList<NodeProvisioner.PlannedNode>();
             final ECSTaskTemplate template = getTemplate(label);
+            String parentLabel = template.getInheritFrom();
+            final ECSTaskTemplate merged = template.merge(getTemplate(parentLabel));
 
             for (int i = 1; i <= toBeProvisioned; i++) {
-            LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{template.getDisplayName(), label} );
+            LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{merged.getDisplayName(), label} );
 
-                r.add(new NodeProvisioner.PlannedNode(template.getDisplayName(), Computer.threadPoolForRemoting.submit(new ProvisioningCallback(template)), 1));
+                r.add(new NodeProvisioner.PlannedNode(template.getDisplayName(), Computer.threadPoolForRemoting.submit(new ProvisioningCallback(merged)), 1));
             }
             return r;
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Failed to provision ECS agent", e);
-            return Collections.emptyList();
         }
+        return Collections.emptyList();
     }
 
     public int getSlaveTimeoutInSeconds() {
@@ -211,6 +269,33 @@ public class ECSCloud extends Cloud {
     @DataBoundSetter
     public void setRetentionTimeout(int retentionTimeout) {
         this.retentionTimeout = retentionTimeout;
+    }
+
+    public int getMaxCpu() {
+        return maxCpu;
+    }
+
+    @DataBoundSetter
+    public void setMaxCpu(int maxCpu) {
+        this.maxCpu = maxCpu;
+    }
+
+    public int getMaxMemory() {
+        return maxMemory;
+    }
+
+    @DataBoundSetter
+    public void setMaxMemory(int maxMemory) {
+        this.maxMemory = maxMemory;
+    }
+
+    public int getMaxMemoryReservation() {
+        return maxMemoryReservation;
+    }
+
+    @DataBoundSetter
+    public void setMaxMemoryReservation(int maxMemoryReservation) {
+        this.maxMemoryReservation = maxMemoryReservation;
     }
 
 
@@ -252,10 +337,28 @@ public class ECSCloud extends Cloud {
         }
     }
 
+    /**
+     * Add a dynamic task template. Won't be displayed in UI, and persisted separately from the cloud instance.
+     * @param t the template to add
+     */
+    public void addDynamicTemplate(ECSTaskTemplate t) {
+        TaskTemplateMap.get().addTemplate(this, t);
+    }
+
+    /**
+     * Remove a dynamic task template.
+     * @param t the template to remove
+     */
+    public void removeDynamicTemplate(ECSTaskTemplate t) {
+        getEcsService().removeTemplate(this, t);
+        TaskTemplateMap.get().removeTemplate(this, t);
+    }
+
     @Extension
     public static class DescriptorImpl extends Descriptor<Cloud> {
         public static final int DEFAULT_RETENTION_TIMEOUT = 5;
         public static final int DEFAULT_SLAVE_TIMEOUT_IN_SECONDS= 900;
+        public static final String DEFAULT_ALLOWED_OVERRIDES = "";
         private static String CLOUD_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
 
         @Override
@@ -264,7 +367,7 @@ public class ECSCloud extends Cloud {
         }
 
         public ListBoxModel doFillCredentialsIdItems() {
-            return AWSCredentialsHelper.doFillCredentialsIdItems(Jenkins.getInstance());
+            return AWSCredentialsHelper.doFillCredentialsIdItems(Jenkins.get());
         }
 
         public ListBoxModel doFillRegionNameItems() {

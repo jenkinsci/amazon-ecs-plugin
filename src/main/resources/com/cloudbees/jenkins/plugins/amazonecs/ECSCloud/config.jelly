@@ -42,13 +42,25 @@
   </f:entry>
 
   <f:advanced>
+    <f:entry field="allowedOverrides" title="${%Allowed declarative settings}" description="Settings allowed to be used in the declarative pipeline. Use all for unrestricted use. Always include label, otherwise no agent can be defined. The default is none for security reasons, which fully disables the use of declarative settings.">
+      <f:textbox />
+    </f:entry>
+    <f:entry field="maxCpu" title="${%Maximum declarative CPU}" description="Maximum CPU that can be configured in declarative agent. 0 means unlimited.">
+      <f:textbox />
+    </f:entry>
+    <f:entry field="maxMemory" title="${%Maximum declarative memory}" description="Maximum memory that can be configured in declarative agent. 0 means unlimited.">
+      <f:textbox />
+    </f:entry>
+    <f:entry field="maxMemoryReservation" title="${%Maximum declarative memoryReservation}" description="Maximum memoryReservation that can be configured in declarative agent. 0 means unlimited.">
+      <f:textbox />
+    </f:entry>
     <f:entry field="tunnel" title="${%Tunnel connection through}" help="/help/system-config/master-slave/jnlp-tunnel.html">
       <f:textbox />
     </f:entry>
     <f:entry field="jenkinsUrl" title="${%Alternative Jenkins URL}" description="If needed, the Jenkins URL can be overwritten with this property (e.g. to support other HTTP(S) endpoints due to reverse proxies or firewalling). By default the URL from the global Jenkins configuration is used.">
       <f:textbox />
     </f:entry>
-    <f:entry field="slaveTimoutInSeconds" title="${%ECS task creation timeout}" description="Timeout (in second) for ECS task to be created, usefull if you use large docker agent image, because the host will take more time to pull the docker image">
+    <f:entry field="slaveTimoutInSeconds" title="${%ECS task creation timeout}" description="Timeout (in second) for ECS task to be created, useful if you use large docker agent image, because the host will take more time to pull the docker image">
       <f:textbox default="${descriptor.defaultSlaveTimoutInSeconds}" />
     </f:entry>
     <f:entry field="retentionTimeout" title="${%Container Cleanup Timeout (minutes)}" description="Timeout (in minutes) for how long instances can be idle before they are cleaned up. Should be at least 1.">

@@ -36,6 +36,7 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -48,10 +49,14 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.*;
 
+import java.io.Serializable;
+import com.google.common.base.Strings;
+
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
-public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
+public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> implements Serializable {
+    private static final long serialVersionUID = -426721853953018205L;
     /**
      * Template Name
      */
@@ -241,6 +246,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     private String logDriver;
     private List<LogDriverOption> logDriverOptions;
 
+    private String inheritFrom;
+
     @DataBoundConstructor
     public ECSTaskTemplate(@Nonnull String templateName,
                            @Nullable String label,
@@ -262,7 +269,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
                            @Nullable List<MountPointEntry> mountPoints,
-                           @Nullable List<PortMappingEntry> portMappings) {
+                           @Nullable List<PortMappingEntry> portMappings,
+                           @Nullable String taskrole,
+                           @Nullable String inheritFrom) {
         // if the user enters a task definition override, always prefer to use it, rather than the jenkins template.
         if (taskDefinitionOverride != null && !taskDefinitionOverride.trim().isEmpty()) {
             this.taskDefinitionOverride = taskDefinitionOverride.trim();
@@ -297,6 +306,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         this.extraHosts = extraHosts;
         this.mountPoints = mountPoints;
         this.portMappings = portMappings;
+        this.taskrole = taskrole;
+        this.inheritFrom = inheritFrom;
     }
 
     @DataBoundSetter
@@ -332,6 +343,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     @DataBoundSetter
     public void setLogDriver(String logDriver) {
         this.logDriver = StringUtils.trimToNull(logDriver);
+    }
+
+    @DataBoundSetter
+    public void setInheritFrom(String inheritFrom) {
+        this.inheritFrom = inheritFrom;
     }
 
     @DataBoundSetter
@@ -436,9 +452,14 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return logDriver;
     }
 
+    public String getInheritFrom() {
+        return inheritFrom;
+    }
+
     public String getTemplateName() {return templateName; }
 
-    public static class LogDriverOption extends AbstractDescribableImpl<LogDriverOption>{
+    public static class LogDriverOption extends AbstractDescribableImpl<LogDriverOption> implements Serializable {
+        private static final long serialVersionUID = 8585792353105873086L;
         public String name, value;
 
         @DataBoundConstructor
@@ -492,6 +513,68 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
     public List<PortMappingEntry> getPortMappings() {
         return portMappings;
     }
+
+    public ECSTaskTemplate merge(ECSTaskTemplate parent) {
+        if(parent == null) {
+            return this;
+        }
+
+        String templateName = Strings.isNullOrEmpty(this.templateName) ? parent.getTemplateName() : this.templateName;
+        String label = Strings.isNullOrEmpty(this.label) ? parent.getLabel() : this.label;
+        String taskDefinitionOverride = Strings.isNullOrEmpty(this.taskDefinitionOverride) ? parent.getTaskDefinitionOverride() : this.taskDefinitionOverride;
+        String image = Strings.isNullOrEmpty(this.image) ? parent.getImage() : this.image;
+        String repositoryCredentials = Strings.isNullOrEmpty(this.repositoryCredentials) ? parent.getRepositoryCredentials() : this.repositoryCredentials;
+        String launchType = Strings.isNullOrEmpty(this.launchType) ? parent.getLaunchType() : this.launchType;
+        String networkMode = Strings.isNullOrEmpty(this.networkMode) ? parent.getNetworkMode() : this.networkMode;
+        String remoteFSRoot = Strings.isNullOrEmpty(this.remoteFSRoot) ? parent.getRemoteFSRoot() : this.remoteFSRoot;
+        int memory = this.memory == 0 ? parent.getMemory() : this.memory;
+        int memoryReservation = this.memoryReservation == 0 ? parent.getMemoryReservation() : this.memoryReservation;
+        int cpu = this.cpu == 0 ? parent.getCpu() : this.cpu;
+        String subnets = Strings.isNullOrEmpty(this.subnets) ? parent.getSubnets() : this.subnets;
+        String securityGroups = Strings.isNullOrEmpty(this.securityGroups) ? parent.getSecurityGroups() : this.securityGroups;
+        boolean assignPublicIp = this.assignPublicIp ? this.assignPublicIp : parent.getAssignPublicIp();
+        boolean privileged = this.privileged ? this.privileged : parent.getPrivileged();
+        String containerUser = Strings.isNullOrEmpty(this.containerUser) ? parent.getContainerUser() : this.containerUser;
+        String logDriver = Strings.isNullOrEmpty(this.logDriver) ? parent.getLogDriver() : this.logDriver;
+
+        // TODO probably merge lists with parent instead of overriding them
+        List<LogDriverOption> logDriverOptions = CollectionUtils.isEmpty(this.logDriverOptions) ? parent.getLogDriverOptions() : this.logDriverOptions;
+        List<EnvironmentEntry> environments = CollectionUtils.isEmpty(this.environments) ? parent.getEnvironments() : this.environments;
+        List<ExtraHostEntry> extraHosts = CollectionUtils.isEmpty(this.extraHosts) ? parent.getExtraHosts() : this.extraHosts;
+        List<MountPointEntry> mountPoints = CollectionUtils.isEmpty(this.mountPoints) ? parent.getMountPoints() : this.mountPoints;
+        List<PortMappingEntry> portMappings = CollectionUtils.isEmpty(this.portMappings) ? parent.getPortMappings() : this.portMappings;
+
+        String taskrole = Strings.isNullOrEmpty(this.taskrole) ? parent.getTaskrole() : this.taskrole;
+
+        ECSTaskTemplate merged = new ECSTaskTemplate(templateName,
+                                                       label,
+                                                       taskDefinitionOverride,
+                                                       image,
+                                                       repositoryCredentials,
+                                                       launchType,
+                                                       networkMode,
+                                                       remoteFSRoot,
+                                                       memory,
+                                                       memoryReservation,
+                                                       cpu,
+                                                       subnets,
+                                                       securityGroups,
+                                                       assignPublicIp,
+                                                       privileged,
+                                                       containerUser,
+                                                       logDriverOptions,
+                                                       environments,
+                                                       extraHosts,
+                                                       mountPoints,
+                                                       portMappings,
+                                                       taskrole,
+                                                       null);
+        merged.setLogDriver(logDriver);
+
+        return merged;
+    }
+
+
 
     Collection<KeyValuePair> getEnvironmentKeyValuePairs() {
         if (null == environments || environments.isEmpty()) {
@@ -580,7 +663,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         return ports;
     }
 
-    public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> {
+    public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> implements Serializable {
+        private static final long serialVersionUID = 4195862080979262875L;
         public String name, value;
 
         @DataBoundConstructor
@@ -603,7 +687,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         }
     }
 
-    public static class ExtraHostEntry extends AbstractDescribableImpl<ExtraHostEntry> {
+    public static class ExtraHostEntry extends AbstractDescribableImpl<ExtraHostEntry> implements Serializable {
+        private static final long serialVersionUID = -23978859661031633L;
         public String ipAddress, hostname;
 
         @DataBoundConstructor
@@ -626,7 +711,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         }
     }
 
-    public static class MountPointEntry extends AbstractDescribableImpl<MountPointEntry> {
+    public static class MountPointEntry extends AbstractDescribableImpl<MountPointEntry> implements Serializable {
+        private static final long serialVersionUID = -5363412950753423854L;
         public String name, sourcePath, containerPath;
         public Boolean readOnly;
 
@@ -658,7 +744,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> {
         }
     }
 
-    public static class PortMappingEntry extends AbstractDescribableImpl<PortMappingEntry> {
+    public static class PortMappingEntry extends AbstractDescribableImpl<PortMappingEntry> implements Serializable {
+        private static final long serialVersionUID = 8223725139080497839L;
         public Integer containerPort, hostPort;
         public String protocol;
 

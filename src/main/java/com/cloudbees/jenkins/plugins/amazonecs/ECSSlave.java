@@ -31,6 +31,7 @@ import java.io.ObjectOutputStream;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -90,7 +91,7 @@ public class ECSSlave extends AbstractCloudSlave {
     private String taskArn;
 
     public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, ECSTaskTemplate template, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
-        super(name, "ECS Agent", template.getRemoteFSRoot(), 1, Mode.EXCLUSIVE, template.getLabel(), launcher, new OnceRetentionStrategy(cloud.getRetentionTimeout()), Collections.EMPTY_LIST);
+        super(name, "ECS Agent", template.getRemoteFSRoot(), 1, Mode.EXCLUSIVE, template.getLabel(), launcher, new OnceRetentionStrategy(cloud.getRetentionTimeout()), Collections.emptyList());
         this.cloud = cloud;
         this.template = template;
     }

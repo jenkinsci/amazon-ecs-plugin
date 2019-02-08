@@ -44,6 +44,7 @@ import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
 import com.amazonaws.services.ecs.model.ClientException;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.ContainerOverride;
+import com.amazonaws.services.ecs.model.DeregisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.DescribeTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.DescribeTaskDefinitionResult;
 import com.amazonaws.services.ecs.model.DescribeTasksRequest;
@@ -286,6 +287,24 @@ class ECSService {
             LOGGER.log(Level.FINE, "Created Task Definition {0}: {1}", new Object[]{result.getTaskDefinition(), request});
             LOGGER.log(Level.INFO, "Created Task Definition: {0}", new Object[]{result.getTaskDefinition()});
             return result.getTaskDefinition();
+        }
+    }
+
+    void removeTemplate(final ECSCloud cloud, final ECSTaskTemplate template) {
+        AmazonECS client = getAmazonECSClient();
+
+        String familyName = fullQualifiedTemplateName(cloud, template);
+
+        int revision = findTaskDefinition(familyName).getRevision();
+
+        try {
+            client.deregisterTaskDefinition(
+                    new DeregisterTaskDefinitionRequest()
+                            .withTaskDefinition(familyName + ":" + revision));
+
+        } catch (ClientException e) {
+            LOGGER.log(Level.FINE, "Error removing task definition: " + familyName + ":" + revision, e);
+            LOGGER.log(Level.INFO, "Error removing task definition: " + familyName + ":" + revision);
         }
     }
 
