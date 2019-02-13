@@ -82,6 +82,7 @@ public class ECSSlaveTest {
             "launchType",
             "networkMode",
             "remoteFSRoot",
+            false,
             0,
             0,
             0,

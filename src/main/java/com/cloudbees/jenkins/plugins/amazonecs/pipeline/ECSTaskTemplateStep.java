@@ -47,6 +47,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private String launchType;
     private String networkMode;
     private String remoteFSRoot;
+    private boolean uniqueRemoteFSRoot;
     private int memory;
     private int memoryReservation;
     private int cpu;
@@ -145,6 +146,15 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
 
     public String getRemoteFSRoot() {
         return remoteFSRoot;
+    }
+
+    @DataBoundSetter
+    public void setUniqueRemoteFSRoot(boolean uniqueRemoteFSRoot) {
+        this.uniqueRemoteFSRoot = uniqueRemoteFSRoot;
+    }
+
+    public boolean getUniqueRemoteFSRoot() {
+        return uniqueRemoteFSRoot;
     }
 
     @DataBoundSetter
@@ -436,6 +446,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
                 "launchType='" + launchType + '\'' + '\n' +
                 "networkMode='" + networkMode + '\'' + '\n' +
                 "remoteFSRoot='" + remoteFSRoot + '\'' + '\n' +
+                "uniqueRemoteFSRoot='" + uniqueRemoteFSRoot + '\'' + '\n' +
                 "memory='" + memory + '\'' + '\n' +
                 "memoryReservation='" + memoryReservation + '\'' + '\n' +
                 "cpu='" + cpu + '\'' + '\n' +

@@ -31,6 +31,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private String image;
     private String launchType;
     private String remoteFSRoot;
+    private boolean uniqueRemoteFSRoot;
     private int memory;
     private int memoryReservation;
     private int cpu;
@@ -114,6 +115,16 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     public void setRemoteFSRoot(String remoteFSRoot) {
         this.remoteFSRoot = remoteFSRoot;
         overrides.add("remoteFSRoot");
+    }
+
+    public boolean getUniqueRemoteFSRoot() {
+        return uniqueRemoteFSRoot;
+    }
+
+    @DataBoundSetter
+    public void setUniqueRemoteFSRoot(boolean uniqueRemoteFSRoot) {
+        this.uniqueRemoteFSRoot = uniqueRemoteFSRoot;
+        overrides.add("uniqueRemoteFSRoot");
     }
 
     public int getMemory() {
@@ -323,6 +334,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         if (!StringUtils.isEmpty(remoteFSRoot)) {
             argMap.put("remoteFSRoot", remoteFSRoot);
         }
+        argMap.put("uniqueRemoteFSRoot", uniqueRemoteFSRoot);
 
         if (memory != 0) {
             argMap.put("memory", memory);

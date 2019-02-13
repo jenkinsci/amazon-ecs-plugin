@@ -92,6 +92,7 @@ public class ECSCloudTest {
             "launchType",
             "networkMode",
             "remoteFSRoot",
+            false,
             0,
             0,
             0,

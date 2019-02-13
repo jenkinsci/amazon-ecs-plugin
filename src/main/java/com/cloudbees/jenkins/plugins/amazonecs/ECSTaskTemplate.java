@@ -227,6 +227,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private final boolean privileged;
 
     /**
+     * Indicates whether to append a unique agent ID (the agent name)
+     * at the end of the remoteFSRoot path.
+     */
+    private final boolean uniqueRemoteFSRoot;
+
+    /**
      * User for conatiner
      */
     @Nullable
@@ -268,6 +274,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            @Nonnull String launchType,
                            @Nonnull String networkMode,
                            @Nullable String remoteFSRoot,
+                           boolean uniqueRemoteFSRoot,
                            int memory,
                            int memoryReservation,
                            int cpu,
@@ -305,6 +312,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.image = image;
         this.repositoryCredentials = StringUtils.trimToNull(repositoryCredentials);
         this.remoteFSRoot = remoteFSRoot;
+        this.uniqueRemoteFSRoot = uniqueRemoteFSRoot;
         this.memory = memory;
         this.memoryReservation = memoryReservation;
         this.cpu = cpu;
@@ -396,6 +404,17 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
     public String getRemoteFSRoot() {
         return remoteFSRoot;
+    }
+
+    public String makeRemoteFSRoot(@Nonnull String name) {
+        if (!uniqueRemoteFSRoot || remoteFSRoot == null) {
+            return remoteFSRoot;
+        }
+        return remoteFSRoot + "/" + name;
+    }
+
+    public boolean getUniqueRemoteFSRoot() {
+        return uniqueRemoteFSRoot;
     }
 
     public int getMemory() {
@@ -550,6 +569,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         String launchType = Strings.isNullOrEmpty(this.launchType) ? parent.getLaunchType() : this.launchType;
         String networkMode = Strings.isNullOrEmpty(this.networkMode) ? parent.getNetworkMode() : this.networkMode;
         String remoteFSRoot = Strings.isNullOrEmpty(this.remoteFSRoot) ? parent.getRemoteFSRoot() : this.remoteFSRoot;
+        boolean uniqueRemoteFSRoot = this.uniqueRemoteFSRoot || parent.getUniqueRemoteFSRoot();
         int memory = this.memory == 0 ? parent.getMemory() : this.memory;
         int memoryReservation = this.memoryReservation == 0 ? parent.getMemoryReservation() : this.memoryReservation;
         int cpu = this.cpu == 0 ? parent.getCpu() : this.cpu;
@@ -580,6 +600,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        launchType,
                                                        networkMode,
                                                        remoteFSRoot,
+                                                       uniqueRemoteFSRoot,
                                                        memory,
                                                        memoryReservation,
                                                        cpu,
