@@ -1,0 +1,36 @@
+<!--
+  ~ The MIT License
+  ~
+  ~  Copyright (c) 2015, CloudBees, Inc.
+  ~
+  ~  Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~  of this software and associated documentation files (the "Software"), to deal
+  ~  in the Software without restriction, including without limitation the rights
+  ~  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~  copies of the Software, and to permit persons to whom the Software is
+  ~  furnished to do so, subject to the following conditions:
+  ~
+  ~  The above copyright notice and this permission notice shall be included in
+  ~  all copies or substantial portions of the Software.
+  ~
+  ~  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  ~  THE SOFTWARE.
+  ~
+  -->
+
+The placement Strategy to apply to the task. See <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-placement-strategies.html" target="_blank">Placement Strategies</a> for more details.</br>
+If using <b>binpack</b> or <b>spread</b> you must specify <b>Placement Strategy Field</b>.
+</br>
+binpack</br>
+Place tasks based on the least available amount of CPU or memory. This minimizes the number of instances in use.</br>
+</br>
+random</br>
+Place tasks randomly.</br>
+</br>
+spread</br>
+Place tasks evenly based on the specified value. Accepted values are attribute key-value pairs, instanceId, or host. Service tasks are spread based on the tasks from that service</br>

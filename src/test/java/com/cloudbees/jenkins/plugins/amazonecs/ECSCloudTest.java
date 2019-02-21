@@ -91,6 +91,8 @@ public class ECSCloudTest {
             "repositoryCredentials",
             "launchType",
             "networkMode",
+            "placementStrategyType",
+            "placementStrategyField",
             "remoteFSRoot",
             0,
             0,

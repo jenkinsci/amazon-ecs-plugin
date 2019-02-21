@@ -81,6 +81,8 @@ public class ECSSlaveTest {
             "repositoryCredentials", 
             "launchType",
             "networkMode",
+            "placementStrategyType",
+            "placementStrategyField",
             "remoteFSRoot",
             0,
             0,

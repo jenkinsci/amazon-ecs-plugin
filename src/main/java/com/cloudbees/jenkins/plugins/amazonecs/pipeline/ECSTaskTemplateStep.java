@@ -45,6 +45,8 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private String image;
     private String launchType;
     private String networkMode;
+    private String placementStrategyType;
+    private String placementStrategyField;
     private String remoteFSRoot;
     private int memory;
     private int memoryReservation;
@@ -134,6 +136,24 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
 
     public String getNetworkMode() {
         return networkMode;
+    }
+
+    @DataBoundSetter
+    public void setPlacementStrategyType(String placementStrategyType) {
+        this.placementStrategyType = placementStrategyType;
+    }
+
+    public String getPlacementStrategyType() {
+        return placementStrategyType;
+    }
+
+        @DataBoundSetter
+    public void setPlacementStrategyField(String placementStrategyField) {
+        this.placementStrategyField = placementStrategyField;
+    }
+
+    public String getPlacementStrategyField() {
+        return placementStrategyField;
     }
 
     @DataBoundSetter
