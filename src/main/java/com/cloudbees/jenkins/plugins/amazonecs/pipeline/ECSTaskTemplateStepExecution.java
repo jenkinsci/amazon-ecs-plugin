@@ -106,7 +106,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
 
     private void checkAllowedOverrides(ECSCloud cloud, ECSTaskTemplateStep step) throws AbortException {
         for (String override : step.getOverrides()) {
-            if(!cloud.isAllowedOverride(override.toLowerCase())) {
+            if(!cloud.isAllowedOverride(override)) {
                 LOGGER.log(Level.FINE, "Override {0} is not allowed", new Object[] { override });
                 throw new AbortException(String.format("Not allowed to override %s. Allowed overrides are %s", override, cloud.getAllowedOverrides()));
             }

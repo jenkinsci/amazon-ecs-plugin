@@ -175,7 +175,7 @@ public class ECSCloud extends Cloud {
     public boolean isAllowedOverride(String override) {
         List<String> allowedOverridesList = Arrays.asList(getAllowedOverrides().toLowerCase().replaceAll(" ", "").split(","));
         if (allowedOverridesList.contains("all")) return true;
-        return allowedOverridesList.contains(override);
+        return allowedOverridesList.contains(override.toLowerCase());
     }
 
     @Override
