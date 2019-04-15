@@ -94,6 +94,7 @@ class ECSService {
     AmazonECS getAmazonECSClient() {
         ProxyConfiguration proxy = Jenkins.get().proxy;
         ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.withMaxErrorRetry(10);
 
         if(proxy != null) {
             clientConfiguration.setProxyHost(proxy.name);
@@ -137,6 +138,7 @@ class ECSService {
 
     public Task describeTask(String taskArn, String clusterArn) {
         final AmazonECS client = getAmazonECSClient();
+
 
         DescribeTasksResult result = client.describeTasks(new DescribeTasksRequest().withCluster(clusterArn).withTasks(taskArn));
 
