@@ -29,11 +29,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.text.MessageFormat;
-import java.time.Duration;
 import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,23 +39,15 @@ import javax.annotation.Nonnull;
 import com.amazonaws.services.ecs.model.AccessDeniedException;
 import com.amazonaws.services.ecs.model.ClientException;
 import com.amazonaws.services.ecs.model.ClusterNotFoundException;
-import com.amazonaws.services.ecs.model.DescribeTasksRequest;
-import com.amazonaws.services.ecs.model.DescribeTasksResult;
 import com.amazonaws.services.ecs.model.InvalidParameterException;
 import com.amazonaws.services.ecs.model.ServerException;
-import com.amazonaws.services.shield.model.InvalidOperationException;
 
 import org.jenkinsci.plugins.durabletask.executors.OnceRetentionStrategy;
-import org.jvnet.localizer.Localizable;
-import org.jvnet.localizer.ResourceBundleHolder;
-
-import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.TaskListener;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
 import hudson.slaves.ComputerLauncher;
-import hudson.slaves.OfflineCause;
 
 /**
  * This agent should only handle a single task and then be shutdown.
@@ -68,8 +56,9 @@ import hudson.slaves.OfflineCause;
  */
 public class ECSSlave extends AbstractCloudSlave {
 
+    private static final long serialVersionUID = -6324547877157811307L;
+
     private static final Logger LOGGER = Logger.getLogger(ECSSlave.class.getName());
-    private static final ResourceBundleHolder HOLDER = ResourceBundleHolder.get(Messages.class);
 
     @Nonnull
     private final ECSCloud cloud;

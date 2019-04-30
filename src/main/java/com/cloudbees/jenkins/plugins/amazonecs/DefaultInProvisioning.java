@@ -2,7 +2,6 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import javax.annotation.CheckForNull;
@@ -13,7 +12,6 @@ import hudson.model.Node;
 
 @Extension
 public class DefaultInProvisioning extends InProvisioning {
-    private static final Logger LOGGER = Logger.getLogger(DefaultInProvisioning.class.getName());
 
     private static boolean isNotAcceptingTasks(Node n) {
         return n.toComputer().isLaunchSupported() // Launcher hasn't been called yet

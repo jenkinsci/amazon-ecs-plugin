@@ -51,6 +51,7 @@ import hudson.AbortException;
 import hudson.model.TaskListener;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.SlaveComputer;
+import jenkins.slaves.RemotingWorkDirSettings;
 
 /**
  * Launches on ECS the specified {@link ECSComputer} instance.
@@ -65,7 +66,7 @@ public class ECSLauncher extends JNLPLauncher {
 
     @DataBoundConstructor
     public ECSLauncher(ECSCloud cloud, String tunnel, String vmargs) {
-        super(tunnel, vmargs);
+        super(tunnel, vmargs, RemotingWorkDirSettings.getDisabledDefaults());
         this.cloud = cloud;
         this.ecsService = cloud.getEcsService();
     }
