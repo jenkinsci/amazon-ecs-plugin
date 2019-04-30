@@ -41,19 +41,14 @@
 
   <developers>
     <developer>
+      <id>webratz</id>
+      <name>Andreas Sieferlinger</name>
+      <email>dvcs@webratz.de</email>
+    </developer>
+    <developer>
       <id>pgarbe</id>
       <name>Philipp Garbe</name>
       <email>jenkins@garbe.io</email>
-    </developer>
-    <developer>
-      <id>tekkamanendless</id>
-      <name>Douglas Manley</name>
-      <email>doug.manley@gmail.com</email>
-    </developer>
-    <developer>
-      <id>roehrijn</id>
-      <name>Jan Roehrich</name>
-      <email>jan@roehrich.info</email>
     </developer>
   </developers>
 
