@@ -94,6 +94,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getExtraHosts(),
                                           step.getMountPoints(),
                                           step.getPortMappings(),
+                                          step.getExecutionRole(),
                                           step.getTaskrole(),
                                           step.getInheritFrom());
         newTemplate.setLogDriver(step.getLogDriver());

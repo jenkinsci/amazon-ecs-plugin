@@ -270,6 +270,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            @Nullable List<ExtraHostEntry> extraHosts,
                            @Nullable List<MountPointEntry> mountPoints,
                            @Nullable List<PortMappingEntry> portMappings,
+                           @Nullable String executionRole,
                            @Nullable String taskrole,
                            @Nullable String inheritFrom) {
         // if the user enters a task definition override, always prefer to use it, rather than the jenkins template.
@@ -306,6 +307,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.extraHosts = extraHosts;
         this.mountPoints = mountPoints;
         this.portMappings = portMappings;
+        this.executionRole = executionRole;
         this.taskrole = taskrole;
         this.inheritFrom = inheritFrom;
     }
@@ -544,6 +546,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         List<MountPointEntry> mountPoints = CollectionUtils.isEmpty(this.mountPoints) ? parent.getMountPoints() : this.mountPoints;
         List<PortMappingEntry> portMappings = CollectionUtils.isEmpty(this.portMappings) ? parent.getPortMappings() : this.portMappings;
 
+        String executionRole = Strings.isNullOrEmpty(this.executionRole) ? parent.getExecutionRole() : this.executionRole;
         String taskrole = Strings.isNullOrEmpty(this.taskrole) ? parent.getTaskrole() : this.taskrole;
 
         ECSTaskTemplate merged = new ECSTaskTemplate(templateName,
@@ -567,6 +570,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        extraHosts,
                                                        mountPoints,
                                                        portMappings,
+                                                       executionRole,
                                                        taskrole,
                                                        null);
         merged.setLogDriver(logDriver);

@@ -39,6 +39,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private boolean assignPublicIp;
     private boolean privileged;
     private String containerUser;
+    private String executionRole;
     private String taskrole;
     private String inheritFrom;
     private String logDriver;
@@ -194,6 +195,16 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         overrides.add("containerUser");
     }
 
+    public String getExecutionRole() {
+        return executionRole;
+    }
+
+    @DataBoundSetter
+    public void setExecutionRole(String executionRole) {
+        this.executionRole = executionRole;
+        overrides.add("executionRole");
+    }
+
     public String getTaskrole() {
         return taskrole;
     }
@@ -327,6 +338,10 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
 
         if (!StringUtils.isEmpty(containerUser)) {
             argMap.put("containerUser", containerUser);
+        }
+
+        if (!StringUtils.isEmpty(executionRole)) {
+            argMap.put("executionRole", executionRole);
         }
 
         if (!StringUtils.isEmpty(taskrole)) {
