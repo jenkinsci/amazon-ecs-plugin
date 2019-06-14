@@ -61,7 +61,7 @@ Actually, there can be multiple reasons:
 ## Maintainers
 Andreas Sieferlinger ([GitHub](https://github.com/webratz) [Twitter](https://twitter.com/webratz))  
 Philipp Garbe ([GitHub](https://github.com/pgarbe), [Twitter](https://twitter.com/pgarbe))  
-
+Marky Jackson ([GitHub](https://github.com/markyjackson-taulia), [Twitter](https://twitter.com/MarkyJackson3))
 
 ## Developing
 
