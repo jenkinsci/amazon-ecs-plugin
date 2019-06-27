@@ -428,6 +428,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
                 "memory='" + memory + '\'' + '\n' +
                 "memoryReservation='" + memoryReservation + '\'' + '\n' +
                 "cpu='" + cpu + '\'' + '\n' +
+                "sharedMemorySize='" + sharedMemorySize + '\'' + '\n' +
                 "subnets='" + subnets + '\'' + '\n' +
                 "securityGroups='" + securityGroups + '\'' + '\n' +
                 "assignPublicIp='" + assignPublicIp + '\'' + '\n' +

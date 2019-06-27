@@ -336,6 +336,10 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
             argMap.put("cpu", cpu);
         }
 
+        if (sharedMemorySize != 0) {
+            argMap.put("sharedMemorySize", sharedMemorySize);
+        }
+
         if (!StringUtils.isEmpty(subnets)) {
             argMap.put("subnets", subnets);
         }
