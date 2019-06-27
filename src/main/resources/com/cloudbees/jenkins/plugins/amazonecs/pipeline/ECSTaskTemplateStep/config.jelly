@@ -43,7 +43,7 @@
       <f:textbox />
   </f:entry>
   <f:entry title="${%Docker Image}" field="image">
-    <f:textbox default="jenkinsci/jnlp-slave" />
+    <f:textbox default="jenkins/jnlp-slave" />
   </f:entry>
   <f:entry name="launchType" title="${%Launch type}" field="launchType">
     <f:select />
