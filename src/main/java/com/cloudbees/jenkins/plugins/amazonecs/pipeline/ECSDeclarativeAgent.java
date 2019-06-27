@@ -34,6 +34,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private int memory;
     private int memoryReservation;
     private int cpu;
+    private int sharedMemorySize;
     private String subnets;
     private String securityGroups;
     private boolean assignPublicIp;
@@ -143,6 +144,16 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     public void setCpu(int cpu) {
         this.cpu = cpu;
         overrides.add("cpu");
+    }
+
+    public int getSharedMemorySize() {
+        return sharedMemorySize;
+    }
+
+    @DataBoundSetter
+    public void setSharedMemorySize(int sharedMemorySize) {
+        this.sharedMemorySize = sharedMemorySize;
+        overrides.add("sharedMemorySize");
     }
 
     public String getSubnets() {
