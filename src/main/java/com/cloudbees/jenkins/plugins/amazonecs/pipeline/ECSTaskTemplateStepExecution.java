@@ -159,7 +159,6 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
     }
 
     private class ECSTaskTemplateCallback extends BodyExecutionCallback.TailCall {
-
         private static final long serialVersionUID = 6043919968776851324L;
 
         private final ECSTaskTemplate taskTemplate;
@@ -174,16 +173,24 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
          */
         protected void finished(StepContext context) throws Exception {
             Cloud c = Jenkins.get().getCloud(cloudName);
+            String parentLabel = taskTemplate.getInheritFrom();
             if (c == null) {
                 LOGGER.log(Level.WARNING, "Cloud {0} no longer exists, cannot delete task template {1}",
                         new Object[] { cloudName, taskTemplate.getTemplateName() });
                 return;
             }
             if (c instanceof ECSCloud) {
-                LOGGER.log(Level.INFO, "Removing task template {1} from cloud {0}",
-                        new Object[] { c.name, taskTemplate.getTemplateName() });
                 ECSCloud ecsCloud = (ECSCloud) c;
-                ecsCloud.removeDynamicTemplate(taskTemplate);
+                String customTaskDefinition = ecsCloud.isCustomTaskDefinition(parentLabel);
+                if (customTaskDefinition != null){
+                    LOGGER.log(Level.INFO, "Do not remove custom task template {1} from cloud {0}",
+                        new Object[] { c.name, customTaskDefinition });
+                    return;
+                } else {
+                    LOGGER.log(Level.INFO, "Removing task template {1} from cloud {0}",
+                        new Object[] { c.name, taskTemplate.getTemplateName() });
+                    ecsCloud.removeDynamicTemplate(taskTemplate);
+                }
             } else {
                 LOGGER.log(Level.WARNING, "Cloud is not an ECSCloud: {0} {1}",
                         new String[] { c.name, c.getClass().getName() });

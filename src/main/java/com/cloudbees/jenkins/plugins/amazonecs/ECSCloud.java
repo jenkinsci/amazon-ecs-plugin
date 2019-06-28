@@ -178,6 +178,10 @@ public class ECSCloud extends Cloud {
         return allowedOverridesList.contains(override.toLowerCase());
     }
 
+    public String isCustomTaskDefinition(String label) {
+        return getTemplate(label).getTaskDefinitionOverride();
+    }
+
     @Override
     public boolean canProvision(Label label) {
         return getTemplate(label) != null;
