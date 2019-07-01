@@ -96,7 +96,8 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getPortMappings(),
                                           step.getExecutionRole(),
                                           step.getTaskrole(),
-                                          step.getInheritFrom());
+                                          step.getInheritFrom(),
+                                          step.getSharedMemorySize());
         newTemplate.setLogDriver(step.getLogDriver());
 
         LOGGER.log(Level.INFO, "Registering task template with name {0}", new Object[] { newTemplate.getTemplateName() });
@@ -121,6 +122,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
         LOGGER.log(Level.FINE, "Step cpu: {0}", step.getCpu());
         LOGGER.log(Level.FINE, "Step memory: {0}", step.getMemory());
         LOGGER.log(Level.FINE, "Step memoryReservation: {0}", step.getMemoryReservation());
+        LOGGER.log(Level.FINE, "Step shareMemorySize: {0}", step.getSharedMemorySize());
 
         if(cloud.getMaxCpu() != 0 && cloud.getMaxCpu() < step.getCpu()) {
             throw new AbortException("cpu is higher than maximum configured in cloud");

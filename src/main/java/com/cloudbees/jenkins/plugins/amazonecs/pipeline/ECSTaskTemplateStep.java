@@ -49,6 +49,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private int memory;
     private int memoryReservation;
     private int cpu;
+    private int sharedMemorySize;
     private String subnets;
     private String securityGroups;
     private boolean assignPublicIp;
@@ -169,6 +170,15 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
 
     public int getCpu() {
         return cpu;
+    }
+
+    @DataBoundSetter
+    public void setSharedMemorySize(int sharedMemorySize) {
+        this.sharedMemorySize = sharedMemorySize;
+    }
+
+    public int getSharedMemorySize() {
+        return sharedMemorySize;
     }
 
     @DataBoundSetter
@@ -418,6 +428,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
                 "memory='" + memory + '\'' + '\n' +
                 "memoryReservation='" + memoryReservation + '\'' + '\n' +
                 "cpu='" + cpu + '\'' + '\n' +
+                "sharedMemorySize='" + sharedMemorySize + '\'' + '\n' +
                 "subnets='" + subnets + '\'' + '\n' +
                 "securityGroups='" + securityGroups + '\'' + '\n' +
                 "assignPublicIp='" + assignPublicIp + '\'' + '\n' +

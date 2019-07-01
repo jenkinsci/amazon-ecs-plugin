@@ -68,6 +68,9 @@
     <f:checkbox />
   </f:entry>
   <f:advanced>
+    <f:entry title="${%Shared Memory Size (Mb)}" field="sharedMemorySize" description="The size of the Shared Application Memory (/dev/shm) in Mb. Docker defaults this to 64Mb.">
+      <f:textbox />
+    </f:entry>
     <f:entry title="${%DNS Search Domains}" field="dnsSearchDomains">
       <f:textbox />
     </f:entry>

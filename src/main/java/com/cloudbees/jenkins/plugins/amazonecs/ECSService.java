@@ -40,28 +40,7 @@ import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.AmazonECSClientBuilder;
-import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
-import com.amazonaws.services.ecs.model.ClientException;
-import com.amazonaws.services.ecs.model.ContainerDefinition;
-import com.amazonaws.services.ecs.model.ContainerOverride;
-import com.amazonaws.services.ecs.model.DeregisterTaskDefinitionRequest;
-import com.amazonaws.services.ecs.model.DescribeTaskDefinitionRequest;
-import com.amazonaws.services.ecs.model.DescribeTaskDefinitionResult;
-import com.amazonaws.services.ecs.model.DescribeTasksRequest;
-import com.amazonaws.services.ecs.model.DescribeTasksResult;
-import com.amazonaws.services.ecs.model.KeyValuePair;
-import com.amazonaws.services.ecs.model.LaunchType;
-import com.amazonaws.services.ecs.model.LogConfiguration;
-import com.amazonaws.services.ecs.model.NetworkConfiguration;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionResult;
-import com.amazonaws.services.ecs.model.RepositoryCredentials;
-import com.amazonaws.services.ecs.model.RunTaskRequest;
-import com.amazonaws.services.ecs.model.RunTaskResult;
-import com.amazonaws.services.ecs.model.StopTaskRequest;
-import com.amazonaws.services.ecs.model.Task;
-import com.amazonaws.services.ecs.model.TaskDefinition;
-import com.amazonaws.services.ecs.model.TaskOverride;
+import com.amazonaws.services.ecs.model.*;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 
@@ -76,7 +55,6 @@ import jenkins.model.Jenkins;
  * Encapsulates interactions with Amazon ECS.
  *
  * @author Jan Roehrich <jan@roehrich.info>
- *
  */
 class ECSService {
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
@@ -95,7 +73,7 @@ class ECSService {
         ProxyConfiguration proxy = Jenkins.get().proxy;
         ClientConfiguration clientConfiguration = new ClientConfiguration();
 
-        if(proxy != null) {
+        if (proxy != null) {
             clientConfiguration.setProxyHost(proxy.name);
             clientConfiguration.setProxyPort(proxy.port);
             clientConfiguration.setProxyUsername(proxy.getUserName());
@@ -103,10 +81,10 @@ class ECSService {
         }
 
         AmazonECSClientBuilder builder = AmazonECSClientBuilder
-                    .standard()
-                    .withClientConfiguration(clientConfiguration)
-                    .withRegion(regionName);
-        
+                .standard()
+                .withClientConfiguration(clientConfiguration)
+                .withRegion(regionName);
+
         AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
         if (credentials != null) {
             if (LOGGER.isLoggable(Level.FINE)) {
@@ -115,7 +93,7 @@ class ECSService {
                 LOGGER.log(Level.FINE, "Connect to Amazon ECS with IAM Access Key {1}", new Object[]{obfuscatedAccessKeyId});
             }
             builder
-                .withCredentials(credentials);
+                    .withCredentials(credentials);
         }
         LOGGER.log(Level.FINE, "Selected Region: {0}", regionName);
 
@@ -164,7 +142,7 @@ class ECSService {
      */
     TaskDefinition registerTemplate(final ECSCloud cloud, final ECSTaskTemplate template) {
         final AmazonECS client = getAmazonECSClient();
-        
+
         String familyName = fullQualifiedTemplateName(cloud, template);
         final ContainerDefinition def = new ContainerDefinition()
                 .withName(familyName)
@@ -195,12 +173,12 @@ class ECSService {
 
         if (template.getJvmArgs() != null)
             def.withEnvironment(new KeyValuePair()
-                .withName("JAVA_OPTS").withValue(template.getJvmArgs()))
-                .withEssential(true);
-        
+                    .withName("JAVA_OPTS").withValue(template.getJvmArgs()))
+                    .withEssential(true);
+
         if (template.getContainerUser() != null)
             def.withUser(template.getContainerUser());
-        
+
         if (template.getRepositoryCredentials() != null)
             def.withRepositoryCredentials(new RepositoryCredentials().withCredentialsParameter(template.getRepositoryCredentials()));
 
@@ -209,6 +187,10 @@ class ECSService {
             logConfig.setLogDriver(template.getLogDriver());
             logConfig.setOptions(template.getLogDriverOptionsMap());
             def.withLogConfiguration(logConfig);
+        }
+
+        if (template.getSharedMemorySize() > 0) {
+            def.withLinuxParameters(new LinuxParameters().withSharedMemorySize(template.getSharedMemorySize()));
         }
 
         TaskDefinition currentTaskDefinition = findTaskDefinition(familyName);
@@ -223,57 +205,56 @@ class ECSService {
             final ContainerDefinition currentContainerDefinition = currentTaskDefinition.getContainerDefinitions().get(0);
 
             templateMatchesExistingContainerDefinition = def.equals(currentContainerDefinition);
-            LOGGER.log(Level.INFO, "Match on container definition: {0}", new Object[] {templateMatchesExistingContainerDefinition});
-            LOGGER.log(Level.FINE, "Match on container definition: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingContainerDefinition, def, currentContainerDefinition});
+            LOGGER.log(Level.INFO, "Match on container definition: {0}", new Object[]{templateMatchesExistingContainerDefinition});
+            LOGGER.log(Level.FINE, "Match on container definition: {0}; template={1}; last={2}", new Object[]{templateMatchesExistingContainerDefinition, def, currentContainerDefinition});
 
             templateMatchesExistingVolumes = ObjectUtils.equals(template.getVolumeEntries(), currentTaskDefinition.getVolumes());
-            LOGGER.log(Level.INFO, "Match on volumes: {0}", new Object[] {templateMatchesExistingVolumes});
-            LOGGER.log(Level.FINE, "Match on volumes: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingVolumes, template.getVolumeEntries(), currentTaskDefinition.getVolumes()});
+            LOGGER.log(Level.INFO, "Match on volumes: {0}", new Object[]{templateMatchesExistingVolumes});
+            LOGGER.log(Level.FINE, "Match on volumes: {0}; template={1}; last={2}", new Object[]{templateMatchesExistingVolumes, template.getVolumeEntries(), currentTaskDefinition.getVolumes()});
 
             templateMatchesExistingTaskRole = StringUtils.equals(StringUtils.defaultString(template.getTaskrole()), StringUtils.defaultString(currentTaskDefinition.getTaskRoleArn()));
-            LOGGER.log(Level.INFO, "Match on task role: {0}", new Object[] {templateMatchesExistingTaskRole});
-            LOGGER.log(Level.FINE, "Match on task role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingTaskRole, template.getTaskrole(), currentTaskDefinition.getTaskRoleArn()});
+            LOGGER.log(Level.INFO, "Match on task role: {0}", new Object[]{templateMatchesExistingTaskRole});
+            LOGGER.log(Level.FINE, "Match on task role: {0}; template={1}; last={2}", new Object[]{templateMatchesExistingTaskRole, template.getTaskrole(), currentTaskDefinition.getTaskRoleArn()});
 
             templateMatchesExistingExecutionRole = StringUtils.equals(StringUtils.defaultString(template.getExecutionRole()), StringUtils.defaultString(currentTaskDefinition.getExecutionRoleArn()));
-            LOGGER.log(Level.INFO, "Match on execution role: {0}", new Object[] {templateMatchesExistingExecutionRole});
-            LOGGER.log(Level.FINE, "Match on execution role: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingExecutionRole, template.getExecutionRole(), currentTaskDefinition.getExecutionRoleArn()});
+            LOGGER.log(Level.INFO, "Match on execution role: {0}", new Object[]{templateMatchesExistingExecutionRole});
+            LOGGER.log(Level.FINE, "Match on execution role: {0}; template={1}; last={2}", new Object[]{templateMatchesExistingExecutionRole, template.getExecutionRole(), currentTaskDefinition.getExecutionRoleArn()});
 
             //Compare to null if it is default network mode is selected
             String templateNetworkMode = "";
-            if(StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()),"default")){
-                templateMatchesExistingNetworkMode = null == currentTaskDefinition.getNetworkMode(); 
-                templateNetworkMode="null";
-            }
-            else{
+            if (StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()), "default")) {
+                templateMatchesExistingNetworkMode = null == currentTaskDefinition.getNetworkMode();
+                templateNetworkMode = "null";
+            } else {
                 templateMatchesExistingNetworkMode = StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()), StringUtils.defaultString(currentTaskDefinition.getNetworkMode()));
-                templateNetworkMode=template.getNetworkMode();
+                templateNetworkMode = template.getNetworkMode();
             }
 
-            LOGGER.log(Level.INFO, "Match on network mode: {0}", new Object[] {templateMatchesExistingNetworkMode});
-            LOGGER.log(Level.FINE, "Match on network mode: {0}; template={1}; last={2}", new Object[] {templateMatchesExistingNetworkMode, templateNetworkMode, currentTaskDefinition.getNetworkMode()});
+            LOGGER.log(Level.INFO, "Match on network mode: {0}", new Object[]{templateMatchesExistingNetworkMode});
+            LOGGER.log(Level.FINE, "Match on network mode: {0}; template={1}; last={2}", new Object[]{templateMatchesExistingNetworkMode, templateNetworkMode, currentTaskDefinition.getNetworkMode()});
         }
 
-        if(templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole && templateMatchesExistingExecutionRole && templateMatchesExistingNetworkMode) {
+        if (templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole && templateMatchesExistingExecutionRole && templateMatchesExistingNetworkMode) {
             LOGGER.log(Level.FINE, "Task Definition already exists: {0}", new Object[]{currentTaskDefinition.getTaskDefinitionArn()});
             return currentTaskDefinition;
         } else {
-            final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()                
+            final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()
                     .withFamily(familyName)
                     .withVolumes(template.getVolumeEntries())
                     .withContainerDefinitions(def);
 
             //If network mode is default, that means Null in the request, so do not set.
-            if(!StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()),"default")){
+            if (!StringUtils.equals(StringUtils.defaultString(template.getNetworkMode()), "default")) {
                 request.withNetworkMode(template.getNetworkMode());
             }
 
-            if(!StringUtils.isEmpty(template.getExecutionRole())){
+            if (!StringUtils.isEmpty(template.getExecutionRole())) {
                 request.withExecutionRoleArn(template.getExecutionRole());
             }
 
             if (!StringUtils.isEmpty(template.getTaskrole())) {
                 request.withTaskRoleArn(template.getTaskrole());
-            } 
+            }
 
             if (template.isFargate()) {
                 request
@@ -330,7 +311,7 @@ class ECSService {
     }
 
     private String fullQualifiedTemplateName(final ECSCloud cloud, final ECSTaskTemplate template) {
-        return cloud.getDisplayName().replaceAll("\\s+","") + '-' + template.getTemplateName();
+        return cloud.getDisplayName().replaceAll("\\s+", "") + '-' + template.getTemplateName();
     }
 
     RunTaskResult runEcsTask(final ECSSlave agent, final ECSTaskTemplate template, String clusterArn, Collection<String> command, TaskDefinition taskDefinition) throws IOException, AbortException {
@@ -363,7 +344,7 @@ class ECSService {
                                 .withEnvironment(envNodeSecret)))
                 .withCluster(clusterArn);
 
-        if (taskDefinition.getNetworkMode()!=null && taskDefinition.getNetworkMode().equals("awsvpc")) {
+        if (taskDefinition.getNetworkMode() != null && taskDefinition.getNetworkMode().equals("awsvpc")) {
             AwsVpcConfiguration awsVpcConfiguration = new AwsVpcConfiguration();
             awsVpcConfiguration.setAssignPublicIp(template.getAssignPublicIp() ? "ENABLED" : "DISABLED");
             awsVpcConfiguration.setSecurityGroups(Arrays.asList(template.getSecurityGroups().split(",")));
