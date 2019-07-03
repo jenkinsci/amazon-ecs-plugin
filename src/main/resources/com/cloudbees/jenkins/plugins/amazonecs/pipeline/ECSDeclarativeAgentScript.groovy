@@ -48,7 +48,7 @@ public class ECSDeclarativeAgentScript extends DeclarativeAgentScript<ECSDeclara
                 }
                 script.ecsTaskTemplate(describable.asArgs) {
                     script.node(describable.label) {
-                        body.call()
+                        CheckoutScript.doCheckout(script, describable, null, body).call()
                     }
                 }
             } catch (Exception e) {
