@@ -2,6 +2,10 @@
 
 ## vNext
 
+## 1.22
+
+-   BUG - Error Removing Dynamic Templates #122
+
 ## 1.21
 
 -   Feature - adding shared memory size to ecs agent template
