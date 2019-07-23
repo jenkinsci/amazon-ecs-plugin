@@ -183,10 +183,9 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
             }
             if (c instanceof ECSCloud) {
                 ECSCloud ecsCloud = (ECSCloud) c;
-                String customTaskDefinition = ecsCloud.isCustomTaskDefinition(parentLabel);
-                if (customTaskDefinition != null){
+                if (parentLabel != null && ecsCloud.isCustomTaskDefinition(parentLabel) != null){
                     LOGGER.log(Level.INFO, "Do not remove custom task template {1} from cloud {0}",
-                        new Object[] { c.name, customTaskDefinition });
+                        new Object[] { c.name, ecsCloud.isCustomTaskDefinition(parentLabel) });
                     return;
                 } else {
                     LOGGER.log(Level.INFO, "Removing task template {1} from cloud {0}",
