@@ -312,20 +312,6 @@ class ECSService {
         }
     }
 
-    private PlacementStrategy getPlacementStrategy(ECSTaskTemplate template)
-    {
-        String placementStrategyType = template.getPlacementStrategyType();
-
-        PlacementStrategy placementStrategy = new PlacementStrategy()
-             .withType(template.getPlacementStrategyType());
-
-        if(placementStrategyType != "random") {
-            placementStrategy.withField(template.getPlacementStrategyField());
-        }
-
-        return placementStrategy;
-    }
-
     private String fullQualifiedTemplateName(final ECSCloud cloud, final ECSTaskTemplate template) {
         return cloud.getDisplayName().replaceAll("\\s+", "") + '-' + template.getTemplateName();
     }
@@ -349,8 +335,6 @@ class ECSService {
 
         LOGGER.log(Level.FINE, "Found container definition with {0} container(s). Assuming first container is the Jenkins agent: {1}", new Object[]{taskDefinition.getContainerDefinitions().size(), agentContainerName});
 
-        PlacementStrategy placementStrategy = getPlacementStrategy(template);
-
         RunTaskRequest req = new RunTaskRequest()
                 .withTaskDefinition(taskDefinition.getTaskDefinitionArn())
                 .withLaunchType(LaunchType.fromValue(template.getLaunchType()))
@@ -360,7 +344,7 @@ class ECSService {
                                 .withCommand(command)
                                 .withEnvironment(envNodeName)
                                 .withEnvironment(envNodeSecret)))
-                .withPlacementStrategy(placementStrategy)
+                .withPlacementStrategy(template.getPlacementStrategyEntries())
                 .withCluster(clusterArn);
 
         if (taskDefinition.getNetworkMode() != null && taskDefinition.getNetworkMode().equals("awsvpc")) {

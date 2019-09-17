@@ -80,8 +80,6 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getRepositoryCredentials(),
                                           step.getLaunchType(),
                                           step.getNetworkMode(),
-                                          step.getPlacementStrategyType(),
-                                          step.getPlacementStrategyField(),
                                           step.getRemoteFSRoot(),
                                           step.getMemory(),
                                           step.getMemoryReservation(),
@@ -97,6 +95,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getMountPoints(),
                                           step.getPortMappings(),
                                           step.getExecutionRole(),
+                                          step.getPlacementStrategies(),
                                           step.getTaskrole(),
                                           step.getInheritFrom(),
                                           step.getSharedMemorySize());

@@ -222,18 +222,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private final String networkMode;
 
     /**
-     * Task placement strategy type
-     */
-    @Nonnull
-    private  String placementStrategyType;
-
-    /**
-     * Task placement strategy field
-     */
-    @Nullable
-    private  String placementStrategyField;
-
-    /**
      * Indicates whether the container should run in privileged mode
      */
     private final boolean privileged;
@@ -247,6 +235,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private List<EnvironmentEntry> environments;
     private List<ExtraHostEntry> extraHosts;
     private List<PortMappingEntry> portMappings;
+    private List<PlacementStrategyEntry> placementStrategies;
 
     /**
     * The log configuration specification for the container.
@@ -278,8 +267,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            @Nullable final String repositoryCredentials,
                            @Nonnull String launchType,
                            @Nonnull String networkMode,
-                           @Nonnull String placementStrategyType,
-                           @Nullable String placementStrategyField,
                            @Nullable String remoteFSRoot,
                            int memory,
                            int memoryReservation,
@@ -295,6 +282,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            @Nullable List<MountPointEntry> mountPoints,
                            @Nullable List<PortMappingEntry> portMappings,
                            @Nullable String executionRole,
+                           @Nullable List<PlacementStrategyEntry> placementStrategies,
                            @Nullable String taskrole,
                            @Nullable String inheritFrom,
                            int sharedMemorySize) {
@@ -322,8 +310,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.cpu = cpu;
         this.launchType = launchType;
         this.networkMode = networkMode;
-        this.placementStrategyType = placementStrategyType;
-        this.placementStrategyField = placementStrategyField;
         this.subnets = subnets;
         this.securityGroups = securityGroups;
         this.assignPublicIp = assignPublicIp;
@@ -335,6 +321,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.mountPoints = mountPoints;
         this.portMappings = portMappings;
         this.executionRole = executionRole;
+        this.placementStrategies = placementStrategies;
         this.taskrole = taskrole;
         this.inheritFrom = inheritFrom;
         this.sharedMemorySize = sharedMemorySize;
@@ -480,14 +467,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         return networkMode;
     }
 
-    public String getPlacementStrategyType() {
-        return placementStrategyType;
-    }
-
-    public String getPlacementStrategyField() {
-        return placementStrategyField;
-    }
-
     public String getLogDriver() {
         return logDriver;
     }
@@ -554,6 +533,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         return portMappings;
     }
 
+    public List<PlacementStrategyEntry> getPlacementStrategies() {
+        return placementStrategies;
+    }
+
     public ECSTaskTemplate merge(ECSTaskTemplate parent) {
         if(parent == null) {
             return this;
@@ -566,8 +549,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         String repositoryCredentials = Strings.isNullOrEmpty(this.repositoryCredentials) ? parent.getRepositoryCredentials() : this.repositoryCredentials;
         String launchType = Strings.isNullOrEmpty(this.launchType) ? parent.getLaunchType() : this.launchType;
         String networkMode = Strings.isNullOrEmpty(this.networkMode) ? parent.getNetworkMode() : this.networkMode;
-        String placementStrategyType = Strings.isNullOrEmpty(this.placementStrategyType) ? parent.getPlacementStrategyType() : this.placementStrategyType;
-        String placementStrategyField = Strings.isNullOrEmpty(this.placementStrategyField) ? parent.getPlacementStrategyField() : this.placementStrategyField;
         String remoteFSRoot = Strings.isNullOrEmpty(this.remoteFSRoot) ? parent.getRemoteFSRoot() : this.remoteFSRoot;
         int memory = this.memory == 0 ? parent.getMemory() : this.memory;
         int memoryReservation = this.memoryReservation == 0 ? parent.getMemoryReservation() : this.memoryReservation;
@@ -586,6 +567,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         List<ExtraHostEntry> extraHosts = CollectionUtils.isEmpty(this.extraHosts) ? parent.getExtraHosts() : this.extraHosts;
         List<MountPointEntry> mountPoints = CollectionUtils.isEmpty(this.mountPoints) ? parent.getMountPoints() : this.mountPoints;
         List<PortMappingEntry> portMappings = CollectionUtils.isEmpty(this.portMappings) ? parent.getPortMappings() : this.portMappings;
+        List<PlacementStrategyEntry> placementStrategies = CollectionUtils.isEmpty(this.placementStrategies) ? parent.getPlacementStrategies() : this.placementStrategies;
 
         String executionRole = Strings.isNullOrEmpty(this.executionRole) ? parent.getExecutionRole() : this.executionRole;
         String taskrole = Strings.isNullOrEmpty(this.taskrole) ? parent.getTaskrole() : this.taskrole;
@@ -597,8 +579,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        repositoryCredentials,
                                                        launchType,
                                                        networkMode,
-                                                       placementStrategyType,
-                                                       placementStrategyField,
                                                        remoteFSRoot,
                                                        memory,
                                                        memoryReservation,
@@ -614,6 +594,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        mountPoints,
                                                        portMappings,
                                                        executionRole,
+                                                       placementStrategies,
                                                        taskrole,
                                                        null,
                                                         sharedMemorySize);
@@ -709,6 +690,20 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                        .withProtocol(protocol));
         }
         return ports;
+    }
+
+    Collection<PlacementStrategy> getPlacementStrategyEntries() {
+        if (null == placementStrategies || placementStrategies.isEmpty())
+            return null;
+        Collection<PlacementStrategy> placements = new ArrayList<PlacementStrategy>();
+        for (PlacementStrategyEntry placementStrategy : this.placementStrategies) {
+            String type = placementStrategy.type;
+            String field = placementStrategy.field;
+
+            placements.add(new PlacementStrategy().withType(type)
+                                       .withField(field));
+        }
+        return placements;
     }
 
     public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> implements Serializable {
@@ -828,6 +823,44 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         }
     }
 
+    public static class PlacementStrategyEntry extends AbstractDescribableImpl<PlacementStrategyEntry> implements Serializable {
+        //private static final long serialVersionUID = 4195862080979262875L;
+        public String type, field;
+
+        @DataBoundConstructor
+        public PlacementStrategyEntry(String type, String field) {
+            this.type = type;
+            this.field = field;
+        }
+
+        @Override
+        public String toString() {
+            return "PlacementStrategyEntry{" + type + ": " + field + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<PlacementStrategyEntry> {
+            public ListBoxModel doFillTypeItems() {
+                final ListBoxModel options = new ListBoxModel();
+                for (PlacementStrategyType placementStrategyType: PlacementStrategyType.values()) {
+                    options.add(placementStrategyType.toString());
+                }
+                return options;
+            }
+            @Override
+            public String getDisplayName() {
+                return "PlacementStrategyEntry";
+            }
+
+            public FormValidation doCheckField(@QueryParameter("field") String field, @QueryParameter("type") String type) throws IOException, ServletException {
+                if (!type.contentEquals("random") && field.isEmpty()) {
+                    return FormValidation.error("Field needs to be set when using Type other then random");
+                }
+                return FormValidation.ok();
+            }
+        }
+    }
+
     public Set<LabelAtom> getLabelSet() {
         return Label.parse(label);
     }
@@ -866,24 +899,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
             return options;
         }
-
-        public ListBoxModel doFillPlacementStrategyTypeItems() {
-            final ListBoxModel options = new ListBoxModel();
-
-            for (PlacementStrategyType placementStrategyType: PlacementStrategyType.values()) {
-                options.add(placementStrategyType.toString());
-            }
-
-            return options;
-        }
-
-        public FormValidation doCheckPlacementStrategyField(@QueryParameter("placementStrategyField") String placementStrategyField, @QueryParameter("placementStrategyType") String placementStrategyType) throws IOException, ServletException {
-            if (!placementStrategyType.contentEquals("random") && placementStrategyField.isEmpty()) {
-                return FormValidation.error("Placement Field needs to be set when using Type other then random");
-            }
-            return FormValidation.ok();
-        }
-
 
         public FormValidation doCheckTemplateName(@QueryParameter String value) throws IOException, ServletException {
             if (value.length() > 0 && value.length() <= 127 && value.matches(TEMPLATE_NAME_PATTERN)) {
