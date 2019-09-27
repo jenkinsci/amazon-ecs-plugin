@@ -54,7 +54,7 @@
   <f:entry name="placementStrategyType" title="${%Placement Strategy Type}" field="placementStrategyType">
     <f:select />
   </f:entry>
-  <f:entry title="${%lacement Strategy Field}" field="placementStrategyField">
+  <f:entry title="${%Placement Strategy Field}" field="placementStrategyField">
     <f:textbox />
   </f:entry>
   <f:entry title="${%Filesystem root}" field="remoteFSRoot">
