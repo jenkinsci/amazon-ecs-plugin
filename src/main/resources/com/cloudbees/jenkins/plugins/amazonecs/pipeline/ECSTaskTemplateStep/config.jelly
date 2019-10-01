@@ -51,6 +51,12 @@
   <f:entry name="networkMode" title="${%Network mode}" field="networkMode">
     <f:select />
   </f:entry>
+  <f:entry name="placementStrategyType" title="${%Placement Strategy Type}" field="placementStrategyType">
+    <f:select />
+  </f:entry>
+  <f:entry title="${%Placement Strategy Field}" field="placementStrategyField">
+    <f:textbox />
+  </f:entry>
   <f:entry title="${%Filesystem root}" field="remoteFSRoot">
     <f:textbox default="/home/jenkins" />
   </f:entry>

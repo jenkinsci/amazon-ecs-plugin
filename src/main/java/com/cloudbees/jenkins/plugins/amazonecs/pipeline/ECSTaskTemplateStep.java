@@ -25,6 +25,7 @@ import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.ExtraHostEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.LogDriverOption;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.MountPointEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.PortMappingEntry;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.PlacementStrategyEntry;
 import com.google.common.collect.ImmutableSet;
 import hudson.model.Run;
 import java.util.logging.Level;
@@ -64,6 +65,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private List<ExtraHostEntry> extraHosts;
     private List<MountPointEntry> mountPoints;
     private List<PortMappingEntry> portMappings;
+    private List<PlacementStrategyEntry> placementStrategies;
 
     private List<String> overrides;
 
@@ -307,6 +309,15 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
         this.portMappings = portMappings;
     }
 
+    public List<PlacementStrategyEntry> getPlacementStrategies() {
+        return placementStrategies;
+    }
+
+    @DataBoundSetter
+    public void setPlacementStrategies(List<PlacementStrategyEntry> placementStrategies) {
+        this.placementStrategies = placementStrategies;
+    }
+
     @DataBoundSetter
     public void setOverrides(List<String> overrides) {
         this.overrides = overrides;
@@ -442,6 +453,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
                 "extraHosts'" + extraHosts + '\'' + '\n' +
                 "mountPoints'" + mountPoints + '\'' + '\n' +
                 "portMappings'" + portMappings + '\'' + '\n' +
+                "placementStrategies'" + placementStrategies + '\'' + '\n' +
                 '}';
     }
 }

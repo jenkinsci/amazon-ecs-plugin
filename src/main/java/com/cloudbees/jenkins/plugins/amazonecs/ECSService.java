@@ -41,6 +41,8 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.AmazonECSClientBuilder;
 import com.amazonaws.services.ecs.model.*;
+import com.amazonaws.services.ecs.model.PlacementStrategy;
+import com.amazonaws.services.ecs.model.PlacementStrategyType;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 
@@ -342,6 +344,7 @@ class ECSService {
                                 .withCommand(command)
                                 .withEnvironment(envNodeName)
                                 .withEnvironment(envNodeSecret)))
+                .withPlacementStrategy(template.getPlacementStrategyEntries())
                 .withCluster(clusterArn);
 
         if (taskDefinition.getNetworkMode() != null && taskDefinition.getNetworkMode().equals("awsvpc")) {

@@ -189,5 +189,23 @@
         </table>
       </f:repeatable>
     </f:entry>
+    <f:entry field="placementStrategies" title="${%Placement Strategies}">
+      <f:repeatable field="placementStrategies">
+        <table width="100%">
+          <f:entry field="field" title="${%Field}">
+            <f:textbox />
+          </f:entry>
+          <f:entry name="type" title="${%Type}" field="type">
+            <f:select />
+          </f:entry>
+          
+          <f:entry>
+            <div align="right">
+              <f:repeatableDeleteButton />
+            </div>
+          </f:entry>
+        </table>
+      </f:repeatable>
+    </f:entry>
   </f:advanced>
 </j:jelly>

@@ -98,6 +98,7 @@ public class ECSSlaveTest {
             null,
             null,
             null,
+            null,
             0);
     }
 }
