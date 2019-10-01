@@ -2,6 +2,10 @@
 
 ## vNext
 
+## 1.23
+
+-   Feature - configurable placement strategy #81
+
 ## 1.22
 
 -   BUG - Error Removing Dynamic Templates #122
