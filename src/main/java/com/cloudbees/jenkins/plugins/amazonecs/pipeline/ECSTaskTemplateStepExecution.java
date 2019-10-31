@@ -176,7 +176,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
          */
         protected void finished(StepContext context) throws Exception {
             Cloud c = Jenkins.get().getCloud(cloudName);
-            String parentLabel = taskTemplate.getInheritFrom();
+            String override = taskTemplate.getTaskDefinitionOverride();
             if (c == null) {
                 LOGGER.log(Level.WARNING, "Cloud {0} no longer exists, cannot delete task template {1}",
                         new Object[] { cloudName, taskTemplate.getTemplateName() });
@@ -184,9 +184,9 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
             }
             if (c instanceof ECSCloud) {
                 ECSCloud ecsCloud = (ECSCloud) c;
-                if (parentLabel != null && ecsCloud.isCustomTaskDefinition(parentLabel) != null){
-                    LOGGER.log(Level.INFO, "Do not remove custom task template {1} from cloud {0}",
-                        new Object[] { c.name, ecsCloud.isCustomTaskDefinition(parentLabel) });
+                if (override != null){
+                    LOGGER.log(Level.INFO, "Do not remove custom task template from cloud {0}",
+                        new Object[] { c.name});
                     return;
                 } else {
                     LOGGER.log(Level.INFO, "Removing task template {1} from cloud {0}",
