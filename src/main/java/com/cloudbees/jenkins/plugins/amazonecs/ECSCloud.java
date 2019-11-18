@@ -86,6 +86,7 @@ public class ECSCloud extends Cloud {
     private String jenkinsUrl;
     private int retentionTimeout = DescriptorImpl.DEFAULT_RETENTION_TIMEOUT;
     private int slaveTimeoutInSeconds = DescriptorImpl.DEFAULT_SLAVE_TIMEOUT_IN_SECONDS;
+    private int taskPollingIntervalInSeconds = DescriptorImpl.DEFAULT_TASK_POLLING_INTERVAL_IN_SECONDS;
     private ECSService ecsService;
     private String allowedOverrides;
     private int maxCpu;
@@ -275,6 +276,23 @@ public class ECSCloud extends Cloud {
         this.retentionTimeout = retentionTimeout;
     }
 
+
+    public int getTaskPollingIntervalInSeconds() {
+        // this is only needed for edge cases, where in the config was nothing set
+        // and then 0 is assumed as default which breaks things.
+
+        if (this.taskPollingIntervalInSeconds == 0) {
+            return DescriptorImpl.DEFAULT_TASK_POLLING_INTERVAL_IN_SECONDS;
+        } else {
+            return this.taskPollingIntervalInSeconds;
+        }
+    }
+
+    @DataBoundSetter
+    public void setTaskPollingIntervalInSeconds(int taskPollingIntervalInSeconds) {
+        this.taskPollingIntervalInSeconds = taskPollingIntervalInSeconds;
+    }
+
     public int getMaxCpu() {
         return maxCpu;
     }
@@ -361,7 +379,8 @@ public class ECSCloud extends Cloud {
     @Extension
     public static class DescriptorImpl extends Descriptor<Cloud> {
         public static final int DEFAULT_RETENTION_TIMEOUT = 5;
-        public static final int DEFAULT_SLAVE_TIMEOUT_IN_SECONDS= 900;
+        public static final int DEFAULT_SLAVE_TIMEOUT_IN_SECONDS = 900;
+        public static final int DEFAULT_TASK_POLLING_INTERVAL_IN_SECONDS = 1;
         public static final String DEFAULT_ALLOWED_OVERRIDES = "";
         private static String CLOUD_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
 

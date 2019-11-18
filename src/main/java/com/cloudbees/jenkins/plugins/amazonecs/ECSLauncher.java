@@ -138,7 +138,7 @@ public class ECSLauncher extends JNLPLauncher {
 
                 LOGGER.log(INFO, "[{0}]: Waiting for agent to start", new Object[]{agent.getNodeName()});
                 logger.printf("Waiting for agent to start: %1$s%n", agent.getNodeName());
-                Thread.sleep(1000);
+                Thread.sleep(cloud.getTaskPollingIntervalInSeconds() * 1000);
             }
 
             if (!taskRunning) {
