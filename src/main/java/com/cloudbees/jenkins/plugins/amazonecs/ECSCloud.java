@@ -222,20 +222,22 @@ public class ECSCloud extends Cloud {
         try {
             LOGGER.log(Level.INFO, "Asked to provision {0} agent(s) for: {1}", new Object[]{excessWorkload, label});
 
-            Set<String> allInProvisioning = InProvisioning.getAllInProvisioning(label);
-            LOGGER.log(Level.INFO, "In provisioning : " + allInProvisioning);
-            int toBeProvisioned = Math.max(0, excessWorkload - allInProvisioning.size());
-            LOGGER.log(Level.INFO, "Excess workload after pending ECS agents: {0}", toBeProvisioned);
-
             List<NodeProvisioner.PlannedNode> r = new ArrayList<NodeProvisioner.PlannedNode>();
             final ECSTaskTemplate template = getTemplate(label);
             String parentLabel = template.getInheritFrom();
             final ECSTaskTemplate merged = template.merge(getTemplate(parentLabel));
 
-            for (int i = 1; i <= toBeProvisioned; i++) {
+            for (int i = 1; i <= excessWorkload; i++) {
             LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{merged.getDisplayName(), label} );
-
-                r.add(new NodeProvisioner.PlannedNode(template.getDisplayName(), Computer.threadPoolForRemoting.submit(new ProvisioningCallback(merged)), 1));
+                r.add(
+                        new NodeProvisioner.PlannedNode(
+                                template.getDisplayName(),
+                                Computer.threadPoolForRemoting.submit(
+                                        new ProvisioningCallback(merged)
+                                ),
+                                1
+                        )
+                );
             }
             return r;
         } catch (Exception e) {
