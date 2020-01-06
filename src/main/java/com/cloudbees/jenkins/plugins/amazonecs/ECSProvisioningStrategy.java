@@ -14,14 +14,24 @@ import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Overrides Jenkins' default ProvisioningStrategy to always provision an agent ASAP.
+ *
+ * This code is lifted from https://github.com/jenkinsci/jenkins/blob/67e19919081023a54b450fffaf7005d4e40339d3/core/src/main/java/hudson/slaves/NodeProvisioner.java#L632,
+ * removing most of the code that handles load statistics averaging in favour of just using the latest values.
+ */
 @Extension
 public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
     private static final Logger LOGGER = Logger.getLogger(ECSProvisioningStrategy.class.getName());
 
+    /**
+     * Takes a provisioning decision for a single label. Determines how many ECS tasks to start based solely on
+     * queue length and how many agents are in the process of connecting.
+     */
     @Nonnull
     @Override
     public NodeProvisioner.StrategyDecision apply(@Nonnull NodeProvisioner.StrategyState state) {
-        LOGGER.log(Level.INFO, "Received StrategyState {0}", new Object[]{state});
+        LOGGER.log(Level.FINE, "Received {0}", new Object[]{state});
         LoadStatistics.LoadStatisticsSnapshot snap = state.getSnapshot();
         Label label = state.getLabel();
 
@@ -47,11 +57,12 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
 
             Collection<NodeProvisioner.PlannedNode> additionalCapacities = c.provision(label, excessWorkload);
 
+            // compat with what the default NodeProvisioner.Strategy does
             fireOnStarted(c, label, additionalCapacities);
 
             for (NodeProvisioner.PlannedNode ac : additionalCapacities) {
                 excessWorkload -= ac.numExecutors;
-                LOGGER.log(Level.INFO, "Started provisioning {0} from {1} with {2,number,integer} "
+                LOGGER.log(Level.FINE, "Started provisioning {0} from {1} with {2,number,integer} "
                                 + "executors. Remaining excess workload: {3,number,#.###}",
                         new Object[]{ac.displayName, c.name, ac.numExecutors, excessWorkload});
             }
