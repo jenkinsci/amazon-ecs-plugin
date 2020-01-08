@@ -187,7 +187,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                 if (override != null){
                     LOGGER.log(Level.INFO, "Remove custom task template from map, not cloud {0}",
                         new Object[] { c.name});
-		    ecsCloud.removeDynamicTemplateFromTemplateMap(taskTemplate);
+                    ecsCloud.removeDynamicTemplateFromTemplateMap(taskTemplate);
                     return;
                 } else {
                     LOGGER.log(Level.INFO, "Removing task template {1} from cloud {0}",
