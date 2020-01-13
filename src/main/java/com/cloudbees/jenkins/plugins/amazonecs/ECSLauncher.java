@@ -106,20 +106,21 @@ public class ECSLauncher extends JNLPLauncher {
 
             TaskDefinition taskDefinition = getTaskDefinition(agent.getNodeName(), agent.getTemplate(), cloud, ecsService);
 
-            Task task = runECSTask(taskDefinition, cloud, agent.getTemplate(), ecsService, agent);
+            Task startedTask = runECSTask(taskDefinition, cloud, agent.getTemplate(), ecsService, agent);
 
-            LOGGER.log(INFO, "[{0}]: TaskArn: {1}", new Object[]{agent.getNodeName(), task.getTaskArn()});
-            LOGGER.log(INFO, "[{0}]: TaskDefinitionArn: {1}", new Object[]{agent.getNodeName(), task.getTaskDefinitionArn()});
-            LOGGER.log(INFO, "[{0}]: ClusterArn: {1}", new Object[]{agent.getNodeName(), task.getClusterArn()});
-            LOGGER.log(INFO, "[{0}]: ContainerInstanceArn: {1}", new Object[]{agent.getNodeName(), task.getContainerInstanceArn()});
+            LOGGER.log(INFO, "[{0}]: TaskArn: {1}", new Object[]{agent.getNodeName(), startedTask.getTaskArn()});
+            LOGGER.log(INFO, "[{0}]: TaskDefinitionArn: {1}", new Object[]{agent.getNodeName(), startedTask.getTaskDefinitionArn()});
+            LOGGER.log(INFO, "[{0}]: ClusterArn: {1}", new Object[]{agent.getNodeName(), startedTask.getClusterArn()});
+            LOGGER.log(INFO, "[{0}]: ContainerInstanceArn: {1}", new Object[]{agent.getNodeName(), startedTask.getContainerInstanceArn()});
 
             long timeout = System.currentTimeMillis() + Duration.ofSeconds(cloud.getSlaveTimeoutInSeconds()).toMillis();
 
             boolean taskRunning = false;
+            Task task = null;
             while (System.currentTimeMillis() < timeout) {
 
                 // Wait while PENDING
-                task = ecsService.describeTask(task.getTaskArn(), task.getClusterArn());
+                task = ecsService.describeTask(startedTask.getTaskArn(), startedTask.getClusterArn());
 
                 if (task != null) {
                     String taskStatus = task.getLastStatus();
