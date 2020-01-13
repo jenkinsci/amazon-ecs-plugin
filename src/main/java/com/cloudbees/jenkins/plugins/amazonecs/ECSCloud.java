@@ -227,13 +227,14 @@ public class ECSCloud extends Cloud {
             String parentLabel = template.getInheritFrom();
             final ECSTaskTemplate merged = template.merge(getTemplate(parentLabel));
 
-            for (int i = 1; i <= excessWorkload; i++) {
-            LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{merged.getDisplayName(), label} );
+            for (int i = 1; i <= toBeProvisioned; i++) {
+                String agentName = name + "-" + label.getName() + "-" + RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
+                LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{agentName, label} );
                 r.add(
                         new NodeProvisioner.PlannedNode(
-                                template.getDisplayName(),
+                                agentName,
                                 Computer.threadPoolForRemoting.submit(
-                                        new ProvisioningCallback(merged)
+                                        new ProvisioningCallback(merged, agentName)
                                 ),
                                 1
                         )
@@ -326,14 +327,15 @@ public class ECSCloud extends Cloud {
     private class ProvisioningCallback implements Callable<Node> {
 
         private final ECSTaskTemplate template;
+        private final String agentName;
 
-        public ProvisioningCallback(ECSTaskTemplate template) {
+        public ProvisioningCallback(ECSTaskTemplate template, String agentName) {
             this.template = template;
+            this.agentName = agentName;
         }
 
         public Node call() throws Exception {
-            String uniq = RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
-            return new ECSSlave(ECSCloud.this, name + "-" + uniq, template, new ECSLauncher(ECSCloud.this, tunnel, null));
+            return new ECSSlave(ECSCloud.this, this.agentName, template, new ECSLauncher(ECSCloud.this, tunnel, null));
         }
     }
 
@@ -375,6 +377,14 @@ public class ECSCloud extends Cloud {
      */
     public void removeDynamicTemplate(ECSTaskTemplate t) {
         getEcsService().removeTemplate(this, t);
+        TaskTemplateMap.get().removeTemplate(this, t);
+    }
+
+    /**
+     * Remove a dynamic task template from the template map.
+     * @param t the template to remove
+     */
+    public void removeDynamicTemplateFromTemplateMap(ECSTaskTemplate t) {
         TaskTemplateMap.get().removeTemplate(this, t);
     }
 
