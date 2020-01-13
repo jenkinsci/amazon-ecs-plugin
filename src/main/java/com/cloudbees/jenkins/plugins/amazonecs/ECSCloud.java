@@ -227,7 +227,7 @@ public class ECSCloud extends Cloud {
             String parentLabel = template.getInheritFrom();
             final ECSTaskTemplate merged = template.merge(getTemplate(parentLabel));
 
-            for (int i = 1; i <= toBeProvisioned; i++) {
+            for (int i = 1; i <= excessWorkload; i++) {
                 String agentName = name + "-" + label.getName() + "-" + RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
                 LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{agentName, label} );
                 r.add(
