@@ -49,6 +49,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import hudson.AbortException;
 import hudson.model.TaskListener;
+import hudson.util.LogTaskListener;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.SlaveComputer;
 import jenkins.slaves.RemotingWorkDirSettings;
@@ -148,6 +149,7 @@ public class ECSLauncher extends JNLPLauncher {
                 }
                 throw new IllegalStateException("Task took too long to start");
             }
+            listener.getLogger().println("ECS Task: " + startedTask.getTaskArn() + "running on Cluster " + startedTask.getClusterArn());
 
             LOGGER.log(INFO, "[{0}]: Task started, waiting for agent to become online", new Object[]{agent.getNodeName()});
 
@@ -171,6 +173,10 @@ public class ECSLauncher extends JNLPLauncher {
             LOGGER.log(INFO, "[{0}]: Agent connected", new Object[]{agent.getNodeName()});
 
             computer.setAcceptingTasks(true);
+            LogTaskListener foobar = new LogTaskListener(LOGGER, Level.FINE);
+
+            logger.println("ECS Task: " + startedTask.getTaskArn() + "running on Cluster " + startedTask.getClusterArn());
+            foobar.getLogger().println("ECS Task v2: " + startedTask.getTaskArn() + "running on Cluster " + startedTask.getClusterArn());
 
         } catch (Throwable ex) {
             LOGGER.log(Level.WARNING, MessageFormat.format("[{0}]: Error in provisioning; agent={1}", agent.getNodeName(), agent), ex);
