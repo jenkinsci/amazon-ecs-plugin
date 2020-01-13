@@ -385,6 +385,14 @@ public class ECSCloud extends Cloud {
         TaskTemplateMap.get().removeTemplate(this, t);
     }
 
+    /**
+     * Remove a dynamic task template from the template map.
+     * @param t the template to remove
+     */
+    public void removeDynamicTemplateFromTemplateMap(ECSTaskTemplate t) {
+        TaskTemplateMap.get().removeTemplate(this, t);
+    }
+
     @Extension
     public static class DescriptorImpl extends Descriptor<Cloud> {
         public static final int DEFAULT_RETENTION_TIMEOUT = 5;
