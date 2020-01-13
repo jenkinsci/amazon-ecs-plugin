@@ -233,9 +233,17 @@ public class ECSCloud extends Cloud {
             final ECSTaskTemplate merged = template.merge(getTemplate(parentLabel));
 
             for (int i = 1; i <= toBeProvisioned; i++) {
-            LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{merged.getDisplayName(), label} );
-
-                r.add(new NodeProvisioner.PlannedNode(template.getDisplayName(), Computer.threadPoolForRemoting.submit(new ProvisioningCallback(merged)), 1));
+                String agentName = name + "-" + label.getName() + "-" + RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
+                LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{agentName, label} );
+                r.add(
+                        new NodeProvisioner.PlannedNode(
+                                agentName,
+                                Computer.threadPoolForRemoting.submit(
+                                        new ProvisioningCallback(merged, agentName)
+                                ),
+                                1
+                        )
+                );
             }
             return r;
         } catch (Exception e) {
@@ -324,14 +332,15 @@ public class ECSCloud extends Cloud {
     private class ProvisioningCallback implements Callable<Node> {
 
         private final ECSTaskTemplate template;
+        private final String agentName;
 
-        public ProvisioningCallback(ECSTaskTemplate template) {
+        public ProvisioningCallback(ECSTaskTemplate template, String agentName) {
             this.template = template;
+            this.agentName = agentName;
         }
 
         public Node call() throws Exception {
-            String uniq = RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
-            return new ECSSlave(ECSCloud.this, name + "-" + uniq, template, new ECSLauncher(ECSCloud.this, tunnel, null));
+            return new ECSSlave(ECSCloud.this, this.agentName, template, new ECSLauncher(ECSCloud.this, tunnel, null));
         }
     }
 
