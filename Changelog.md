@@ -1,6 +1,7 @@
 # Changelog
 
 ## vNext
+-   Feature - Optional unique paths for remote filesystem root
 
 ## 1.23
 
