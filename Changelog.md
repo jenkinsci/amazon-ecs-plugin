@@ -1,6 +1,18 @@
 # Changelog
 
 ## vNext
+
+## 1.25
+
+-   Feature - Speed up agent provisioning #144
+-   Feature - Allow customizable agent root #80
+-   Bug - Fix NPE when provisioning #141
+-   Feature - Assign agent name earlier #140
+
+## 1.24
+
+-   Feature - Make ECS task polling interval customizable #133
+-   Bug - Do not remove custom task #132
 -   Feature - Optional unique paths for remote filesystem root
 
 ## 1.23
