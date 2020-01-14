@@ -29,9 +29,9 @@
     <artifactId>amazon-ecs</artifactId>
     <version>1.25-SNAPSHOT</version>
     <packaging>hpi</packaging>
-    <name>Amazon Elastic Container Service plugin</name>
+    <name>Amazon Elastic Container Service (ECS) / Fargate plugin</name>
     <description>Jenkins plugin to run dynamic agents in a Amazon ECS/Docker environment</description>
-    <url>https://wiki.jenkins-ci.org/display/JENKINS/Amazon+EC2+Container+Service+Plugin</url>
+    <url>https://github.com/jenkinsci/amazon-ecs-plugin</url>
 
     <properties>
         <jenkins.version>2.107.3</jenkins.version>
