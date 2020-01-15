@@ -2,6 +2,10 @@
 
 ## vNext
 
+## 1.26
+
+-   No changes. just re-release of failed 1.25
+
 ## 1.25
 
 -   Feature - Speed up agent provisioning #144
