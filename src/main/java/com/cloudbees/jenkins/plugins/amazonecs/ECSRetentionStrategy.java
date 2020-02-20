@@ -12,8 +12,11 @@ import java.util.logging.Logger;
 public class ECSRetentionStrategy extends CloudRetentionStrategy implements ExecutorListener {
     private static final Logger LOGGER = Logger.getLogger(ECSRetentionStrategy.class.getName());
 
-    private int idleMinutes;
+    // OnceRetentionStrategy is final, so let's delegate instead of extending
     private OnceRetentionStrategy onceRetentionStrategy;
+
+    // This field is private in OnceRetentionStrategy, but we need it to lateinit this.onceRetentionStrategy
+    private int idleMinutes;
 
     public ECSRetentionStrategy(int idleMinutes) {
         super(idleMinutes);
@@ -22,7 +25,8 @@ public class ECSRetentionStrategy extends CloudRetentionStrategy implements Exec
 
     private OnceRetentionStrategy getOnceRetentionStrategy() {
         if (this.onceRetentionStrategy == null) {
-            onceRetentionStrategy = new OnceRetentionStrategy(this.idleMinutes);
+            // onceRetentionStrategy isn't persisted to disk across master reboots, so let's get a fresh one if needed
+            this.onceRetentionStrategy = new OnceRetentionStrategy(this.idleMinutes);
         }
         return this.onceRetentionStrategy;
     }
