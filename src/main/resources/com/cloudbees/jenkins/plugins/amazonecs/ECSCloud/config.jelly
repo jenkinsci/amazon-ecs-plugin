@@ -63,6 +63,9 @@
     <f:entry field="slaveTimeoutInSeconds" title="${%ECS task creation timeout}" description="Timeout (in seconds) for ECS task to be created, useful if you use large docker agent image, because the host will take more time to pull the docker image">
       <f:textbox default="${descriptor.defaultSlaveTimeoutInSeconds}" />
     </f:entry>
+    <f:entry field="retainAgents" title="${%Retain agents}" description="Keep agents instead of terminating them immediately after their job completes. Retained agents are still cleaned up when idle.">
+      <f:checkbox />
+    </f:entry>
     <f:entry field="retentionTimeout" title="${%Container Cleanup Timeout (minutes)}" description="Timeout (in minutes) for how long instances can be idle before they are cleaned up. Should be at least 1.">
       <f:textbox default="${descriptor.defaultRetentionTimeout}"/>
     </f:entry>

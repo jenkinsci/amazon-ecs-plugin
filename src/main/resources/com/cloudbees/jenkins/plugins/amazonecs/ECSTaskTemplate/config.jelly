@@ -28,9 +28,6 @@
   <f:entry title="Label" field="label" description="The label used to identify this agent in Jenkins.">
     <f:textbox />
   </f:entry>
-  <f:entry title="Minimum retained nodes" field="minRetainedNodes" description="The minimum number of nodes to retain on standby.">
-    <f:textbox default="0"/>
-  </f:entry>
   <f:entry title="${%Template Name}" field="templateName" description="The name that will be appended to the ECS cluster name when creating task definitions. Cannot be used with a Task Definition Override.">
       <f:textbox />
     </f:entry>

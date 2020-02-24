@@ -42,10 +42,12 @@ import com.amazonaws.services.ecs.model.ClusterNotFoundException;
 import com.amazonaws.services.ecs.model.InvalidParameterException;
 import com.amazonaws.services.ecs.model.ServerException;
 
+import org.jenkinsci.plugins.durabletask.executors.OnceRetentionStrategy;
 import hudson.model.Descriptor;
 import hudson.model.TaskListener;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
+import hudson.slaves.CloudRetentionStrategy;
 import hudson.slaves.ComputerLauncher;
 
 /**
@@ -79,10 +81,23 @@ public class ECSSlave extends AbstractCloudSlave {
     private String taskArn;
 
     public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, ECSTaskTemplate template, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
-        super(name, "ECS Agent", template.makeRemoteFSRoot(name), 1, Mode.EXCLUSIVE, template.getLabel(), launcher, new ECSRetentionStrategy(cloud.getRetentionTimeout()), Collections.emptyList());
+        super(
+            name,
+            "ECS Agent",
+            template.makeRemoteFSRoot(name),
+            1,
+            Mode.EXCLUSIVE,
+            template.getLabel(),
+            launcher,
+            cloud.getRetainAgents() ?
+                new CloudRetentionStrategy(cloud.getRetentionTimeout()) :
+                new OnceRetentionStrategy(cloud.getRetentionTimeout()),
+            Collections.emptyList()
+        );
         this.cloud = cloud;
         this.template = template;
     }
+
 
     public String getClusterArn() {
         return clusterArn;
