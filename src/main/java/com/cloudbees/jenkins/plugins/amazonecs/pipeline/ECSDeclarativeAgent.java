@@ -395,7 +395,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
             argMap.put("extraHosts", extraHosts);
         }
 
-        if (mountPoints) != null && mountPoints.size() > 0) {
+        if (mountPoints != null && mountPoints.size() > 0) {
             argMap.put("mountPoints", mountPoints);
         }
 
