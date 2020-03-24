@@ -395,11 +395,11 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
             argMap.put("extraHosts", extraHosts);
         }
 
-        if (extraHosts != null && mountPoints.size() > 0) {
+        if (mountPoints) != null && mountPoints.size() > 0) {
             argMap.put("mountPoints", mountPoints);
         }
 
-        if (extraHosts != null && portMappings.size() > 0) {
+        if (portMappings != null && portMappings.size() > 0) {
             argMap.put("portMappings", portMappings);
         }
 
