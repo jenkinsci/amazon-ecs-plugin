@@ -90,7 +90,7 @@ public class ECSLauncher extends JNLPLauncher {
         ECSComputer ecsComputer = (ECSComputer) computer;
         computer.setAcceptingTasks(false);
 
-        ECSSlave agent = (ECSSlave)ecsComputer.getNode();
+        ECSSlave agent = ecsComputer.getNode();
         if (agent == null) {
             throw new IllegalStateException("Node has been removed, cannot launch " + computer.getName());
         }
@@ -177,9 +177,7 @@ public class ECSLauncher extends JNLPLauncher {
             LOGGER.log(Level.FINER, "[{0}]: Removing Jenkins node", agent.getNodeName());
             try {
                 agent.terminate();
-            } catch (InterruptedException e) {
-                LOGGER.log(Level.WARNING, "Unable to remove Jenkins node", e);
-            } catch (IOException e) {
+            } catch (InterruptedException | IOException e) {
                 LOGGER.log(Level.WARNING, "Unable to remove Jenkins node", e);
             }
             throw Throwables.propagate(ex);
@@ -199,7 +197,7 @@ public class ECSLauncher extends JNLPLauncher {
         TaskDefinition taskDefinition;
 
         if (template.getTaskDefinitionOverride() == null) {
-            taskDefinition = ecsService.registerTemplate(cloud, template);
+            taskDefinition = ecsService.registerTemplate(cloud.getDisplayName(), template);
 
         } else {
             LOGGER.log(Level.FINE, "[{0}]: Attempting to find task definition family or ARN: {1}", new Object[] {nodeName, template.getTaskDefinitionOverride()});
@@ -215,7 +213,7 @@ public class ECSLauncher extends JNLPLauncher {
         return taskDefinition;
     }
 
-    private Task runECSTask(TaskDefinition taskDefinition, ECSCloud cloud, ECSTaskTemplate template, ECSService ecsService, ECSSlave agent) throws IOException, AbortException {
+    private Task runECSTask(TaskDefinition taskDefinition, ECSCloud cloud, ECSTaskTemplate template, ECSService ecsService, ECSSlave agent) throws IOException {
 
         LOGGER.log(Level.INFO, "[{0}]: Starting agent with task definition {1}}", new Object[]{agent.getNodeName(), taskDefinition.getTaskDefinitionArn()});
 
@@ -239,7 +237,7 @@ public class ECSLauncher extends JNLPLauncher {
     }
 
     private Collection<String> getDockerRunCommand(ECSSlave slave, String jenkinsUrl) {
-        Collection<String> command = new ArrayList<String>();
+        Collection<String> command = new ArrayList<>();
         command.add("-url");
         command.add(jenkinsUrl);
         if (StringUtils.isNotBlank(tunnel)) {

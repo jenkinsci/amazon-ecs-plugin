@@ -1,20 +1,21 @@
 package com.cloudbees.jenkins.plugins.amazonecs.pipeline;
 
-import jenkins.model.Jenkins;
-import hudson.slaves.Cloud;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSCloud;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
+import hudson.slaves.Cloud;
+import jenkins.model.Jenkins;
+import org.apache.commons.lang.RandomStringUtils;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import javax.annotation.Nonnull;
-import com.cloudbees.jenkins.plugins.amazonecs.ECSCloud;
-import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
+import java.io.Serializable;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.commons.lang.RandomStringUtils;
 
 
 public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
@@ -25,14 +26,16 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
 
     @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "not needed on deserialization")
     private final transient ECSTaskTemplateStep step;
+    private Jenkins.CloudList    cloudList;
     private @Nonnull String cloudName;
 
     private ECSTaskTemplate newTemplate = null;
 
-    ECSTaskTemplateStepExecution(ECSTaskTemplateStep ecsTaskTemplateStep, StepContext context) {
+    ECSTaskTemplateStepExecution(ECSTaskTemplateStep ecsTaskTemplateStep, StepContext context, Jenkins.CloudList cloudList ) {
         super(context);
         this.step = ecsTaskTemplateStep;
         this.cloudName = ecsTaskTemplateStep.getCloud();
+        this.cloudList = cloudList;
     }
 
     @Override
@@ -42,33 +45,10 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
         LOGGER.log(Level.FINE, "label: {0}", step.getLabel());
         String randString = RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
         String name = String.format(NAME_FORMAT, step.getName(), randString);
+        final String parentLabel = step.getInheritFrom();
 
-        Cloud cloud = null;
-        String parentLabel = step.getInheritFrom();
-        if (parentLabel != null) {
-            for (Cloud c: Jenkins.get().clouds) {
-                if (c instanceof ECSCloud) {
-                    ECSCloud ecsCloud = (ECSCloud)c;
-                    if (ecsCloud.canProvision(parentLabel)){
-                        cloud = c;
-                        cloudName = cloud.name;
-                        break;
-                    }
-                }
-            }
-        } else {
-            cloud = Jenkins.get().getCloud(this.cloudName);
-        }
-
-        if (cloud == null) {
-            throw new AbortException(String.format("Cloud does not exist: %s", cloudName));
-        }
-
-        if (!(cloud instanceof ECSCloud)) {
-            throw new AbortException(String.format("Cloud is not an ECS cloud: %s (%s)", cloudName,
-                    cloud.getClass().getName()));
-        }
-
+        Cloud cloud = validateCloud(findCloud(parentLabel));
+        cloudName = cloud.getDisplayName();
         ECSCloud ecsCloud = (ECSCloud) cloud;
         checkAllowedOverrides(ecsCloud, step);
         checkResourceLimits(ecsCloud, step);
@@ -102,17 +82,64 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getSharedMemorySize());
         newTemplate.setLogDriver(step.getLogDriver());
 
+        ECSTaskTemplate parentTemplate = ecsCloud.findParentTemplate(parentLabel);
+        if(parentTemplate == null){
+            LOGGER.log(Level.WARNING, "No parent template found. Hope you defined everything");
+        }
+        final ECSTaskTemplate merged  = newTemplate.merge(parentTemplate);
+
         LOGGER.log(Level.INFO, "Registering task template with name {0}", new Object[] { newTemplate.getTemplateName() });
-        ecsCloud.addDynamicTemplate(newTemplate);
+        ecsCloud.addDynamicTemplate(merged);
         getContext().newBodyInvoker().withContext(step).withCallback(new ECSTaskTemplateCallback(newTemplate)).start();
         return false;
+    }
+
+    private Cloud validateCloud(Cloud cloud) throws AbortException {
+        if (cloud == null) {
+            throw new AbortException(String.format(
+                    "Unable to determine cloud configuration using: Labels: [%s], inheritFrom: '%s', Cloud: '%s'",
+                    step.getLabel(), step.getInheritFrom(), cloudName
+            ));
+        }
+
+        if (!(cloud instanceof ECSCloud)) {
+            throw new AbortException(String.format("Cloud is not an ECS cloud: %s (%s)", cloudName,
+                    cloud.getClass().getName()));
+        }
+        return cloud;
+    }
+
+
+
+    private Cloud findCloud(String parentLabel) {
+        Cloud  cloud  = null;
+
+
+        if (parentLabel != null) {
+
+            for (Cloud c: cloudList) {
+                if (c instanceof ECSCloud) {
+                    ECSCloud ecsCloud = (ECSCloud)c;
+                    if (ecsCloud.canProvision(parentLabel)){
+                        cloud = c;
+                        break;
+                    }
+                }
+            }
+        } else {
+            cloud = cloudList.getByName(this.cloudName);
+        }
+        return cloud;
     }
 
     private void checkAllowedOverrides(ECSCloud cloud, ECSTaskTemplateStep step) throws AbortException {
         for (String override : step.getOverrides()) {
             if(!cloud.isAllowedOverride(override)) {
                 LOGGER.log(Level.FINE, "Override {0} is not allowed", new Object[] { override });
-                throw new AbortException(String.format("Not allowed to override %s. Allowed overrides are %s", override, cloud.getAllowedOverrides()));
+                throw new AbortException(String.format(
+                        "Cloud (%s): Not allowed to override '%s'. Allowed overrides are [%s]",
+                        cloud.getDisplayName(), override, cloud.getAllowedOverrides()
+                ));
             }
         }
     }
@@ -172,8 +199,8 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
         }
 
         @Override
-        /**
-         * Remove the template after step is done
+        /*
+          Remove the template after step is done
          */
         protected void finished(StepContext context) throws Exception {
             Cloud c = Jenkins.get().getCloud(cloudName);
@@ -190,11 +217,11 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                         new Object[] { c.name});
                     ecsCloud.removeDynamicTemplateFromTemplateMap(taskTemplate);
                     return;
-                } else {
-                    LOGGER.log(Level.INFO, "Removing task template {1} from cloud {0}",
-                        new Object[] { c.name, taskTemplate.getTemplateName() });
-                    ecsCloud.removeDynamicTemplate(taskTemplate);
                 }
+                LOGGER.log(Level.INFO, "Removing task template {1} from cloud {0}",
+                    new Object[] { c.name, taskTemplate.getTemplateName() });
+                ecsCloud.removeDynamicTemplate(taskTemplate);
+
             } else {
                 LOGGER.log(Level.WARNING, "Cloud is not an ECSCloud: {0} {1}",
                         new String[] { c.name, c.getClass().getName() });

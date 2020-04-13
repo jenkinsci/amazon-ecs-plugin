@@ -30,12 +30,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -48,9 +51,11 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.model.ListClustersRequest;
 import com.amazonaws.services.ecs.model.ListClustersResult;
+import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.cloudbees.jenkins.plugins.amazonecs.pipeline.TaskTemplateMap;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 
+import hudson.model.labels.LabelAtom;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -77,7 +82,6 @@ public class ECSCloud extends Cloud {
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
 
     private List<ECSTaskTemplate> templates;
-    @Nonnull
     private final String credentialsId;
     private final String cluster;
     private String regionName;
@@ -94,12 +98,17 @@ public class ECSCloud extends Cloud {
     private int maxMemoryReservation;
 
     @DataBoundConstructor
-    public ECSCloud(String name,
-                    @Nonnull String credentialsId,
-                    String cluster) throws InterruptedException {
+    public ECSCloud(String name, @Nonnull String credentialsId, String cluster) {
         super(name);
         this.credentialsId = credentialsId;
         this.cluster = cluster;
+    }
+
+    public ECSCloud(String name, String cluster, ECSService ecsService) {
+        super(name);
+        this.cluster = cluster;
+        this.credentialsId = null;
+        this.ecsService = ecsService;
     }
 
     public static @Nonnull ECSCloud getByName(@Nonnull String name) throws IllegalArgumentException {
@@ -204,33 +213,50 @@ public class ECSCloud extends Cloud {
         return null;
     }
 
-    private ECSTaskTemplate getTemplate(String label) {
-        if (label == null) {
-            return null;
-        }
-        for (ECSTaskTemplate t : getAllTemplates()) {
-            if (label.matches(t.getLabel())) {
-                return t;
+    public ECSTaskTemplate getTemplate(String label) {
+        return Optional.ofNullable(label).map(Label::parse).flatMap(atoms ->
+            getAllTemplates().stream().filter(t -> t.getLabelSet().stream().anyMatch(l -> l.matches(atoms))).findFirst()
+        ).orElse(null);
+    }
+
+    /**
+     * Will attempt to find a parent for the template label supplied. If no parent is supplied it will attempt to look for one with a label of 'template-default'
+     * and if it still can't find one, it will attempt to find one by name of 'template-default'
+     * @param parentLabel the parent template to find
+     * @return a task template or potentially null if one can't be determined
+     */
+    public ECSTaskTemplate findParentTemplate(String parentLabel) {
+        ECSTaskTemplate result = null;
+        if(parentLabel == null){
+            LOGGER.log(Level.INFO, "No parent label supplied, looking for TaskTemplate name: 'template-default'");
+            result = this.getTemplate("template-default");
+            if(result == null) {
+                LOGGER.log(Level.INFO, "No task template label of 'template-default' found, searching by name 'template-default'");
+                result = this.getTemplateByName("template-default");
             }
         }
-        return null;
+        return result != null ? result : this.getTemplate(parentLabel);
+    }
+
+    private ECSTaskTemplate getTemplateByName(String templateName) {
+        return this.getAllTemplates().stream().filter(t -> t.getTemplateName().equals(templateName)).findFirst().orElse(null);
     }
 
     @Override
     public synchronized Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
 
-        try {
-            LOGGER.log(Level.INFO, "Asked to provision {0} agent(s) for: {1}", new Object[]{excessWorkload, label});
+        LOGGER.log(Level.INFO, "Asked to provision {0} agent(s) for: {1}", new Object[]{excessWorkload, label});
 
-            List<NodeProvisioner.PlannedNode> r = new ArrayList<NodeProvisioner.PlannedNode>();
-            final ECSTaskTemplate template = getTemplate(label);
+        List<NodeProvisioner.PlannedNode> result = new ArrayList<>();
+        final ECSTaskTemplate template = getTemplate(label);
+        if (template != null) {
             String parentLabel = template.getInheritFrom();
             final ECSTaskTemplate merged = template.merge(getTemplate(parentLabel));
 
             for (int i = 1; i <= excessWorkload; i++) {
                 String agentName = name + "-" + label.getName() + "-" + RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
                 LOGGER.log(Level.INFO, "Will provision {0}, for label: {1}", new Object[]{agentName, label} );
-                r.add(
+                result.add(
                         new NodeProvisioner.PlannedNode(
                                 agentName,
                                 Computer.threadPoolForRemoting.submit(
@@ -240,11 +266,9 @@ public class ECSCloud extends Cloud {
                         )
                 );
             }
-            return r;
-        } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to provision ECS agent", e);
         }
-        return Collections.emptyList();
+        return result.isEmpty() ? Collections.emptyList() : result;
+
     }
 
     public int getSlaveTimeoutInSeconds() {
@@ -323,6 +347,15 @@ public class ECSCloud extends Cloud {
         this.maxMemoryReservation = maxMemoryReservation;
     }
 
+    public List<ECSTaskTemplate> addTemplate(ECSTaskTemplate taskTemplate) {
+        List<ECSTaskTemplate> currentTemplates = getAllTemplates();
+        List<ECSTaskTemplate> newTemplates = new LinkedList<>(currentTemplates);
+        newTemplates.add(taskTemplate);
+        setTemplates(newTemplates);
+        return newTemplates;
+    }
+
+
 
     private class ProvisioningCallback implements Callable<Node> {
 
@@ -363,21 +396,32 @@ public class ECSCloud extends Cloud {
         }
     }
 
+
     /**
      * Add a dynamic task template. Won't be displayed in UI, and persisted separately from the cloud instance.
-     * @param t the template to add
+     * @param template the template to add
+     * @return the task definition created from the template
      */
-    public void addDynamicTemplate(ECSTaskTemplate t) {
-        TaskTemplateMap.get().addTemplate(this, t);
+    public TaskDefinition  addDynamicTemplate(ECSTaskTemplate template) {
+        TaskDefinition taskDefinition = getEcsService().registerTemplate(this.getDisplayName(), template);
+        if(taskDefinition != null){
+            LOGGER.log(Level.INFO, String.format("Task definition created: ARN: %s", taskDefinition.getTaskDefinitionArn()));
+            TaskTemplateMap.get().addTemplate(this, template);
+        }
+        return taskDefinition;
     }
 
     /**
      * Remove a dynamic task template.
      * @param t the template to remove
      */
-    public void removeDynamicTemplate(ECSTaskTemplate t) {
-        getEcsService().removeTemplate(this, t);
+    public TaskDefinition removeDynamicTemplate(ECSTaskTemplate t) {
+        TaskDefinition taskDefinition = getEcsService().removeTemplate(this.getDisplayName(), t);
+        if (taskDefinition == null) {
+            LOGGER.log(Level.SEVERE, "Unable to remove the task template/definition from from ECS");
+        }
         TaskTemplateMap.get().removeTemplate(this, t);
+        return taskDefinition;
     }
 
     /**

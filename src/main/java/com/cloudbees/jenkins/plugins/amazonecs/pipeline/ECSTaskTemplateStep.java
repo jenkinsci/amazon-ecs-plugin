@@ -5,6 +5,7 @@ import hudson.model.TaskListener;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 
+import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -15,6 +16,8 @@ import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -30,6 +33,7 @@ import com.google.common.collect.ImmutableSet;
 import hudson.model.Run;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
 
@@ -341,7 +345,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     public StepExecution start(StepContext stepContext) throws Exception {
         LOGGER.log(Level.FINE, "In ECSTaskTemplateStep start. label: {0}", label);
         LOGGER.log(Level.FINE, "In ECSTaskTemplateStep start. cloud: {0}", cloud);
-        return new ECSTaskTemplateStepExecution(this, stepContext);
+        return new ECSTaskTemplateStepExecution(this, stepContext, Jenkins.get().clouds);
     }
 
     @Extension(optional = true)
@@ -438,33 +442,12 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
 
     @Override
     public String toString() {
-        return "Step options: " +
-                "ecs{" + '\n' +
-                "cloud='" + cloud + '\'' + '\n' +
-                "image='" + image + '\'' + '\n' +
-                "taskDefinitionOverride='" + taskDefinitionOverride + '\'' + '\n' +
-                "launchType='" + launchType + '\'' + '\n' +
-                "networkMode='" + networkMode + '\'' + '\n' +
-                "remoteFSRoot='" + remoteFSRoot + '\'' + '\n' +
-                "uniqueRemoteFSRoot='" + uniqueRemoteFSRoot + '\'' + '\n' +
-                "memory='" + memory + '\'' + '\n' +
-                "memoryReservation='" + memoryReservation + '\'' + '\n' +
-                "cpu='" + cpu + '\'' + '\n' +
-                "sharedMemorySize='" + sharedMemorySize + '\'' + '\n' +
-                "subnets='" + subnets + '\'' + '\n' +
-                "securityGroups='" + securityGroups + '\'' + '\n' +
-                "assignPublicIp='" + assignPublicIp + '\'' + '\n' +
-                "privileged='" + privileged + '\'' + '\n' +
-                "containerUser='" + containerUser + '\'' + '\n' +
-                "taskrole='" + taskrole + '\'' + '\n' +
-                "inheritFrom='" + inheritFrom + '\'' + '\n' +
-                "logDriver='" + logDriver + '\'' + '\n' +
-                "logDriverOptions'" + logDriverOptions + '\'' + '\n' +
-                "environments'" + environments + '\'' + '\n' +
-                "extraHosts'" + extraHosts + '\'' + '\n' +
-                "mountPoints'" + mountPoints + '\'' + '\n' +
-                "portMappings'" + portMappings + '\'' + '\n' +
-                "placementStrategies'" + placementStrategies + '\'' + '\n' +
-                '}';
+        return Arrays.stream(this.getClass().getDeclaredFields()).filter(f -> !Modifier.isStatic(f.getModifiers()) ).map(f -> {
+            try {
+                return String.format("%s: %s",f.getName(),f.get(this));
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException();
+            }
+        }).collect(Collectors.joining("\n"));
     }
 }

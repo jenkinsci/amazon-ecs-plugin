@@ -28,10 +28,12 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.amazonaws.ClientConfiguration;
@@ -61,45 +63,47 @@ import jenkins.model.Jenkins;
 class ECSService {
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
 
-    private String credentialsId;
-
-    private String regionName;
+    @Nonnull
+    private final Supplier<AmazonECS> clientSupplier;
 
     public ECSService(String credentialsId, String regionName) {
-        super();
-        this.credentialsId = credentialsId;
-        this.regionName = regionName;
+        this.clientSupplier = () -> {
+            ProxyConfiguration proxy = Jenkins.get().proxy;
+            ClientConfiguration clientConfiguration = new ClientConfiguration();
+
+            if (proxy != null) {
+                clientConfiguration.setProxyHost(proxy.name);
+                clientConfiguration.setProxyPort(proxy.port);
+                clientConfiguration.setProxyUsername(proxy.getUserName());
+                clientConfiguration.setProxyPassword(proxy.getPassword());
+            }
+
+            AmazonECSClientBuilder builder = AmazonECSClientBuilder
+                    .standard()
+                    .withClientConfiguration(clientConfiguration)
+                    .withRegion(regionName);
+
+            AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
+            if (credentials != null) {
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    String awsAccessKeyId = credentials.getCredentials().getAWSAccessKeyId();
+                    String obfuscatedAccessKeyId = StringUtils.left(awsAccessKeyId, 4) + StringUtils.repeat("*", awsAccessKeyId.length() - (2 * 4)) + StringUtils.right(awsAccessKeyId, 4);
+                    LOGGER.log(Level.FINE, "Connect to Amazon ECS with IAM Access Key {1}", new Object[]{obfuscatedAccessKeyId});
+                }
+                builder
+                        .withCredentials(credentials);
+            }
+            LOGGER.log(Level.FINE, "Selected Region: {0}", regionName);
+
+            return builder.build();
+        };
+    }
+    public ECSService(Supplier<AmazonECS> clientSupplier){
+        this.clientSupplier = clientSupplier;
     }
 
     AmazonECS getAmazonECSClient() {
-        ProxyConfiguration proxy = Jenkins.get().proxy;
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
-
-        if (proxy != null) {
-            clientConfiguration.setProxyHost(proxy.name);
-            clientConfiguration.setProxyPort(proxy.port);
-            clientConfiguration.setProxyUsername(proxy.getUserName());
-            clientConfiguration.setProxyPassword(proxy.getPassword());
-        }
-
-        AmazonECSClientBuilder builder = AmazonECSClientBuilder
-                .standard()
-                .withClientConfiguration(clientConfiguration)
-                .withRegion(regionName);
-
-        AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
-        if (credentials != null) {
-            if (LOGGER.isLoggable(Level.FINE)) {
-                String awsAccessKeyId = credentials.getCredentials().getAWSAccessKeyId();
-                String obfuscatedAccessKeyId = StringUtils.left(awsAccessKeyId, 4) + StringUtils.repeat("*", awsAccessKeyId.length() - (2 * 4)) + StringUtils.right(awsAccessKeyId, 4);
-                LOGGER.log(Level.FINE, "Connect to Amazon ECS with IAM Access Key {1}", new Object[]{obfuscatedAccessKeyId});
-            }
-            builder
-                    .withCredentials(credentials);
-        }
-        LOGGER.log(Level.FINE, "Selected Region: {0}", regionName);
-
-        return builder.build();
+        return clientSupplier.get();
     }
 
     Region getRegion(String regionName) {
@@ -116,10 +120,9 @@ class ECSService {
     }
 
     public Task describeTask(String taskArn, String clusterArn) {
-        final AmazonECS client = getAmazonECSClient();
+        final AmazonECS client = clientSupplier.get();
 
         DescribeTasksResult result = client.describeTasks(new DescribeTasksRequest().withCluster(clusterArn).withTasks(taskArn));
-
         if (result.getTasks().size() == 0) {
             return null;
         } else {
@@ -128,7 +131,7 @@ class ECSService {
     }
 
     public void stopTask(String taskArn, String clusterArn) {
-        final AmazonECS client = getAmazonECSClient();
+        final AmazonECS client = clientSupplier.get();
 
         LOGGER.log(Level.INFO, "Delete ECS agent task: {0}", taskArn);
         try {
@@ -142,10 +145,10 @@ class ECSService {
      * Looks whether the latest task definition matches the desired one. If yes, returns the full TaskDefinition of the existing one.
      * If no, register a new task definition with desired parameters and returns the new TaskDefinition.
      */
-    TaskDefinition registerTemplate(final ECSCloud cloud, final ECSTaskTemplate template) {
-        final AmazonECS client = getAmazonECSClient();
+    TaskDefinition registerTemplate(final String cloudName, final ECSTaskTemplate template) {
+        final AmazonECS client = clientSupplier.get();
 
-        String familyName = fullQualifiedTemplateName(cloud, template);
+        String familyName = fullQualifiedTemplateName(cloudName, template);
         final ContainerDefinition def = new ContainerDefinition()
                 .withName(familyName)
                 .withImage(template.getImage())
@@ -273,22 +276,25 @@ class ECSService {
         }
     }
 
-    void removeTemplate(final ECSCloud cloud, final ECSTaskTemplate template) {
-        AmazonECS client = getAmazonECSClient();
+    TaskDefinition removeTemplate(final String cloudName, final ECSTaskTemplate template) {
+        AmazonECS client = clientSupplier.get();
 
-        String familyName = fullQualifiedTemplateName(cloud, template);
+        String familyName = fullQualifiedTemplateName(cloudName, template);
 
-        int revision = findTaskDefinition(familyName).getRevision();
-
+        int            revision       = 0;
+        TaskDefinition taskDefinition = null;
         try {
-            client.deregisterTaskDefinition(
-                    new DeregisterTaskDefinitionRequest()
-                            .withTaskDefinition(familyName + ":" + revision));
+            taskDefinition = findTaskDefinition(familyName);
+            if (taskDefinition != null) {
+                revision = taskDefinition.getRevision();
+                client.deregisterTaskDefinition(new DeregisterTaskDefinitionRequest().withTaskDefinition(familyName + ":" + revision));
+            }
 
         } catch (ClientException e) {
             LOGGER.log(Level.FINE, "Error removing task definition: " + familyName + ":" + revision, e);
             LOGGER.log(Level.INFO, "Error removing task definition: " + familyName + ":" + revision);
         }
+        return taskDefinition;
     }
 
     /**
@@ -296,12 +302,12 @@ class ECSService {
      * The parameter may be a task definition family, family with revision, or full task definition ARN.
      */
     TaskDefinition findTaskDefinition(String familyOrArn) {
-        AmazonECS client = getAmazonECSClient();
+        AmazonECS client = clientSupplier.get();
 
         try {
             DescribeTaskDefinitionResult result = client.describeTaskDefinition(
-                    new DescribeTaskDefinitionRequest()
-                            .withTaskDefinition(familyOrArn));
+                    new DescribeTaskDefinitionRequest().withTaskDefinition(familyOrArn)
+            );
 
             return result.getTaskDefinition();
         } catch (ClientException e) {
@@ -312,12 +318,12 @@ class ECSService {
         }
     }
 
-    private String fullQualifiedTemplateName(final ECSCloud cloud, final ECSTaskTemplate template) {
-        return cloud.getDisplayName().replaceAll("\\s+", "") + '-' + template.getTemplateName();
+    private String fullQualifiedTemplateName(final String cloudName, final ECSTaskTemplate template) {
+        return cloudName.replaceAll("\\s+", "") + '-' + template.getTemplateName();
     }
 
     RunTaskResult runEcsTask(final ECSSlave agent, final ECSTaskTemplate template, String clusterArn, Collection<String> command, TaskDefinition taskDefinition) throws IOException, AbortException {
-        AmazonECS client = getAmazonECSClient();
+        AmazonECS client = clientSupplier.get();
         agent.setTaskDefinitonArn(taskDefinition.getTaskDefinitionArn());
 
         KeyValuePair envNodeName = new KeyValuePair();

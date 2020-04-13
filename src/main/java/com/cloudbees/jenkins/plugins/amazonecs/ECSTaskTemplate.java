@@ -27,6 +27,7 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 
 import com.amazonaws.services.ecs.model.*;
 import com.amazonaws.services.ecs.model.Volume;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -35,6 +36,7 @@ import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -47,9 +49,13 @@ import javax.annotation.Nullable;
 import javax.servlet.ServletException;
 
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 import java.io.Serializable;
+import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;
+
 import com.google.common.base.Strings;
 
 /**
@@ -496,6 +502,17 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
     public String getTemplateName() {return templateName; }
 
+    @Override
+    public String toString() {
+        return Arrays.stream(this.getClass().getDeclaredFields()).filter(f -> !Modifier.isStatic(f.getModifiers()) ).map(f -> {
+            try {
+                return String.format("%s: %s",f.getName(),f.get(this));
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException();
+            }
+        }).collect(Collectors.joining("\n"));
+    }
+
     public static class LogDriverOption extends AbstractDescribableImpl<LogDriverOption> implements Serializable {
         private static final long serialVersionUID = 8585792353105873086L;
         public String name, value;
@@ -556,41 +573,53 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         return placementStrategies;
     }
 
+    /**
+     * This merge does not take an into consideration the child intentionally setting empty values for parameters like "entrypoint" - in fact
+     * it's not uncommon to override the entrypoint of a container and set it to blank so you can use your own entrypoint as part of the command.
+     * What's really needed is a "MergeStrategy `BinaryOperator<ECSTaskTemplate>` that's user selectable.
+     * @param parent inherit settings from
+     * @return a 'merged' template
+     */
     public ECSTaskTemplate merge(ECSTaskTemplate parent) {
         if(parent == null) {
             return this;
         }
+        String templateName = isNullOrEmpty(this.templateName) ? parent.getTemplateName() : this.templateName;
+        String label = isNullOrEmpty(this.label) ? parent.getLabel() : this.label;
+        String taskDefinitionOverride = isNullOrEmpty(this.taskDefinitionOverride) ? parent.getTaskDefinitionOverride() : this.taskDefinitionOverride;
+        String image = isNullOrEmpty(this.image) ? parent.getImage() : this.image;
+        String repositoryCredentials = isNullOrEmpty(this.repositoryCredentials) ? parent.getRepositoryCredentials() : this.repositoryCredentials;
+        String launchType = isNullOrEmpty(this.launchType) ? parent.getLaunchType() : this.launchType;
+        String networkMode = isNullOrEmpty(this.networkMode) ? parent.getNetworkMode() : this.networkMode;
+        String remoteFSRoot = isNullOrEmpty(this.remoteFSRoot) ? parent.getRemoteFSRoot() : this.remoteFSRoot;
 
-        String templateName = Strings.isNullOrEmpty(this.templateName) ? parent.getTemplateName() : this.templateName;
-        String label = Strings.isNullOrEmpty(this.label) ? parent.getLabel() : this.label;
-        String taskDefinitionOverride = Strings.isNullOrEmpty(this.taskDefinitionOverride) ? parent.getTaskDefinitionOverride() : this.taskDefinitionOverride;
-        String image = Strings.isNullOrEmpty(this.image) ? parent.getImage() : this.image;
-        String repositoryCredentials = Strings.isNullOrEmpty(this.repositoryCredentials) ? parent.getRepositoryCredentials() : this.repositoryCredentials;
-        String launchType = Strings.isNullOrEmpty(this.launchType) ? parent.getLaunchType() : this.launchType;
-        String networkMode = Strings.isNullOrEmpty(this.networkMode) ? parent.getNetworkMode() : this.networkMode;
-        String remoteFSRoot = Strings.isNullOrEmpty(this.remoteFSRoot) ? parent.getRemoteFSRoot() : this.remoteFSRoot;
+        // Bug potential here. If I intenionally set it false in the child, then it will be ignored and take the parent. Need null to mean 'unset'
         boolean uniqueRemoteFSRoot = this.uniqueRemoteFSRoot || parent.getUniqueRemoteFSRoot();
         int memory = this.memory == 0 ? parent.getMemory() : this.memory;
         int memoryReservation = this.memoryReservation == 0 ? parent.getMemoryReservation() : this.memoryReservation;
         int cpu = this.cpu == 0 ? parent.getCpu() : this.cpu;
         int sharedMemorySize = this.sharedMemorySize == 0 ? parent.getSharedMemorySize() : this.sharedMemorySize;
-        String subnets = Strings.isNullOrEmpty(this.subnets) ? parent.getSubnets() : this.subnets;
-        String securityGroups = Strings.isNullOrEmpty(this.securityGroups) ? parent.getSecurityGroups() : this.securityGroups;
+        String subnets = isNullOrEmpty(this.subnets) ? parent.getSubnets() : this.subnets;
+        String securityGroups = isNullOrEmpty(this.securityGroups) ? parent.getSecurityGroups() : this.securityGroups;
+
+        // Bug potential here. If I intenionally set it false in the child, then it will be ignored and take the parent. Need null to mean 'unset'
         boolean assignPublicIp = this.assignPublicIp ? this.assignPublicIp : parent.getAssignPublicIp();
+
+        // Bug potential here. If I intenionally set it false in the child, then it will be ignored and take the parent. Need null to mean 'unset'
         boolean privileged = this.privileged ? this.privileged : parent.getPrivileged();
-        String containerUser = Strings.isNullOrEmpty(this.containerUser) ? parent.getContainerUser() : this.containerUser;
-        String logDriver = Strings.isNullOrEmpty(this.logDriver) ? parent.getLogDriver() : this.logDriver;
+        String containerUser = isNullOrEmpty(this.containerUser) ? parent.getContainerUser() : this.containerUser;
+        String logDriver = isNullOrEmpty(this.logDriver) ? parent.getLogDriver() : this.logDriver;
 
         // TODO probably merge lists with parent instead of overriding them
-        List<LogDriverOption> logDriverOptions = CollectionUtils.isEmpty(this.logDriverOptions) ? parent.getLogDriverOptions() : this.logDriverOptions;
-        List<EnvironmentEntry> environments = CollectionUtils.isEmpty(this.environments) ? parent.getEnvironments() : this.environments;
-        List<ExtraHostEntry> extraHosts = CollectionUtils.isEmpty(this.extraHosts) ? parent.getExtraHosts() : this.extraHosts;
-        List<MountPointEntry> mountPoints = CollectionUtils.isEmpty(this.mountPoints) ? parent.getMountPoints() : this.mountPoints;
-        List<PortMappingEntry> portMappings = CollectionUtils.isEmpty(this.portMappings) ? parent.getPortMappings() : this.portMappings;
-        List<PlacementStrategyEntry> placementStrategies = CollectionUtils.isEmpty(this.placementStrategies) ? parent.getPlacementStrategies() : this.placementStrategies;
+        List<LogDriverOption> logDriverOptions = isEmpty(this.logDriverOptions) ? parent.getLogDriverOptions() : this.logDriverOptions;
+        List<EnvironmentEntry> environments = isEmpty(this.environments) ? parent.getEnvironments() : this.environments;
+        List<ExtraHostEntry> extraHosts = isEmpty(this.extraHosts) ? parent.getExtraHosts() : this.extraHosts;
+        List<MountPointEntry> mountPoints = isEmpty(this.mountPoints) ? parent.getMountPoints() : this.mountPoints;
+        List<PortMappingEntry> portMappings = isEmpty(this.portMappings) ? parent.getPortMappings() : this.portMappings;
+        List<PlacementStrategyEntry> placementStrategies = isEmpty(this.placementStrategies) ? parent.getPlacementStrategies() : this.placementStrategies;
 
-        String executionRole = Strings.isNullOrEmpty(this.executionRole) ? parent.getExecutionRole() : this.executionRole;
-        String taskrole = Strings.isNullOrEmpty(this.taskrole) ? parent.getTaskrole() : this.taskrole;
+        String executionRole = isNullOrEmpty(this.executionRole) ? parent.getExecutionRole() : this.executionRole;
+        String taskrole = isNullOrEmpty(this.taskrole) ? parent.getTaskrole() : this.taskrole;
 
         ECSTaskTemplate merged = new ECSTaskTemplate(templateName,
                                                        label,
@@ -620,6 +649,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        null,
                                                         sharedMemorySize);
         merged.setLogDriver(logDriver);
+        merged.setEntrypoint(entrypoint);
 
         return merged;
     }
@@ -965,5 +995,145 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
             }
             return FormValidation.ok();
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        ECSTaskTemplate that = (ECSTaskTemplate) o;
+
+        if (memory != that.memory) {
+            return false;
+        }
+        if (memoryReservation != that.memoryReservation) {
+            return false;
+        }
+        if (cpu != that.cpu) {
+            return false;
+        }
+        if (sharedMemorySize != that.sharedMemorySize) {
+            return false;
+        }
+        if (assignPublicIp != that.assignPublicIp) {
+            return false;
+        }
+        if (privileged != that.privileged) {
+            return false;
+        }
+        if (uniqueRemoteFSRoot != that.uniqueRemoteFSRoot) {
+            return false;
+        }
+        if (!templateName.equals(that.templateName)) {
+            return false;
+        }
+        if (label != null ? !label.equals(that.label) : that.label != null) {
+            return false;
+        }
+        if (taskDefinitionOverride != null ? !taskDefinitionOverride.equals(that.taskDefinitionOverride) : that.taskDefinitionOverride != null) {
+            return false;
+        }
+        if (!image.equals(that.image)) {
+            return false;
+        }
+        if (remoteFSRoot != null ? !remoteFSRoot.equals(that.remoteFSRoot) : that.remoteFSRoot != null) {
+            return false;
+        }
+        if (subnets != null ? !subnets.equals(that.subnets) : that.subnets != null) {
+            return false;
+        }
+        if (securityGroups != null ? !securityGroups.equals(that.securityGroups) : that.securityGroups != null) {
+            return false;
+        }
+        if (dnsSearchDomains != null ? !dnsSearchDomains.equals(that.dnsSearchDomains) : that.dnsSearchDomains != null) {
+            return false;
+        }
+        if (entrypoint != null ? !entrypoint.equals(that.entrypoint) : that.entrypoint != null) {
+            return false;
+        }
+        if (taskrole != null ? !taskrole.equals(that.taskrole) : that.taskrole != null) {
+            return false;
+        }
+        if (executionRole != null ? !executionRole.equals(that.executionRole) : that.executionRole != null) {
+            return false;
+        }
+        if (repositoryCredentials != null ? !repositoryCredentials.equals(that.repositoryCredentials) : that.repositoryCredentials != null) {
+            return false;
+        }
+        if (jvmArgs != null ? !jvmArgs.equals(that.jvmArgs) : that.jvmArgs != null) {
+            return false;
+        }
+        if (mountPoints != null ? !mountPoints.equals(that.mountPoints) : that.mountPoints != null) {
+            return false;
+        }
+        if (!launchType.equals(that.launchType)) {
+            return false;
+        }
+        if (!networkMode.equals(that.networkMode)) {
+            return false;
+        }
+        if (containerUser != null ? !containerUser.equals(that.containerUser) : that.containerUser != null) {
+            return false;
+        }
+        if (environments != null ? !environments.equals(that.environments) : that.environments != null) {
+            return false;
+        }
+        if (extraHosts != null ? !extraHosts.equals(that.extraHosts) : that.extraHosts != null) {
+            return false;
+        }
+        if (portMappings != null ? !portMappings.equals(that.portMappings) : that.portMappings != null) {
+            return false;
+        }
+        if (placementStrategies != null ? !placementStrategies.equals(that.placementStrategies) : that.placementStrategies != null) {
+            return false;
+        }
+        if (logDriver != null ? !logDriver.equals(that.logDriver) : that.logDriver != null) {
+            return false;
+        }
+        if (logDriverOptions != null ? !logDriverOptions.equals(that.logDriverOptions) : that.logDriverOptions != null) {
+            return false;
+        }
+        return inheritFrom != null ? inheritFrom.equals(that.inheritFrom) : that.inheritFrom == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = templateName.hashCode();
+        result = 31 * result + (label != null ? label.hashCode() : 0);
+        result = 31 * result + (taskDefinitionOverride != null ? taskDefinitionOverride.hashCode() : 0);
+        result = 31 * result + image.hashCode();
+        result = 31 * result + (remoteFSRoot != null ? remoteFSRoot.hashCode() : 0);
+        result = 31 * result + memory;
+        result = 31 * result + memoryReservation;
+        result = 31 * result + cpu;
+        result = 31 * result + sharedMemorySize;
+        result = 31 * result + (subnets != null ? subnets.hashCode() : 0);
+        result = 31 * result + (securityGroups != null ? securityGroups.hashCode() : 0);
+        result = 31 * result + (assignPublicIp ? 1 : 0);
+        result = 31 * result + (dnsSearchDomains != null ? dnsSearchDomains.hashCode() : 0);
+        result = 31 * result + (entrypoint != null ? entrypoint.hashCode() : 0);
+        result = 31 * result + (taskrole != null ? taskrole.hashCode() : 0);
+        result = 31 * result + (executionRole != null ? executionRole.hashCode() : 0);
+        result = 31 * result + (repositoryCredentials != null ? repositoryCredentials.hashCode() : 0);
+        result = 31 * result + (jvmArgs != null ? jvmArgs.hashCode() : 0);
+        result = 31 * result + (mountPoints != null ? mountPoints.hashCode() : 0);
+        result = 31 * result + launchType.hashCode();
+        result = 31 * result + networkMode.hashCode();
+        result = 31 * result + (privileged ? 1 : 0);
+        result = 31 * result + (uniqueRemoteFSRoot ? 1 : 0);
+        result = 31 * result + (containerUser != null ? containerUser.hashCode() : 0);
+        result = 31 * result + (environments != null ? environments.hashCode() : 0);
+        result = 31 * result + (extraHosts != null ? extraHosts.hashCode() : 0);
+        result = 31 * result + (portMappings != null ? portMappings.hashCode() : 0);
+        result = 31 * result + (placementStrategies != null ? placementStrategies.hashCode() : 0);
+        result = 31 * result + (logDriver != null ? logDriver.hashCode() : 0);
+        result = 31 * result + (logDriverOptions != null ? logDriverOptions.hashCode() : 0);
+        result = 31 * result + (inheritFrom != null ? inheritFrom.hashCode() : 0);
+        return result;
     }
 }
