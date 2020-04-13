@@ -1,5 +1,6 @@
 package com.cloudbees.jenkins.plugins.amazonecs.pipeline;
 
+import com.cloudbees.jenkins.plugins.amazonecs.SerializableSupplier;
 import hudson.Extension;
 import hudson.model.TaskListener;
 import hudson.util.FormValidation;
@@ -345,7 +346,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     public StepExecution start(StepContext stepContext) throws Exception {
         LOGGER.log(Level.FINE, "In ECSTaskTemplateStep start. label: {0}", label);
         LOGGER.log(Level.FINE, "In ECSTaskTemplateStep start. cloud: {0}", cloud);
-        return new ECSTaskTemplateStepExecution(this, stepContext, Jenkins.get().clouds);
+        return new ECSTaskTemplateStepExecution(this, stepContext, (SerializableSupplier<Jenkins.CloudList>)() -> Jenkins.get().clouds);
     }
 
     @Extension(optional = true)

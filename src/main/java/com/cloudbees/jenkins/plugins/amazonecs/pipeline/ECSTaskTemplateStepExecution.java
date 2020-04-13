@@ -2,6 +2,7 @@ package com.cloudbees.jenkins.plugins.amazonecs.pipeline;
 
 import com.cloudbees.jenkins.plugins.amazonecs.ECSCloud;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
+import com.cloudbees.jenkins.plugins.amazonecs.SerializableSupplier;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.slaves.Cloud;
@@ -12,8 +13,6 @@ import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 import javax.annotation.Nonnull;
-import java.io.Serializable;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,17 +24,17 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
     private static final transient String NAME_FORMAT = "%s-%s";
 
     @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "not needed on deserialization")
-    private final transient ECSTaskTemplateStep step;
-    private Jenkins.CloudList    cloudList;
-    private @Nonnull String cloudName;
+    private final transient ECSTaskTemplateStep     step;
+    private SerializableSupplier<Jenkins.CloudList> cloudSupplier;
+    private @Nonnull String                         cloudName;
 
     private ECSTaskTemplate newTemplate = null;
 
-    ECSTaskTemplateStepExecution(ECSTaskTemplateStep ecsTaskTemplateStep, StepContext context, Jenkins.CloudList cloudList ) {
+    ECSTaskTemplateStepExecution(ECSTaskTemplateStep ecsTaskTemplateStep, StepContext context, SerializableSupplier<Jenkins.CloudList> cloudSupplier ) {
         super(context);
         this.step = ecsTaskTemplateStep;
         this.cloudName = ecsTaskTemplateStep.getCloud();
-        this.cloudList = cloudList;
+        this.cloudSupplier = cloudSupplier;
     }
 
     @Override
@@ -113,11 +112,11 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
 
     private Cloud findCloud(String parentLabel) {
         Cloud  cloud  = null;
-
+        Jenkins.CloudList clouds = cloudSupplier.get();
 
         if (parentLabel != null) {
 
-            for (Cloud c: cloudList) {
+            for (Cloud c: clouds) {
                 if (c instanceof ECSCloud) {
                     ECSCloud ecsCloud = (ECSCloud)c;
                     if (ecsCloud.canProvision(parentLabel)){
@@ -127,7 +126,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                 }
             }
         } else {
-            cloud = cloudList.getByName(this.cloudName);
+            cloud = clouds.getByName(this.cloudName);
         }
         return cloud;
     }

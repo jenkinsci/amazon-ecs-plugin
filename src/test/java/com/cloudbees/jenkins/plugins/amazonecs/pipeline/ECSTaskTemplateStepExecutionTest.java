@@ -2,27 +2,22 @@ package com.cloudbees.jenkins.plugins.amazonecs.pipeline;
 
 import com.cloudbees.jenkins.plugins.amazonecs.ECSCloud;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
-import hudson.model.Hudson;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
+import com.cloudbees.jenkins.plugins.amazonecs.SerializableSupplier;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.BodyInvoker;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
-import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import static org.mockito.Matchers.any;
-import org.mockito.Mockito;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Random;
 import java.util.UUID;
 
@@ -66,7 +61,7 @@ public class ECSTaskTemplateStepExecutionTest {
         clouds.add(cloud);
         step.setOverrides(Arrays.asList("image","taskRole"));
 
-        ECSTaskTemplateStepExecution executionStep = new ECSTaskTemplateStepExecution(step, context, clouds);
+        ECSTaskTemplateStepExecution executionStep = new ECSTaskTemplateStepExecution(step, context, (SerializableSupplier<Jenkins.CloudList>) () -> clouds);
         Random r = new Random();
         ECSTaskTemplate expected = new ECSTaskTemplate(
                 "",
