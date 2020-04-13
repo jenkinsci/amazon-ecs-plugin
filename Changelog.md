@@ -2,6 +2,10 @@
 
 ## vNext
 
+## 1.27
+
+-   BUG Fix mountPoints and portMappings bug in ECSDeclarativeAgent#getAsArgs; add example of portMappings use (#161)
+
 ## 1.26
 
 -   No changes. just re-release of failed 1.25
