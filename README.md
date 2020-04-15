@@ -62,7 +62,7 @@ Alternative Jenkins URL: The URL used as the Jenkins URL within the ECS containe
 One or several ECS agent templates can be defined for the Amazon EC2 Container Service Cloud. The main reason to create more than one ECS agent template is to use several Docker image to perform build (e.g. java-build-tools, php-build-tools...)
 
 -   `Template name` is used (prefixed with the cloud's name) for the task definition in ECS.
--   `Label`: agent labels used in conjunction with the job level configuration "Restrict where the project can be run / Label expression". ECS agent label could identify the Docker image used for the agent (e.g. `docker` for the jenkinsci/jnlp-slave).
+-   `Label`: agent labels used in conjunction with the job level configuration "Restrict where the project can be run / Label expression". ECS agent label could identify the Docker image used for the agent (e.g. `docker` for the jenkinsci/inbound-agent).
 -   `Docker image`: identifier of the Docker image to use to create the agents
     `Filesystem root`: working directory used by Jenkins (e.g. `/home/jenkins/`).
     `Memory`: number of MiB of memory reserved for the container. If your container attempts to exceed the memory allocated here, the container is killed.
@@ -157,7 +157,7 @@ TaskRole:
 
 The Jenkins Amazon EC2 Container Service Cloud can use for the agents all the Docker image designed to act as a Jenkins JNLP agent. Here is a list of compatible Docker images:
 
--   [jenkins/jnlp-slave](https://hub.docker.com/r/jenkins/jnlp-slave/)
+-   [jenkins/inbound-agent](https://hub.docker.com/r/jenkins/inbound-agent/)
 
 You can easily extend the images or also build your own.
 
@@ -165,18 +165,18 @@ You can easily extend the images or also build your own.
 
 Declarative Pipeline support requires Jenkins 2.66+
 
-Declarative agents can be defined like shown below. You can also reuse pre-configured templates and override certain settings using `inheritFrom` to reference the *Label field*
- of the template that you want to use as preconfigured. Only one label is expected to be specified.
+Declarative agents can be defined like shown below. You can also reuse pre-configured templates and override certain settings using `inheritFrom` to reference the _Label field_
+of the template that you want to use as preconfigured. Only one label is expected to be specified.
 
 _Note_: You have to configure list of settings to be allowed in the declarative pipeline first (see the Allowed Overrides setting). They are disabled by default for security reasons, to avoid non-privileged users to suddenly be able to change certain settings.
-
 
 ## Usage
 
 The ECS agents can be used for any job and any type of job (Freestyle job, Maven job, Workflow job...), you just have to restrict the execution of the jobs on one of the labels used in the ECS Agent Template configuration. You can either restrict the job to run on a specific label only via the UI or directly in the pipeline.
-In addition, when configuring the cloud to run on, you must also 
+In addition, when configuring the cloud to run on, you must also
+
 ```groovy
- 
+
 pipeline {
   agent none
 
@@ -185,8 +185,8 @@ pipeline {
           environment {
               STAGE='prod'
           }
-          agent { 
-            label 'build-python36' 
+          agent {
+            label 'build-python36'
           }
       }
       steps {
@@ -195,6 +195,7 @@ pipeline {
     }
   }
 ```
+
 ```groovy
 pipeline {
   agent none
@@ -219,6 +220,7 @@ pipeline {
   }
 }
 ```
+
 ## FAQ
 
 ### My parallel jobs don't start at the same time
@@ -259,7 +261,9 @@ Marky Jackson ([GitHub](https://github.com/markyjackson-taulia), [Twitter](https
   mvn -version # Need a modern maven version; maven 3.2.5 and 3.5.0 are known to work
   mvn clean install
 ```
+
 ### Running locally
+
 To run locally, execute the following command and open the browser [http://localhost:8080/jenkins/](http://localhost:8080/jenkins/)
 
 ```bash
@@ -268,12 +272,14 @@ To run locally, execute the following command and open the browser [http://local
 
 ### Debugging The plugin in an editor:
 
-the 
+the
+
 ```java
 
     @Rule
     public JenkinsRule j = new JenkinsRule();
-````
+```
+
 Will actually invoke code that will bootstrap a local installation of `jenkins.war`. This will allow you to debug with with breakpoints and such. However, to do it
 you will need to set some system properties or be aware how it tries to auto-configure. It will attempt to look for a `.jenkins` directory recursively with an already exploded war,
 So, theoretically you explode it, and git ignore it, right in this space. Alternatively, you can set a System property:
