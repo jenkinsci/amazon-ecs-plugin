@@ -195,14 +195,14 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
      */
     @CheckForNull
     private String executionRole;
-    
+
     /**
      * ARN of the Secrets Manager to use for the agent ECS task
      *
      * @see ContainerDefinition#withRepositoryCredentials(RepositoryCredentials)
      */
     @CheckForNull
-    private String repositoryCredentials;    
+    private String repositoryCredentials;
 
     /**
      * JVM arguments to start slave.jar
@@ -354,7 +354,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     @DataBoundSetter
     public void setRepositoryCredentials(final String repositoryCredentials) {
         this.repositoryCredentials = StringUtils.trimToNull(repositoryCredentials);
-    }    
+    }
 
     @DataBoundSetter
     public void setEntrypoint(String entrypoint) {
@@ -468,7 +468,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     public String getRepositoryCredentials() {
         return repositoryCredentials;
     }
-    
+
     public String getJvmArgs() {
         return jvmArgs;
     }
@@ -576,7 +576,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     /**
      * This merge does not take an into consideration the child intentionally setting empty values for parameters like "entrypoint" - in fact
      * it's not uncommon to override the entrypoint of a container and set it to blank so you can use your own entrypoint as part of the command.
-     * What's really needed is a "MergeStrategy `BinaryOperator<ECSTaskTemplate>` that's user selectable.
+     * What's really needed is a "MergeStrategy `BinaryOperator <ECSTaskTemplate>` that's user selectable.
      * @param parent inherit settings from
      * @return a 'merged' template
      */

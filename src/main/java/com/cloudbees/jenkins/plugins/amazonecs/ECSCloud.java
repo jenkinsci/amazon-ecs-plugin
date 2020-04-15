@@ -414,6 +414,7 @@ public class ECSCloud extends Cloud {
     /**
      * Remove a dynamic task template.
      * @param t the template to remove
+     * @return the task definition removed
      */
     public TaskDefinition removeDynamicTemplate(ECSTaskTemplate t) {
         TaskDefinition taskDefinition = getEcsService().removeTemplate(this.getDisplayName(), t);
