@@ -37,6 +37,8 @@
         <jenkins.version>2.107.3</jenkins.version>
         <java.level>8</java.level>
         <mockito.version>2.0.2-beta</mockito.version>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
     </properties>
 
     <developers>

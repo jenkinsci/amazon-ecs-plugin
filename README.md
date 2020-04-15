@@ -165,10 +165,36 @@ You can easily extend the images or also build your own.
 
 Declarative Pipeline support requires Jenkins 2.66+
 
-Declarative agents can be defined like shown below. You can also reuse pre-configured templates and override certain settings using `inheritFrom` to reference the Label field of the template that you want to use as preconfigured. Only one label is expected to be specified.
+Declarative agents can be defined like shown below. You can also reuse pre-configured templates and override certain settings using `inheritFrom` to reference the *Label field*
+ of the template that you want to use as preconfigured. Only one label is expected to be specified.
 
 _Note_: You have to configure list of settings to be allowed in the declarative pipeline first (see the Allowed Overrides setting). They are disabled by default for security reasons, to avoid non-privileged users to suddenly be able to change certain settings.
 
+
+## Usage
+
+The ECS agents can be used for any job and any type of job (Freestyle job, Maven job, Workflow job...), you just have to restrict the execution of the jobs on one of the labels used in the ECS Agent Template configuration. You can either restrict the job to run on a specific label only via the UI or directly in the pipeline.
+In addition, when configuring the cloud to run on, you must also 
+```groovy
+ 
+pipeline {
+  agent none
+
+  stages {
+       stage('PublishAndTests') {
+          environment {
+              STAGE='prod'
+          }
+          agent { 
+            label 'build-python36' 
+          }
+      }
+      steps {
+        sh 'java -version'
+      }
+    }
+  }
+```
 ```groovy
 pipeline {
   agent none
@@ -177,9 +203,10 @@ pipeline {
     stage('Test') {
         agent {
             ecs {
-                inheritFrom 'my-preconfigured-template'
+                inheritFrom 'label-of-my-preconfigured-template'
                 cpu 2048
                 memory 4096
+                image '$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/jenkins/java8:2019.7.29-1'
                 logDriver 'fluentd'
                 logDriverOptions([[name: 'foo', value:'bar'], [name: 'bar', value: 'foo']])
                 portMappings([[containerPort: 22, hostPort: 22, protocol: 'tcp'], [containerPort: 443, hostPort: 443, protocol: 'tcp']])
@@ -192,20 +219,6 @@ pipeline {
   }
 }
 ```
-
-## Usage
-
-The ECS agents can be used for any job and any type of job (Freestyle job, Maven job, Workflow job...), you just have to restrict the execution of the jobs on one of the labels used in the ECS Agent Template configuration. You can either restrict the job to run on a specific label only via the UI or directly in the pipeline.
-
-```groovy
-  stages {
-    stage('PublishAndTests') {
-      environment {
-          STAGE='prod'
-      }
-      agent { label 'build-python36' }
-```
-
 ## FAQ
 
 ### My parallel jobs don't start at the same time
@@ -239,21 +252,36 @@ Marky Jackson ([GitHub](https://github.com/markyjackson-taulia), [Twitter](https
 
 ## Developing
 
-Building the Plugin
+### Building the Plugin
 
 ```bash
   java -version # Need Java 1.8, earlier versions are unsupported for build
   mvn -version # Need a modern maven version; maven 3.2.5 and 3.5.0 are known to work
   mvn clean install
 ```
-
+### Running locally
 To run locally, execute the following command and open the browser [http://localhost:8080/jenkins/](http://localhost:8080/jenkins/)
 
 ```bash
   mvn -e hpi:run
 ```
 
-Releasing the Plugin
+### Debugging The plugin in an editor:
+
+the 
+```java
+
+    @Rule
+    public JenkinsRule j = new JenkinsRule();
+````
+Will actually invoke code that will bootstrap a local installation of `jenkins.war`. This will allow you to debug with with breakpoints and such. However, to do it
+you will need to set some system properties or be aware how it tries to auto-configure. It will attempt to look for a `.jenkins` directory recursively with an already exploded war,
+So, theoretically you explode it, and git ignore it, right in this space. Alternatively, you can set a System property:
+`-Djth.jenkins-war.path=${PATH}/jenkins.war`
+
+Make sure to include this rule in any tests that touch Jenkins specific resources like: `Jenkins.instance()`
+
+### Releasing the Plugin
 
 ```bash
  mvn release:prepare release:perform
