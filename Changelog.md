@@ -2,6 +2,19 @@
 
 ## vNext
 
+## 1.28
+
+-   Update the default agent name to the new name for the image (#166)
+
+fixed with #164
+
+-   When getting an error from AWS after a task is complete (like if it can't find the task family), don't try to find a task version on `null`
+-   If `ECSCloud.provision` could not find a template, this produced an NPE
+-   added more, and clearer logs
+-   _important_ fixed the match logic for `canProvision` as it was using `String.matches` instead of `LabelAtom.matches` which is a regex match not a set intersection. In addition, the match was backwards.
+-   _Important_ under fargate, "addTemplateDyanamic" was simply not merging at all - this is fixed.
+-   adds mocking to the ECSCloudTest so that tests don't try to create AMZN resources (this should be a seperate test) as this may discourage OSS devs from testing if they think it will cost them money.
+
 ## 1.27
 
 -   BUG Fix mountPoints and portMappings bug in ECSDeclarativeAgent#getAsArgs; add example of portMappings use (#161)
