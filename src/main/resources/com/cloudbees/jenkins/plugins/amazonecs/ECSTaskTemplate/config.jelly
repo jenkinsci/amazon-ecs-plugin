@@ -35,7 +35,7 @@
       <f:textbox />
   </f:entry>
   <f:entry title="${%Docker Image}" field="image">
-    <f:textbox default="jenkins/jnlp-slave" />
+    <f:textbox default="jenkins/inbound-agent" />
   </f:entry>
   <f:entry title="${%Secrets manager ARN}" field="repositoryCredentials">
     <f:textbox />
