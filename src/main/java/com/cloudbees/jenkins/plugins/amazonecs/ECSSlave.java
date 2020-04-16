@@ -98,7 +98,6 @@ public class ECSSlave extends AbstractCloudSlave {
         this.template = template;
     }
 
-
     public String getClusterArn() {
         return clusterArn;
     }
