@@ -1038,7 +1038,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (taskDefinitionOverride != null ? !taskDefinitionOverride.equals(that.taskDefinitionOverride) : that.taskDefinitionOverride != null) {
             return false;
         }
-        if (!image.equals(that.image)) {
+        if (image != null ? !image.equals(that.image) : that.image != null) {
             return false;
         }
         if (remoteFSRoot != null ? !remoteFSRoot.equals(that.remoteFSRoot) : that.remoteFSRoot != null) {
@@ -1071,10 +1071,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (mountPoints != null ? !mountPoints.equals(that.mountPoints) : that.mountPoints != null) {
             return false;
         }
-        if (!launchType.equals(that.launchType)) {
+        if (launchType != null ? !launchType.equals(that.launchType) : that.launchType != null) {
             return false;
         }
-        if (!networkMode.equals(that.networkMode)) {
+        if (networkMode != null ? !networkMode.equals(that.networkMode) : that.networkMode != null) {
             return false;
         }
         if (containerUser != null ? !containerUser.equals(that.containerUser) : that.containerUser != null) {
@@ -1106,7 +1106,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         int result = templateName.hashCode();
         result = 31 * result + (label != null ? label.hashCode() : 0);
         result = 31 * result + (taskDefinitionOverride != null ? taskDefinitionOverride.hashCode() : 0);
-        result = 31 * result + image.hashCode();
+        result = 31 * result + (image != null ? image.hashCode() : 0);
         result = 31 * result + (remoteFSRoot != null ? remoteFSRoot.hashCode() : 0);
         result = 31 * result + memory;
         result = 31 * result + memoryReservation;
@@ -1122,8 +1122,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + (repositoryCredentials != null ? repositoryCredentials.hashCode() : 0);
         result = 31 * result + (jvmArgs != null ? jvmArgs.hashCode() : 0);
         result = 31 * result + (mountPoints != null ? mountPoints.hashCode() : 0);
-        result = 31 * result + launchType.hashCode();
-        result = 31 * result + networkMode.hashCode();
+        result = 31 * result + (launchType != null ? launchType.hashCode() : 0);
+        result = 31 * result + (networkMode != null ? networkMode.hashCode() : 0);
         result = 31 * result + (privileged ? 1 : 0);
         result = 31 * result + (uniqueRemoteFSRoot ? 1 : 0);
         result = 31 * result + (containerUser != null ? containerUser.hashCode() : 0);
