@@ -290,5 +290,19 @@ Make sure to include this rule in any tests that touch Jenkins specific resource
 ### Releasing the Plugin
 
 ```bash
- mvn release:prepare release:perform
+ mvn clean release:prepare release:perform
+```
+
+#### further checks to aid with development
+
+Check for additional or forgotten dependencies:
+
+```bash
+mvn dependency:analyze
+```
+
+Check if javadoc works fine (usually only executed on release)
+
+```bash
+mvn org.apache.maven.plugins:maven-javadoc-plugin:2.10.4:jar
 ```

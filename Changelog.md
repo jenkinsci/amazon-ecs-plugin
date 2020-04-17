@@ -2,7 +2,13 @@
 
 ## vNext
 
-## 1.28
+## 1.31
+
+-   Enable keeping standby agents (#153)
+-   update dependencies
+-   bumping up minimal jenkins version to `2.176.1`
+
+## 1.28 - 1.30
 
 -   Update the default agent name to the new name for the image (#166)
 
