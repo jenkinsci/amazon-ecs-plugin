@@ -599,7 +599,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     /**
      * This merge does not take an into consideration the child intentionally setting empty values for parameters like "entrypoint" - in fact
      * it's not uncommon to override the entrypoint of a container and set it to blank so you can use your own entrypoint as part of the command.
-     * What's really needed is a "MergeStrategy `BinaryOperator<ECSTaskTemplate>` that's user selectable.
+     * What's really needed is a "MergeStrategy <pre>BinaryOperator&lt;ECSTaskTemplate&gt;</pre> that's user selectable.
      * @param parent inherit settings from
      * @return a 'merged' template
      */

@@ -173,6 +173,28 @@ _Note_: You have to configure list of settings to be allowed in the declarative 
 
 The ECS agents can be used for any job and any type of job (Freestyle job, Maven job, Workflow job...), you just have to restrict the execution of the jobs on one of the labels used in the ECS Agent Template configuration. You can either restrict the job to run on a specific label only via the UI or directly in the pipeline.
 In addition, when configuring the cloud to run on, you must also
+
+```groovy
+
+pipeline {
+  agent none
+
+  stages {
+       stage('PublishAndTests') {
+          environment {
+              STAGE='prod'
+          }
+          agent {
+            label 'build-python36'
+          }
+      }
+      steps {
+        sh 'java -version'
+      }
+    }
+  }
+```
+
 ```groovy
 pipeline {
   agent none
