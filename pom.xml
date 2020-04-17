@@ -15,8 +15,7 @@
   ARISING FROM, ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
   DEALINGS IN ~ THE SOFTWARE. ~ -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -28,7 +27,7 @@
 
     <groupId>com.cloudbees.jenkins.plugins</groupId>
     <artifactId>amazon-ecs</artifactId>
-    <version>1.31-SNAPSHOT</version>
+    <version>1.31</version>
     <packaging>hpi</packaging>
     <name>Amazon Elastic Container Service (ECS) / Fargate plugin</name>
     <description>Jenkins plugin to run dynamic agents in a Amazon ECS/Docker environment</description>
@@ -59,7 +58,7 @@
         <connection>scm:git:git://github.com/jenkinsci/amazon-ecs-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/amazon-ecs-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/amazon-ecs-plugin</url>
-        <tag>amazon-ecs-1.21</tag>
+        <tag>amazon-ecs-1.31</tag>
     </scm>
 
     <repositories>
