@@ -64,7 +64,7 @@ public class ECSTaskTemplateStepExecutionTest {
         ECSTaskTemplateStepExecution executionStep = new ECSTaskTemplateStepExecution(step, context, (SerializableSupplier<Jenkins.CloudList>) () -> clouds);
         Random r = new Random();
         ECSTaskTemplate expected = new ECSTaskTemplate(
-                "",
+                "template-name",
                 "child-label",
                 UUID.randomUUID().toString(),
                 "image-override",

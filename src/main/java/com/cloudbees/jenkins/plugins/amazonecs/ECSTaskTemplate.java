@@ -25,7 +25,20 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
-import com.amazonaws.services.ecs.model.*;
+import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
+import com.amazonaws.services.ecs.model.ContainerDefinition;
+import com.amazonaws.services.ecs.model.HostEntry;
+import com.amazonaws.services.ecs.model.HostVolumeProperties;
+import com.amazonaws.services.ecs.model.KeyValuePair;
+import com.amazonaws.services.ecs.model.LaunchType;
+import com.amazonaws.services.ecs.model.LinuxParameters;
+import com.amazonaws.services.ecs.model.MountPoint;
+import com.amazonaws.services.ecs.model.NetworkMode;
+import com.amazonaws.services.ecs.model.PlacementStrategy;
+import com.amazonaws.services.ecs.model.PlacementStrategyType;
+import com.amazonaws.services.ecs.model.PortMapping;
+import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.RepositoryCredentials;
 import com.amazonaws.services.ecs.model.Volume;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import hudson.Extension;
@@ -35,10 +48,8 @@ import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.collections.CollectionUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -47,16 +58,19 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.servlet.ServletException;
-
 import java.io.IOException;
-import java.lang.reflect.Modifier;
-import java.util.*;
-
 import java.io.Serializable;
-import java.util.function.BinaryOperator;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
-
-import com.google.common.base.Strings;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -66,7 +80,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     /**
      * Template Name
      */
-    @Nonnull
     private final String templateName;
     /**
      * White-space separated list of {@link hudson.model.Node} labels.
@@ -86,7 +99,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
      * Docker image
      * @see ContainerDefinition#withImage(String)
      */
-    @Nonnull
     private final String image;
     /**
      * Agent remote FS
@@ -218,13 +230,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     /**
      * Task launch type
      */
-    @Nonnull
     private final String launchType;
 
     /**
      * Task network mode
      */
-    @Nonnull
     private final String networkMode;
 
     /**
@@ -272,13 +282,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private String inheritFrom;
 
     @DataBoundConstructor
-    public ECSTaskTemplate(@Nonnull String templateName,
+    public ECSTaskTemplate(String templateName,
                            @Nullable String label,
                            @Nullable String taskDefinitionOverride,
-                           @Nonnull String image,
+                           String image,
                            @Nullable final String repositoryCredentials,
-                           @Nonnull String launchType,
-                           @Nonnull String networkMode,
+                           String launchType,
+                           String networkMode,
                            @Nullable String remoteFSRoot,
                            boolean uniqueRemoteFSRoot,
                            int memory,
@@ -315,6 +325,19 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         }
 
         this.label = label;
+        if(isNullOrEmpty(image))
+            throw new IllegalArgumentException("You must specify an image");
+
+        if(isNullOrEmpty(launchType))
+            throw new IllegalArgumentException("You must specify a launchType");
+
+        if(isNullOrEmpty(networkMode))
+            throw new IllegalArgumentException("You must specify a networkMode");
+
+        if(isNullOrEmpty(templateName))
+            throw new IllegalArgumentException("You must specify a templateName");
+
+
         this.image = image;
         this.repositoryCredentials = StringUtils.trimToNull(repositoryCredentials);
         this.remoteFSRoot = remoteFSRoot;
