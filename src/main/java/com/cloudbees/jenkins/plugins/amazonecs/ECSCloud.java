@@ -88,6 +88,7 @@ public class ECSCloud extends Cloud {
     @CheckForNull
     private String tunnel;
     private String jenkinsUrl;
+    private boolean retainAgents;
     private int retentionTimeout = DescriptorImpl.DEFAULT_RETENTION_TIMEOUT;
     private int slaveTimeoutInSeconds = DescriptorImpl.DEFAULT_SLAVE_TIMEOUT_IN_SECONDS;
     private int taskPollingIntervalInSeconds = DescriptorImpl.DEFAULT_TASK_POLLING_INTERVAL_IN_SECONDS;
@@ -285,6 +286,15 @@ public class ECSCloud extends Cloud {
     @DataBoundSetter
     public void setSlaveTimeoutInSeconds(int slaveTimeoutInSeconds) {
         this.slaveTimeoutInSeconds = slaveTimeoutInSeconds;
+    }
+
+    public boolean getRetainAgents() {
+        return retainAgents;
+    }
+
+    @DataBoundSetter
+    public void setRetainAgents(boolean retainAgents) {
+        this.retainAgents = retainAgents;
     }
 
     public int getRetentionTimeout() {
