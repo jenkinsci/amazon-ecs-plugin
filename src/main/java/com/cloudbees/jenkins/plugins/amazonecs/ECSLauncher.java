@@ -153,19 +153,24 @@ public class ECSLauncher extends JNLPLauncher {
 
             // now wait for agent to be online
             while (System.currentTimeMillis() < timeout) {
+                SlaveComputer agentComputer = agent.getComputer();
 
-                if (agent.getComputer() == null) {
+                if (agentComputer == null) {
                     throw new IllegalStateException("Node was deleted, computer is null");
                 }
-                if (agent.getComputer().isOnline()) {
+                if (agentComputer.isOnline()) {
                     break;
                 }
                 LOGGER.log(INFO, "[{0}]: Waiting for agent to connect", new Object[]{agent.getNodeName()});
                 logger.printf("Waiting for agent to connect: %1$s%n", agent.getNodeName());
                 Thread.sleep(1000);
             }
+            SlaveComputer agentComputer = agent.getComputer();
+            if (agentComputer == null) {
+                throw new IllegalStateException("Node was deleted, computer is null");
+            }
 
-            if (!agent.getComputer().isOnline()) {
+            if (!agentComputer.isOnline()) {
                 throw new IllegalStateException("Agent is not connected");
             }
             LOGGER.log(INFO, "[{0}]: Agent connected", new Object[]{agent.getNodeName()});
@@ -244,8 +249,12 @@ public class ECSLauncher extends JNLPLauncher {
             command.add("-tunnel");
             command.add(tunnel);
         }
-        command.add(slave.getComputer().getJnlpMac());
-        command.add(slave.getComputer().getName());
+        SlaveComputer agent = slave.getComputer();
+        if (agent == null) {
+            throw new IllegalStateException("Node was deleted, computer is null");
+        }
+        command.add(agent.getJnlpMac());
+        command.add(agent.getName());
         return command;
     }
 }

@@ -54,6 +54,7 @@ import org.apache.commons.lang.StringUtils;
 import hudson.AbortException;
 import hudson.ProxyConfiguration;
 import jenkins.model.Jenkins;
+import hudson.slaves.SlaveComputer;
 
 /**
  * Encapsulates interactions with Amazon ECS.
@@ -326,13 +327,19 @@ class ECSService {
         AmazonECS client = clientSupplier.get();
         agent.setTaskDefinitonArn(taskDefinition.getTaskDefinitionArn());
 
+        SlaveComputer agentComputer = agent.getComputer();
+
+        if (agentComputer == null) {
+            throw new IllegalStateException("Node was deleted, computer is null");
+        }
+
         KeyValuePair envNodeName = new KeyValuePair();
         envNodeName.setName("SLAVE_NODE_NAME");
-        envNodeName.setValue(agent.getComputer().getName());
+        envNodeName.setValue(agentComputer.getName());
 
         KeyValuePair envNodeSecret = new KeyValuePair();
         envNodeSecret.setName("SLAVE_NODE_SECRET");
-        envNodeSecret.setValue(agent.getComputer().getJnlpMac());
+        envNodeSecret.setValue(agentComputer.getJnlpMac());
 
         // by convention, we assume the jenkins agent container is the first container in the task definition. ECS requires
         // all task definitions to contain at least one container, and all containers to have a name, so we do not need
