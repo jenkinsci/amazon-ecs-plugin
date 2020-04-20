@@ -2,6 +2,10 @@
 
 ## vNext
 
+## 1.32
+
+-   fix NPE issues (#169)
+
 ## 1.31
 
 -   Enable keeping standby agents (#153)
