@@ -1,5 +1,6 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
+import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 import static org.junit.Assert.assertTrue;
 import org.apache.commons.lang.builder.EqualsBuilder;
@@ -37,7 +38,7 @@ public class ECSTaskTemplateTest {
 
         ECSTaskTemplate child = new ECSTaskTemplate(
             "child-name", "child-label",
-            null, null, "child-repository-credentials", "EC2", "child-network-mode", "child-remoteFSRoot", // image is set to null
+            null, "child-image", "child-repository-credentials", "EC2", "child-network-mode", "child-remoteFSRoot", // image is set to null
             false, 0, 0, 0, null, null, false, false,
             "child-containerUser", null, null, null, null, null, null, null, null, "parent", 0);
 
@@ -49,13 +50,13 @@ public class ECSTaskTemplateTest {
 
         ECSTaskTemplate expected = new ECSTaskTemplate(
             "child-name", "child-label",
-            null, "parent-image", "child-repository-credentials", "EC2", "child-network-mode", "child-remoteFSRoot",
+            null, "child-image", "child-repository-credentials", "EC2", "child-network-mode", "child-remoteFSRoot",
             false, 0, 0, 0, null, null, false, false,
             "child-containerUser", null, null, null, null, null, null, null, null, null, 0);
 
         ECSTaskTemplate result = child.merge(parent);
 
-        assertTrue(EqualsBuilder.reflectionEquals(expected, result));
+        assertEquals(expected,result);
     }
 
     @Test
@@ -75,6 +76,6 @@ public class ECSTaskTemplateTest {
 
         ECSTaskTemplate result = child.merge(null);
 
-        assertTrue(EqualsBuilder.reflectionEquals(expected, result));
+        assertEquals(expected,result);
     }
 }

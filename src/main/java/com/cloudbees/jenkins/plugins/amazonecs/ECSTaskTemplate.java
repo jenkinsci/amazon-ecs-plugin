@@ -25,7 +25,20 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
-import com.amazonaws.services.ecs.model.*;
+import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
+import com.amazonaws.services.ecs.model.ContainerDefinition;
+import com.amazonaws.services.ecs.model.HostEntry;
+import com.amazonaws.services.ecs.model.HostVolumeProperties;
+import com.amazonaws.services.ecs.model.KeyValuePair;
+import com.amazonaws.services.ecs.model.LaunchType;
+import com.amazonaws.services.ecs.model.LinuxParameters;
+import com.amazonaws.services.ecs.model.MountPoint;
+import com.amazonaws.services.ecs.model.NetworkMode;
+import com.amazonaws.services.ecs.model.PlacementStrategy;
+import com.amazonaws.services.ecs.model.PlacementStrategyType;
+import com.amazonaws.services.ecs.model.PortMapping;
+import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
+import com.amazonaws.services.ecs.model.RepositoryCredentials;
 import com.amazonaws.services.ecs.model.Volume;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import hudson.Extension;
@@ -35,10 +48,8 @@ import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.collections.CollectionUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -47,16 +58,19 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.servlet.ServletException;
-
 import java.io.IOException;
-import java.lang.reflect.Modifier;
-import java.util.*;
-
 import java.io.Serializable;
-import java.util.function.BinaryOperator;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
-
-import com.google.common.base.Strings;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -66,7 +80,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     /**
      * Template Name
      */
-    @Nonnull
     private final String templateName;
     /**
      * White-space separated list of {@link hudson.model.Node} labels.
@@ -86,7 +99,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
      * Docker image
      * @see ContainerDefinition#withImage(String)
      */
-    @Nonnull
     private final String image;
     /**
      * Agent remote FS
@@ -218,13 +230,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     /**
      * Task launch type
      */
-    @Nonnull
     private final String launchType;
 
     /**
      * Task network mode
      */
-    @Nonnull
     private final String networkMode;
 
     /**
@@ -272,13 +282,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private String inheritFrom;
 
     @DataBoundConstructor
-    public ECSTaskTemplate(@Nonnull String templateName,
+    public ECSTaskTemplate(String templateName,
                            @Nullable String label,
                            @Nullable String taskDefinitionOverride,
-                           @Nonnull String image,
+                           String image,
                            @Nullable final String repositoryCredentials,
-                           @Nonnull String launchType,
-                           @Nonnull String networkMode,
+                           String launchType,
+                           String networkMode,
                            @Nullable String remoteFSRoot,
                            boolean uniqueRemoteFSRoot,
                            int memory,
@@ -315,6 +325,19 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         }
 
         this.label = label;
+        if(isNullOrEmpty(image))
+            throw new IllegalArgumentException("You must specify an image");
+
+        if(isNullOrEmpty(launchType))
+            throw new IllegalArgumentException("You must specify a launchType");
+
+        if(isNullOrEmpty(networkMode))
+            throw new IllegalArgumentException("You must specify a networkMode");
+
+        if(isNullOrEmpty(templateName))
+            throw new IllegalArgumentException("You must specify a templateName");
+
+
         this.image = image;
         this.repositoryCredentials = StringUtils.trimToNull(repositoryCredentials);
         this.remoteFSRoot = remoteFSRoot;
@@ -576,7 +599,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     /**
      * This merge does not take an into consideration the child intentionally setting empty values for parameters like "entrypoint" - in fact
      * it's not uncommon to override the entrypoint of a container and set it to blank so you can use your own entrypoint as part of the command.
-     * What's really needed is a "MergeStrategy BinaryOperator ECSTaskTemplate that's user selectable.
+     * What's really needed is a "MergeStrategy <pre>BinaryOperator&lt;ECSTaskTemplate&gt;</pre> that's user selectable.
      * @param parent inherit settings from
      * @return a 'merged' template
      */
@@ -1038,7 +1061,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (taskDefinitionOverride != null ? !taskDefinitionOverride.equals(that.taskDefinitionOverride) : that.taskDefinitionOverride != null) {
             return false;
         }
-        if (!image.equals(that.image)) {
+        if (image != null ? !image.equals(that.image) : that.image != null) {
             return false;
         }
         if (remoteFSRoot != null ? !remoteFSRoot.equals(that.remoteFSRoot) : that.remoteFSRoot != null) {
@@ -1071,10 +1094,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (mountPoints != null ? !mountPoints.equals(that.mountPoints) : that.mountPoints != null) {
             return false;
         }
-        if (!launchType.equals(that.launchType)) {
+        if (launchType != null ? !launchType.equals(that.launchType) : that.launchType != null) {
             return false;
         }
-        if (!networkMode.equals(that.networkMode)) {
+        if (networkMode != null ? !networkMode.equals(that.networkMode) : that.networkMode != null) {
             return false;
         }
         if (containerUser != null ? !containerUser.equals(that.containerUser) : that.containerUser != null) {
@@ -1106,7 +1129,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         int result = templateName.hashCode();
         result = 31 * result + (label != null ? label.hashCode() : 0);
         result = 31 * result + (taskDefinitionOverride != null ? taskDefinitionOverride.hashCode() : 0);
-        result = 31 * result + image.hashCode();
+        result = 31 * result + (image != null ? image.hashCode() : 0);
         result = 31 * result + (remoteFSRoot != null ? remoteFSRoot.hashCode() : 0);
         result = 31 * result + memory;
         result = 31 * result + memoryReservation;
@@ -1122,8 +1145,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + (repositoryCredentials != null ? repositoryCredentials.hashCode() : 0);
         result = 31 * result + (jvmArgs != null ? jvmArgs.hashCode() : 0);
         result = 31 * result + (mountPoints != null ? mountPoints.hashCode() : 0);
-        result = 31 * result + launchType.hashCode();
-        result = 31 * result + networkMode.hashCode();
+        result = 31 * result + (launchType != null ? launchType.hashCode() : 0);
+        result = 31 * result + (networkMode != null ? networkMode.hashCode() : 0);
         result = 31 * result + (privileged ? 1 : 0);
         result = 31 * result + (uniqueRemoteFSRoot ? 1 : 0);
         result = 31 * result + (containerUser != null ? containerUser.hashCode() : 0);

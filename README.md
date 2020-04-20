@@ -169,7 +169,6 @@ Declarative agents can be defined like shown below. You can also reuse pre-confi
 of the template that you want to use as preconfigured. Only one label is expected to be specified.
 
 _Note_: You have to configure list of settings to be allowed in the declarative pipeline first (see the Allowed Overrides setting). They are disabled by default for security reasons, to avoid non-privileged users to suddenly be able to change certain settings.
-
 ## Usage
 
 The ECS agents can be used for any job and any type of job (Freestyle job, Maven job, Workflow job...), you just have to restrict the execution of the jobs on one of the labels used in the ECS Agent Template configuration. You can either restrict the job to run on a specific label only via the UI or directly in the pipeline.
@@ -220,7 +219,6 @@ pipeline {
   }
 }
 ```
-
 ## FAQ
 
 ### My parallel jobs don't start at the same time
