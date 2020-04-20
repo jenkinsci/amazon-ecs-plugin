@@ -1,0 +1,18 @@
+jenkins:
+    systemMessage: "Amazon Fargate Demo"
+    agentProtocols:
+        - "JNLP4-connect"
+    securityRealm:
+        local:
+            allowsSignup: false
+            users:
+                - id: demoAdmin
+                  password: ${adminpw:-passw0rd}
+    authorizationStrategy:
+        globalMatrix:
+            grantedPermissions:
+                - "Overall/Read:anonymous"
+                - "Job/Read:anonymous"
+                - "View/Read:anonymous"
+                - "Overall/Administer:authenticated"
+    crumbIssuer: "standard"
