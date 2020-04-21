@@ -29,8 +29,8 @@ deploy-ecr:
 
 docker:
 	docker build -t $(shell aws ssm get-parameters --region eu-west-1 --names /jenkins/docker-uri --query Parameters[].Value --output text):latest docker
-	# aws ecr get-login-password --region $(region) | docker login --username AWS --password-stdin $(accountid).dkr.ecr.$(region).amazonaws.com
-	# docker push $(shell aws ssm get-parameters --region eu-west-1 --names /jenkins/docker-uri --query Parameters[].Value --output text):latest
+	aws ecr get-login-password --region $(region) | docker login --username AWS --password-stdin $(accountid).dkr.ecr.$(region).amazonaws.com
+	docker push $(shell aws ssm get-parameters --region eu-west-1 --names /jenkins/docker-uri --query Parameters[].Value --output text):latest
 
 deploy-master:
 	aws cloudformation deploy \

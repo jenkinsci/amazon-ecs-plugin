@@ -7,6 +7,8 @@ Parameters:
     Type: AWS::EC2::Subnet::Id
   SubnetB:
     Type: AWS::EC2::Subnet::Id
+  CidrRange:
+    Type: String
   Certificate:
     Type: String
     # Update with the certificate ARN from Certificate Manager, which must exist in the same region.
@@ -35,6 +37,10 @@ Resources:
     Type: AWS::ECS::Cluster
     Properties:
       ClusterName: !Join ['', [!Ref ServiceName, Cluster]]
+  AgentCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Join ['', [!Ref ServiceName, AgentCluster]]
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     # Makes sure the log group is created before it is used.
@@ -57,7 +63,7 @@ Resources:
       # 2GB, 3GB, 4GB, 5GB, 6GB, 7GB, 8GB - Available cpu values: 1024 (1 vCPU)
       # Between 4GB and 16GB in 1GB increments - Available cpu values: 2048 (2 vCPU)
       # Between 8GB and 30GB in 1GB increments - Available cpu values: 4096 (4 vCPU)
-      Memory: '2GB'
+      Memory: '3GB'
       # A role needed by ECS.
       # "The ARN of the task execution role that containers in this task can assume. All containers in this task are granted the permissions that are specified in this role."
       # "There is an optional task execution IAM role that you can specify with Fargate to allow your Fargate tasks to make API calls to Amazon ECR."
@@ -70,6 +76,7 @@ Resources:
             Fn::ImportValue: !Sub ${ServiceName}-docker-uri
           PortMappings:
             - ContainerPort: !Ref ContainerPort
+            - ContainerPort: 50000
           # Send logs to CloudWatch Logs
           LogConfiguration:
             LogDriver: awslogs
@@ -77,6 +84,31 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-group: !Ref LogGroup
               awslogs-stream-prefix: ecs
+          Environment:
+          - Name: JENKINS_URL
+            Value: !Ref DNSRecord
+          - Name: JENKINS_HOST
+            Value: !Ref DNSRecord
+          - Name: NLB_PORT
+            Value: '50000'
+          - Name: NLB_TARGET_GROUP_ARN
+            Value: !Ref NetworkLoadBalancerTargetGroup
+          - Name: NLB_DNS_NAME
+            Value: !GetAtt NetworkLoadBalancer.DNSName
+          - Name: ECS_AGENT_CLUSTER
+            Value: !GetAtt AgentCluster.Arn
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+          - Name: JENKINS_SLAVE_AGENT_PORT
+            Value: '50000'
+          - Name: AGENT_SECURITY_GROUP
+            Value: !GetAtt AgentSecurityGroup.GroupId
+          - Name: SUBNETS
+            Value: !Sub "${SubnetA},${SubnetB}"
+          - Name: VPC
+            Value: !Ref VPC
   # A role needed by ECS
   ExecutionRole:
     Type: AWS::IAM::Role
@@ -101,10 +133,78 @@ Resources:
             Principal:
               Service: ecs-tasks.amazonaws.com
             Action: 'sts:AssumeRole'
-      # ManagedPolicyArns:
-      #   -
-      # Policies:
-      #   -
+      Policies:
+      - PolicyName: !Sub ecs-${AWS::StackName}
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          -
+            Action:
+              - "ecs:RegisterTaskDefinition"
+              - "ecs:ListClusters"
+              - "ecs:DescribeContainerInstances"
+              - "ecs:ListTaskDefinitions"
+              - "ecs:DescribeTaskDefinition"
+              - "ecs:DeregisterTaskDefinition"
+            Effect: Allow
+            Resource: "*"
+          -
+            Action:
+              - "ecs:ListContainerInstances"
+            Effect: Allow
+            Resource: !GetAtt AgentCluster.Arn
+          -
+            Action:
+              - "ecs:RunTask"
+            Effect: Allow
+            Condition:
+              ArnEquals:
+                ecs:cluster: !GetAtt AgentCluster.Arn
+            Resource: !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*"
+          -
+            Action:
+              - "ecs:StopTask"
+            Effect: Allow
+            Condition:
+              ArnEquals:
+                ecs:cluster: !GetAtt AgentCluster.Arn
+            Resource: !Sub "arn:aws:ecs:*:*:task/*" # "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/*"
+          -
+            Action:
+              - "ecs:DescribeTasks"
+            Effect: Allow
+            Condition:
+              ArnEquals:
+                ecs:cluster: !GetAtt AgentCluster.Arn
+            Resource: !Sub "arn:aws:ecs:*:*:task/*" # "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/*"
+          -
+            Action:
+              - "iam:PassRole"
+            Effect: Allow
+            Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/*"
+          -
+            Action:
+              - "ssm:GetParameter"
+            Effect: Allow
+            Resource:
+            - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/jenkins/*"
+          -
+            Action:
+              - "ssm:PutParameter"
+            Effect: Allow
+            Resource:
+            - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/jenkins/*"
+          -
+            Action:
+            - "kms:Decrypt"
+            Effect: Allow
+            Resource:
+            - !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/ssm
+          -
+            Action:
+              - "cloudwatch:PutMetricData"
+            Effect: Allow
+            Resource: "*"
   # A role needed for auto scaling
   AutoScalingRole:
     Type: AWS::IAM::Role
@@ -128,6 +228,14 @@ Resources:
           FromPort: !Ref ContainerPort
           ToPort: !Ref ContainerPort
           SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 50000
+          ToPort: 50000
+          SourceSecurityGroupId: !Ref AgentSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 50000
+          ToPort: 50000
+          CidrIp: !Ref CidrRange  # needed for NLB healthchecks
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -138,13 +246,17 @@ Resources:
           FromPort: !Ref LoadBalancerPort
           ToPort: !Ref LoadBalancerPort
           CidrIp: 0.0.0.0/0
+  AgentSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Join ['', [!Ref ServiceName, AgentSecurityGroup]]
+      VpcId: !Ref VPC
   Service:
     Type: AWS::ECS::Service
     # This dependency is needed so that the load balancer is setup correctly in time
     DependsOn:
       - ListenerHTTPS
     Properties:
-      ServiceName: !Ref ServiceName
       Cluster: !Ref Cluster
       TaskDefinition: !Ref TaskDefinition
       DeploymentConfiguration:
@@ -152,7 +264,7 @@ Resources:
         MaximumPercent: 200
       DesiredCount: 1
       # This may need to be adjusted if the container takes a while to start up
-      HealthCheckGracePeriodSeconds: 60
+      HealthCheckGracePeriodSeconds: 150
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
@@ -167,13 +279,16 @@ Resources:
         - ContainerName: !Ref ServiceName
           ContainerPort: !Ref ContainerPort
           TargetGroupArn: !Ref TargetGroup
+        # - ContainerName: !Ref ServiceName
+        #   ContainerPort: 50000
+        #   TargetGroupArn: !Ref NetworkLoadBalancerTargetGroup
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 10
       # will look for a 200 status code by default unless specified otherwise
       HealthCheckPath: !Ref HealthCheckPath
-      HealthCheckTimeoutSeconds: 5
+      HealthCheckTimeoutSeconds: 9
       UnhealthyThresholdCount: 2
       HealthyThresholdCount: 2
       Name: !Join ['', [!Ref ServiceName, TargetGroup]]
@@ -210,6 +325,38 @@ Resources:
       Subnets:
         - !Ref SubnetA
         - !Ref SubnetB
+
+  NetworkLoadBalancerTargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      Port: 50000
+      Protocol: TCP
+      VpcId: !Ref VPC
+      TargetType: ip
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+
+  NetworkLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref NetworkLoadBalancerTargetGroup
+      LoadBalancerArn: !Ref NetworkLoadBalancer
+      Port: 50000
+      Protocol: TCP
+
+  NetworkLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internal
+      Type: network
+      Subnets:
+        - !Ref SubnetA
+        - !Ref SubnetB
+      LoadBalancerAttributes:
+      - Key: load_balancing.cross_zone.enabled
+        Value: "true"
   DNSRecord:
     Type: AWS::Route53::RecordSet
     Properties:
@@ -250,3 +397,6 @@ Outputs:
   Endpoint:
     Description: Endpoint
     Value: !Join ['', ['https://', !Ref DNSRecord]]
+  AgentSG:
+    Description: security group id that needs to be used for agents
+    Value: !GetAtt AgentSecurityGroup.GroupId
