@@ -2,6 +2,10 @@
 
 ## vNext
 
+## 1.33
+
+-   fix too aggressive checks (#171)
+
 ## 1.32
 
 -   fix NPE issues (#169)
