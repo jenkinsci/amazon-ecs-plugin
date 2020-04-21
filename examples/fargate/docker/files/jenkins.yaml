@@ -31,7 +31,7 @@ jenkins:
               tunnel: "${NLB_DNS_NAME}:${NLB_PORT}"
               jenkinsUrl: "https://${JENKINS_URL}"
               templates:
-                  - assignPublicIp: false
+                  - assignPublicIp: true
                     cpu: "512"
                     image: "jenkins/inbound-agent"
                     label: "build-example"

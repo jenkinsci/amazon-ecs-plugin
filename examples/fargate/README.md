@@ -2,10 +2,11 @@
 
 **Work in progess!** This template is not yet optmized or fully usable.
 
-Things missing;
+Things missing:
 
 -   persistence for master
 -   proper upgrade of versions in master
+-   network security; currently agent connections are allowed from everywhere
 
 ## Usage
 

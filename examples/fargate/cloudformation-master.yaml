@@ -7,8 +7,6 @@ Parameters:
     Type: AWS::EC2::Subnet::Id
   SubnetB:
     Type: AWS::EC2::Subnet::Id
-  CidrRange:
-    Type: String
   Certificate:
     Type: String
     # Update with the certificate ARN from Certificate Manager, which must exist in the same region.
@@ -235,7 +233,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 50000
           ToPort: 50000
-          CidrIp: !Ref CidrRange  # needed for NLB healthchecks
+          CidrIp: 0.0.0.0/0  # needed for NLB healthchecks
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -279,9 +277,9 @@ Resources:
         - ContainerName: !Ref ServiceName
           ContainerPort: !Ref ContainerPort
           TargetGroupArn: !Ref TargetGroup
-        # - ContainerName: !Ref ServiceName
-        #   ContainerPort: 50000
-        #   TargetGroupArn: !Ref NetworkLoadBalancerTargetGroup
+        - ContainerName: !Ref ServiceName
+          ContainerPort: 50000
+          TargetGroupArn: !Ref NetworkLoadBalancerTargetGroup
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
