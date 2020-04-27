@@ -54,7 +54,7 @@ public class ECSTaskTemplateStepExecutionTest {
         when(cloud.canProvision(parentTemplate.getLabel())).thenReturn(true);
 
         step = new ECSTaskTemplateStep("child-label", "child-name");
-        
+
         step.setInheritFrom(parentTemplate.getLabel());
 
         Jenkins.CloudList clouds = new Jenkins.CloudList();
@@ -73,6 +73,7 @@ public class ECSTaskTemplateStepExecutionTest {
                 UUID.randomUUID().toString(),
                 UUID.randomUUID().toString(),
                 false,
+                null,
                 r.nextInt(123),
                 r.nextInt(456),
                 r.nextInt(1024),
@@ -105,6 +106,7 @@ public class ECSTaskTemplateStepExecutionTest {
         step.setNetworkMode(expected.getNetworkMode());
         step.setRemoteFSRoot(expected.getRemoteFSRoot());
         step.setUniqueRemoteFSRoot(expected.getUniqueRemoteFSRoot());
+        step.setPlatformVersion(expected.getPlatformVersion());
         step.setMemory(expected.getMemory());
         step.setMemoryReservation(expected.getMemoryReservation());
         step.setCpu(expected.getCpu());
@@ -145,6 +147,7 @@ public class ECSTaskTemplateStepExecutionTest {
                 "networkMode",
                 "remoteFSRoot",
                 false,
+                null,
                 0,
                 0,
                 0,

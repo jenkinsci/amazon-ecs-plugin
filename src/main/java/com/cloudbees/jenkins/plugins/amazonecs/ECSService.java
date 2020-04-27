@@ -360,6 +360,10 @@ class ECSService {
                 .withPlacementStrategy(template.getPlacementStrategyEntries())
                 .withCluster(clusterArn);
 
+        if (template.getLaunchType() != null && template.getLaunchType().equals("FARGATE")) {
+            req.withPlatformVersion(template.getPlatformVersion());
+        }
+
         if (taskDefinition.getNetworkMode() != null && taskDefinition.getNetworkMode().equals("awsvpc")) {
             AwsVpcConfiguration awsVpcConfiguration = new AwsVpcConfiguration();
             awsVpcConfiguration.setAssignPublicIp(template.getAssignPublicIp() ? "ENABLED" : "DISABLED");

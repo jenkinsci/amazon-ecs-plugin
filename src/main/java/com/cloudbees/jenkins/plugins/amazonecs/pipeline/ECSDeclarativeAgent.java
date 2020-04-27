@@ -32,6 +32,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private String launchType;
     private String remoteFSRoot;
     private boolean uniqueRemoteFSRoot;
+    private String platformVersion;
     private int memory;
     private int memoryReservation;
     private int cpu;
@@ -125,6 +126,16 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     public void setUniqueRemoteFSRoot(boolean uniqueRemoteFSRoot) {
         this.uniqueRemoteFSRoot = uniqueRemoteFSRoot;
         overrides.add("uniqueRemoteFSRoot");
+    }
+
+    public String getPlatformVersion() {
+        return platformVersion;
+    }
+
+    @DataBoundSetter
+    public void setPlatformVersion(String platformVersion) {
+        this.platformVersion = platformVersion;
+        overrides.add("platformVersion");
     }
 
     public int getMemory() {
@@ -335,6 +346,10 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
             argMap.put("remoteFSRoot", remoteFSRoot);
         }
         argMap.put("uniqueRemoteFSRoot", uniqueRemoteFSRoot);
+
+        if (!StringUtils.isEmpty(platformVersion)) {
+            argMap.put("platformVersion", platformVersion);
+        }
 
         if (memory != 0) {
             argMap.put("memory", memory);

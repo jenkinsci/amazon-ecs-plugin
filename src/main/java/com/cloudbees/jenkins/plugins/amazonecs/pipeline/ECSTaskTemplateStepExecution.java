@@ -61,6 +61,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getNetworkMode(),
                                           step.getRemoteFSRoot(),
                                           step.getUniqueRemoteFSRoot(),
+                                          step.getPlatformVersion(),
                                           step.getMemory(),
                                           step.getMemoryReservation(),
                                           step.getCpu(),
