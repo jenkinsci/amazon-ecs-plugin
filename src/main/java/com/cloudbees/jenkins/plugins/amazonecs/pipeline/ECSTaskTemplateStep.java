@@ -53,6 +53,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private String networkMode;
     private String remoteFSRoot;
     private boolean uniqueRemoteFSRoot;
+    private String platformVersion;
     private int memory;
     private int memoryReservation;
     private int cpu;
@@ -160,6 +161,15 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
 
     public boolean getUniqueRemoteFSRoot() {
         return uniqueRemoteFSRoot;
+    }
+
+    @DataBoundSetter
+    public void setPlatformVersion(String platformVersion) {
+        this.platformVersion = platformVersion;
+    }
+
+    public String getPlatformVersion() {
+        return platformVersion  ;
     }
 
     @DataBoundSetter

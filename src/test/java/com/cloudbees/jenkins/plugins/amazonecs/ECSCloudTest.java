@@ -150,6 +150,7 @@ public class ECSCloudTest {
                 "networkMode",
                 "remoteFSRoot",
                 false,
+                null,
                 0,
                 0,
                 0,

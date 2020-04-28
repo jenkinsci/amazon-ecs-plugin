@@ -112,6 +112,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
      *
      * @see ContainerDefinition#withMemory(Integer)
      */
+
     private final int memory;
     /**
      * The soft limit (in MiB) of memory to reserve for the container. When
@@ -249,6 +250,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private final boolean uniqueRemoteFSRoot;
 
     /**
+     * Task launch type platform version
+     */
+    private final String platformVersion;
+
+    /**
      * User for conatiner
      */
     @Nullable
@@ -291,6 +297,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            String networkMode,
                            @Nullable String remoteFSRoot,
                            boolean uniqueRemoteFSRoot,
+                           String platformVersion,
                            int memory,
                            int memoryReservation,
                            int cpu,
@@ -329,6 +336,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.repositoryCredentials = StringUtils.trimToNull(repositoryCredentials);
         this.remoteFSRoot = remoteFSRoot;
         this.uniqueRemoteFSRoot = uniqueRemoteFSRoot;
+        this.platformVersion = platformVersion;
         this.memory = memory;
         this.memoryReservation = memoryReservation;
         this.cpu = cpu;
@@ -431,6 +439,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
     public boolean getUniqueRemoteFSRoot() {
         return uniqueRemoteFSRoot;
+    }
+
+    public String getPlatformVersion() {
+        return platformVersion;
     }
 
     public int getMemory() {
@@ -606,6 +618,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
         // Bug potential here. If I intenionally set it false in the child, then it will be ignored and take the parent. Need null to mean 'unset'
         boolean uniqueRemoteFSRoot = this.uniqueRemoteFSRoot || parent.getUniqueRemoteFSRoot();
+        String platformVersion = isNullOrEmpty(this.platformVersion) ? parent.getPlatformVersion() : this.platformVersion;
         int memory = this.memory == 0 ? parent.getMemory() : this.memory;
         int memoryReservation = this.memoryReservation == 0 ? parent.getMemoryReservation() : this.memoryReservation;
         int cpu = this.cpu == 0 ? parent.getCpu() : this.cpu;
@@ -641,6 +654,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        networkMode,
                                                        remoteFSRoot,
                                                        uniqueRemoteFSRoot,
+                                                       platformVersion,
                                                        memory,
                                                        memoryReservation,
                                                        cpu,
@@ -1040,6 +1054,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (uniqueRemoteFSRoot != that.uniqueRemoteFSRoot) {
             return false;
         }
+        if (platformVersion != null ? !platformVersion.equals(that.platformVersion) : that.platformVersion != null) {
+            return false;
+        }
         if (!templateName.equals(that.templateName)) {
             return false;
         }
@@ -1123,6 +1140,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + memoryReservation;
         result = 31 * result + cpu;
         result = 31 * result + sharedMemorySize;
+        result = 31 * result + (platformVersion != null ? platformVersion.hashCode() : 0);
         result = 31 * result + (subnets != null ? subnets.hashCode() : 0);
         result = 31 * result + (securityGroups != null ? securityGroups.hashCode() : 0);
         result = 31 * result + (assignPublicIp ? 1 : 0);
