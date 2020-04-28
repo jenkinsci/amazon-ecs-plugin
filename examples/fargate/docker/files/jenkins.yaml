@@ -1,0 +1,51 @@
+jenkins:
+    systemMessage: "Amazon Fargate Demo"
+    numExecutors: 0
+    remotingSecurity:
+      enabled: true
+    agentProtocols:
+        - "JNLP4-connect"
+    securityRealm:
+        local:
+            allowsSignup: false
+            users:
+                - id: ecsuser
+                  password: ${adminpw:-passw0rd1337}
+    authorizationStrategy:
+        globalMatrix:
+            grantedPermissions:
+                - "Overall/Read:anonymous"
+                - "Job/Read:anonymous"
+                - "View/Read:anonymous"
+                - "Overall/Administer:authenticated"
+    crumbIssuer: "standard"
+    slaveAgentPort: 50000
+    clouds:
+        - ecs:
+              allowedOverrides: "inheritFrom,label,memory,cpu,image"
+              credentialsId: ""
+              cluster: ${ECS_AGENT_CLUSTER}
+              name: "fargate-cloud"
+              regionName: ${AWS_DEFAULT_REGION}
+              retentionTimeout: 10
+              tunnel: "${NLB_DNS_NAME}:${NLB_PORT}"
+              jenkinsUrl: "https://${JENKINS_URL}"
+              templates:
+                  - assignPublicIp: true
+                    cpu: "512"
+                    image: "jenkins/inbound-agent"
+                    label: "build-example"
+                    launchType: "FARGATE"
+                    memory: 0
+                    memoryReservation: 1024
+                    networkMode: "default"
+                    privileged: false
+                    remoteFSRoot: "/home/jenkins"
+                    securityGroups: ${AGENT_SECURITY_GROUP}
+                    sharedMemorySize: 0
+                    subnets: ${SUBNETS}
+                    templateName: "build-example"
+                    uniqueRemoteFSRoot: false
+security:
+  sSHD:
+    port: -1

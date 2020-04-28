@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Template for Jenkins Master on Fargate with EFS - ECR repo
+Parameters:
+  ServiceName:
+    Type: String
+    Default: ECSJenkins
+Resources:
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: jenkins-master
+      RepositoryPolicyText:
+        Version: '2008-10-17'
+        Statement:
+        - Sid: AllowPush
+          Effect: Allow
+          Principal:
+            AWS:
+            - !Sub arn:aws:iam::${AWS::AccountId}:root
+          Action:
+          - ecr:GetAuthorizationToken
+          - ecr:GetDownloadUrlForLayer
+          - ecr:PutImage
+          - ecr:InitiateLayerUpload
+          - ecr:UploadLayerPart
+          - ecr:CompleteLayerUpload
+
+        - Sid: AllowPull
+          Effect: Allow
+          Principal:
+            AWS:
+            - !Sub arn:aws:iam::${AWS::AccountId}:root
+          Action:
+          - ecr:GetDownloadUrlForLayer
+          - ecr:BatchGetImage
+          - ecr:BatchCheckLayerAvailability
+          - ecr:GetAuthorizationToken
+  ECRParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Docker repo URI for jenkins master
+      Name: '/jenkins/docker-uri'
+      Type: 'String'
+      Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepository}
+Outputs:
+  ECRURI:
+    Description: URI of jenkins master repo
+    Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepository}
+    Export:
+      Name: !Sub ${ServiceName}-docker-uri
