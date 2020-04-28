@@ -2,6 +2,10 @@
 
 ## vNext
 
+## 1.34
+
+-   support PlatformVersion as ECS parameter (#176)
+
 ## 1.33
 
 -   fix too aggressive checks (#171)
