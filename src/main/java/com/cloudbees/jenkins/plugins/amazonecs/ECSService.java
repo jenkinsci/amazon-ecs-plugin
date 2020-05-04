@@ -289,9 +289,9 @@ class ECSService {
     }
 
     /**
-     * De-Registers the last task definition that a template should have created If
-     * a TaskDefinitionOverride is set, we assume that we don't want to de-register
-     * a task that was created outside of this plugin
+     * Deregisters the last task definition that a template should have created. If
+     * a TaskDefinitionOverride is set we don't deregister, as we don't want to
+     * deregister a task that is managed outside of this plugin
      * 
      * @param cloudName Name of cloud needed to generate the task definition name
      * @param template  The template that the task definition will be deduced from
