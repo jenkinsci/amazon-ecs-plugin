@@ -406,16 +406,19 @@ public class ECSCloud extends Cloud {
         }
     }
 
-
     /**
-     * Add a dynamic task template. Won't be displayed in UI, and persisted separately from the cloud instance.
+     * Adds a dynamic task template. Won't be displayed in UI, and persisted
+     * separately from the cloud instance. Also creates a task definition for this
+     * template, saving time so that ECSLauncher can find and launch the computer
+     * without needing to create the task
+     * 
      * @param template the template to add
      * @return the task definition created from the template
      */
-    public TaskDefinition  addDynamicTemplate(ECSTaskTemplate template) {
+    public TaskDefinition addDynamicTemplate(ECSTaskTemplate template) {
         TaskDefinition taskDefinition = getEcsService().registerTemplate(this.getDisplayName(), template);
         if(taskDefinition != null){
-            LOGGER.log(Level.INFO, String.format("Task definition created: ARN: %s", taskDefinition.getTaskDefinitionArn()));
+            LOGGER.log(Level.INFO, String.format("Task definition created or found: ARN: %s", taskDefinition.getTaskDefinitionArn()));
             TaskTemplateMap.get().addTemplate(this, template);
         }
         return taskDefinition;
@@ -433,14 +436,6 @@ public class ECSCloud extends Cloud {
         }
         TaskTemplateMap.get().removeTemplate(this, t);
         return taskDefinition;
-    }
-
-    /**
-     * Remove a dynamic task template from the template map.
-     * @param t the template to remove
-     */
-    public void removeDynamicTemplateFromTemplateMap(ECSTaskTemplate t) {
-        TaskTemplateMap.get().removeTemplate(this, t);
     }
 
     @Extension

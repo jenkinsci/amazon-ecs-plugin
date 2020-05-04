@@ -145,8 +145,19 @@ class ECSService {
     /**
      * Looks whether the latest task definition matches the desired one. If yes, returns the full TaskDefinition of the existing one.
      * If no, register a new task definition with desired parameters and returns the new TaskDefinition.
+     * If a TaskDefinitionOverride is set, we only look to see if the task definition exists and return it.
      */
     TaskDefinition registerTemplate(final String cloudName, final ECSTaskTemplate template) {
+        if (template.getTaskDefinitionOverride() != null){
+            TaskDefinition overrideTaskDefinition = findTaskDefinition(template.getTaskDefinitionOverride());
+            if (overrideTaskDefinition == null) {
+                throw new RuntimeException("Could not find task definition family or ARN: " + template.getTaskDefinitionOverride());
+            }
+
+            LOGGER.log(Level.FINE, "Found override task definition: {0}", new Object[] {overrideTaskDefinition.getTaskDefinitionArn()});
+            return overrideTaskDefinition;
+        }
+
         final AmazonECS client = clientSupplier.get();
 
         String familyName = fullQualifiedTemplateName(cloudName, template);
@@ -277,15 +288,28 @@ class ECSService {
         }
     }
 
+    /**
+     * De-Registers the last task definition that a template should have created If
+     * a TaskDefinitionOverride is set, we assume that we don't want to de-register
+     * a task that was created outside of this plugin
+     * 
+     * @param cloudName Name of cloud needed to generate the task definition name
+     * @param template  The template that the task definition will be deduced from
+     * @return The task definition if found, otherwise null
+     */
     TaskDefinition removeTemplate(final String cloudName, final ECSTaskTemplate template) {
         AmazonECS client = clientSupplier.get();
 
         String familyName = fullQualifiedTemplateName(cloudName, template);
 
         int            revision       = 0;
-        TaskDefinition taskDefinition = null;
+        TaskDefinition taskDefinition = findTaskDefinition(familyName);
+
+        if (template.getTaskDefinitionOverride() != null){
+            return taskDefinition;
+        }
+
         try {
-            taskDefinition = findTaskDefinition(familyName);
             if (taskDefinition != null) {
                 revision = taskDefinition.getRevision();
                 client.deregisterTaskDefinition(new DeregisterTaskDefinitionRequest().withTaskDefinition(familyName + ":" + revision));
