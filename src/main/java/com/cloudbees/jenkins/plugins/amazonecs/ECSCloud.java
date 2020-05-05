@@ -229,7 +229,7 @@ public class ECSCloud extends Cloud {
     public ECSTaskTemplate findParentTemplate(String parentLabel) {
         ECSTaskTemplate result = null;
         if(parentLabel == null){
-            LOGGER.log(Level.INFO, "No parent label supplied, looking for TaskTemplate name: 'template-default'");
+            LOGGER.log(Level.INFO, "No parent label supplied, looking for TaskTemplate with label 'template-default'");
             result = this.getTemplate("template-default");
             if(result == null) {
                 LOGGER.log(Level.INFO, "No task template label of 'template-default' found, searching by name 'template-default'");
@@ -410,7 +410,7 @@ public class ECSCloud extends Cloud {
      * Adds a dynamic task template. Won't be displayed in UI, and persisted
      * separately from the cloud instance. Also creates a task definition for this
      * template, saving time so that ECSLauncher can find and launch the computer
-     * without needing to create the task
+     * without needing to register a task definition
      * 
      * @param template the template to add
      * @return the task definition created from the template
@@ -427,15 +427,9 @@ public class ECSCloud extends Cloud {
     /**
      * Remove a dynamic task template.
      * @param t the template to remove
-     * @return the task definition removed
      */
-    public TaskDefinition removeDynamicTemplate(ECSTaskTemplate t) {
-        TaskDefinition taskDefinition = getEcsService().removeTemplate(this.getDisplayName(), t);
-        if (taskDefinition == null) {
-            LOGGER.log(Level.SEVERE, "Unable to remove the task template/definition from from ECS");
-        }
+    public void removeDynamicTemplate(ECSTaskTemplate t) {
         TaskTemplateMap.get().removeTemplate(this, t);
-        return taskDefinition;
     }
 
     @Extension

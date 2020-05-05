@@ -289,37 +289,38 @@ class ECSService {
     }
 
     /**
-     * Deregisters the last task definition that a template should have created. If
-     * a TaskDefinitionOverride is set we don't deregister, as we don't want to
-     * deregister a task that is managed outside of this plugin
+     * Deregisters a task definition created for a template we are deleting. The
+     * supplied task definition must have the correct revision, not necessarily the
+     * latest. If a TaskDefinitionOverride is set we don't deregister, as we don't
+     * want to deregister a task that is managed outside of this plugin
      * 
-     * @param cloudName Name of cloud needed to generate the task definition name
-     * @param template  The template that the task definition will be deduced from
+     * @param cloudName      Name of cloud needed to generate the task definition name
+     * @param template       The template used to create the task definition
+     * @param taskDefinition The task definition (with revision) to deregister.
      * @return The task definition if found, otherwise null
      */
-    TaskDefinition removeTemplate(final String cloudName, final ECSTaskTemplate template) {
+    void removeTemplate(final ECSTaskTemplate template, final TaskDefinition taskDefinition) {
         AmazonECS client = clientSupplier.get();
 
-        String familyName = fullQualifiedTemplateName(cloudName, template);
-
-        int            revision       = 0;
-        TaskDefinition taskDefinition = findTaskDefinition(familyName);
-
-        if (template.getTaskDefinitionOverride() != null){
-            return taskDefinition;
+        if (template.getTaskDefinitionOverride() != null) {
+            return;
         }
+
+        String familyName = taskDefinition.getFamily();
+
+        int revision = 0;
 
         try {
             if (taskDefinition != null) {
                 revision = taskDefinition.getRevision();
-                client.deregisterTaskDefinition(new DeregisterTaskDefinitionRequest().withTaskDefinition(familyName + ":" + revision));
+                client.deregisterTaskDefinition(
+                        new DeregisterTaskDefinitionRequest().withTaskDefinition(familyName + ":" + revision));
             }
 
         } catch (ClientException e) {
             LOGGER.log(Level.FINE, "Error removing task definition: " + familyName + ":" + revision, e);
             LOGGER.log(Level.INFO, "Error removing task definition: " + familyName + ":" + revision);
         }
-        return taskDefinition;
     }
 
     /**

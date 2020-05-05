@@ -83,8 +83,8 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
         newTemplate.setLogDriver(step.getLogDriver());
 
         ECSTaskTemplate parentTemplate = ecsCloud.findParentTemplate(parentLabel);
-        if(parentTemplate == null){
-            LOGGER.log(Level.WARNING, "No parent template found. Hope you defined everything");
+        if(parentLabel != null && parentTemplate == null){
+            LOGGER.log(Level.WARNING, "InheritFrom specified as '{0}' but its template was not found. Continuing without a parent.", new Object[]{parentLabel});
         }
         final ECSTaskTemplate merged  = newTemplate.merge(parentTemplate);
 
