@@ -408,11 +408,11 @@ public class ECSCloud extends Cloud {
     /**
      * Adds a dynamic task template. Won't be displayed in UI, and persisted
      * separately from the cloud instance. Also creates a task definition for this
-     * template, saving time so that ECSLauncher can find and launch the computer
-     * without needing to register a task definition
+     * template, adding the ARN to back to the template so that launching the agent
+     * will be faster.
      * 
      * @param template the template to add
-     * @return the task definition created from the template
+     * @return the task template with the newly created task definition ARN added
      */
     public ECSTaskTemplate addDynamicTemplate(ECSTaskTemplate template) {
         TaskDefinition taskDefinition = getEcsService().registerTemplate(this.getDisplayName(), template);

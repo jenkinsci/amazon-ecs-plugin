@@ -89,11 +89,11 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
         if(parentLabel != null && parentTemplate == null){
             LOGGER.log(Level.WARNING, "InheritFrom specified as '{0}' but its template was not found. Continuing without a parent.", new Object[]{parentLabel});
         }
-        final ECSTaskTemplate merged  = newTemplate.merge(parentTemplate);
+        newTemplate  = newTemplate.merge(parentTemplate);
 
         LOGGER.log(Level.INFO, "Registering task template with name {0}", new Object[] { newTemplate.getTemplateName() });
-        final ECSTaskTemplate withTaskARN = ecsCloud.addDynamicTemplate(merged);
-        getContext().newBodyInvoker().withContext(step).withCallback(new ECSTaskTemplateCallback(withTaskARN)).start();
+        newTemplate = ecsCloud.addDynamicTemplate(newTemplate);
+        getContext().newBodyInvoker().withContext(step).withCallback(new ECSTaskTemplateCallback(newTemplate)).start();
         return false;
     }
 
