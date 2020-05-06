@@ -77,6 +77,7 @@ public class ECSSlaveTest {
             "templateName",
             "label",
             "taskDefinitionOverride",
+            null,
             "image",
             "repositoryCredentials",
             "launchType",

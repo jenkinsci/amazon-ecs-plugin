@@ -96,6 +96,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private final String taskDefinitionOverride;
 
     /**
+     * ARN of the task definition created for a dynamic agent
+     */
+    private String dynamicTaskDefinitionOverride;
+
+    /**
      * Docker image
      * @see ContainerDefinition#withImage(String)
      */
@@ -265,6 +270,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private List<PortMappingEntry> portMappings;
     private List<PlacementStrategyEntry> placementStrategies;
 
+
+
     /**
     * The log configuration specification for the container.
     * This parameter maps to LogConfig in the Create a container section of
@@ -291,6 +298,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     public ECSTaskTemplate(String templateName,
                            @Nullable String label,
                            @Nullable String taskDefinitionOverride,
+                           @Nullable String dynamicTaskDefinitionOverride,
                            String image,
                            @Nullable final String repositoryCredentials,
                            String launchType,
@@ -357,6 +365,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.taskrole = taskrole;
         this.inheritFrom = inheritFrom;
         this.sharedMemorySize = sharedMemorySize;
+        this.dynamicTaskDefinitionOverride = StringUtils.trimToNull(dynamicTaskDefinitionOverride);
+    }
+
+    @DataBoundSetter
+    public void setDynamicTaskDefinition(String dynamicTaskDefArn) {
+        this.dynamicTaskDefinitionOverride = StringUtils.trimToNull(dynamicTaskDefArn);
     }
 
     @DataBoundSetter
@@ -420,6 +434,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
     public String getTaskDefinitionOverride() {
         return taskDefinitionOverride;
+    }
+
+    public String getDynamicTaskDefinition() {
+        return dynamicTaskDefinitionOverride;
     }
 
     public String getImage() {
@@ -648,6 +666,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         ECSTaskTemplate merged = new ECSTaskTemplate(templateName,
                                                        label,
                                                        taskDefinitionOverride,
+                                                       null,
                                                        image,
                                                        repositoryCredentials,
                                                        launchType,

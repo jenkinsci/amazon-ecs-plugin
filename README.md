@@ -179,7 +179,8 @@ _Note_: You have to configure list of settings to be allowed in the declarative 
 ## Usage
 
 The ECS agents can be used for any job and any type of job (Freestyle job, Maven job, Workflow job...), you just have to restrict the execution of the jobs on one of the labels used in the ECS Agent Template configuration. You can either restrict the job to run on a specific label only via the UI or directly in the pipeline.
-In addition, when configuring the cloud to run on, you must also
+
+It is *highly* recommended that unique labels are specified in dynamic agents, especially if using inheritFrom. Dynamic agents create new templates, and an unchanged label means that either the dynamically created template or the parent template could be chosen as they share the same label. This can get even more confusing if your jobs are capable of running concurrently, where multiple templates will be created and exist at the same time. With multiple templates existing with the same label it will be difficult to predict what job runs will get 'correctly' provisioned.
 
 ```groovy
 

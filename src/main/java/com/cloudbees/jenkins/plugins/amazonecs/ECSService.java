@@ -158,6 +158,16 @@ class ECSService {
             return overrideTaskDefinition;
         }
 
+        if (template.getDynamicTaskDefinition() != null){
+            TaskDefinition overrideTaskDefinition = findTaskDefinition(template.getDynamicTaskDefinition());
+            if (overrideTaskDefinition != null) {
+                LOGGER.log(Level.FINE, "Found override task definition: {0}", new Object[] {overrideTaskDefinition.getTaskDefinitionArn()});
+                return overrideTaskDefinition;
+            }
+
+            LOGGER.log(Level.INFO, "Could not find task definition family or ARN: {0}. This should have been created earlier, creating now...", new Object[] {template.getDynamicTaskDefinition()});
+        }
+
         final AmazonECS client = clientSupplier.get();
 
         String familyName = fullQualifiedTemplateName(cloudName, template);
@@ -284,42 +294,41 @@ class ECSService {
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(request);
             LOGGER.log(Level.FINE, "Created Task Definition {0}: {1}", new Object[]{result.getTaskDefinition(), request});
             LOGGER.log(Level.INFO, "Created Task Definition: {0}", new Object[]{result.getTaskDefinition()});
+
+            if (template.getDynamicTaskDefinition() != null){
+                // if we couldn't find the the dynamic task definition earlier, we'll set it
+                // again here so it gets cleaned up once the task is finished
+                template.setDynamicTaskDefinition(result.getTaskDefinition().getTaskDefinitionArn());
+            }
             return result.getTaskDefinition();
         }
     }
 
     /**
-     * Deregisters a task definition created for a template we are deleting. The
-     * supplied task definition must have the correct revision, not necessarily the
-     * latest. If a TaskDefinitionOverride is set we don't deregister, as we don't
-     * want to deregister a task that is managed outside of this plugin
+     * Deregisters a task definition created for a template we are deleting. 
+     * It's expected that taskDefinitionArn is set
+     * We don't attempt to de-register anything if TaskDefinitionOverride isn't null
      * 
-     * @param cloudName      Name of cloud needed to generate the task definition name
      * @param template       The template used to create the task definition
-     * @param taskDefinition The task definition (with revision) to deregister.
      * @return The task definition if found, otherwise null
      */
-    void removeTemplate(final ECSTaskTemplate template, final TaskDefinition taskDefinition) {
+    void removeTemplate(final ECSTaskTemplate template) {
         AmazonECS client = clientSupplier.get();
-
+        
+        //no task definition was created for this template to delete
         if (template.getTaskDefinitionOverride() != null) {
             return;
         }
 
-        String familyName = taskDefinition.getFamily();
-
-        int revision = 0;
-
+        String taskDefinitionArn = template.getDynamicTaskDefinition();
         try {
-            if (taskDefinition != null) {
-                revision = taskDefinition.getRevision();
+            if (taskDefinitionArn != null) {
                 client.deregisterTaskDefinition(
-                        new DeregisterTaskDefinitionRequest().withTaskDefinition(familyName + ":" + revision));
+                        new DeregisterTaskDefinitionRequest().withTaskDefinition(taskDefinitionArn));
             }
 
         } catch (ClientException e) {
-            LOGGER.log(Level.FINE, "Error removing task definition: " + familyName + ":" + revision, e);
-            LOGGER.log(Level.INFO, "Error removing task definition: " + familyName + ":" + revision);
+            LOGGER.log(Level.WARNING, "Error de-registering task definition: " + taskDefinitionArn, e);
         }
     }
 

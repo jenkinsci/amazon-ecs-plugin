@@ -357,15 +357,14 @@ public class ECSCloud extends Cloud {
         this.maxMemoryReservation = maxMemoryReservation;
     }
 
-    public List<ECSTaskTemplate> addTemplate(ECSTaskTemplate taskTemplate) {
-        List<ECSTaskTemplate> currentTemplates = getAllTemplates();
-        List<ECSTaskTemplate> newTemplates = new LinkedList<>(currentTemplates);
-        newTemplates.add(taskTemplate);
-        setTemplates(newTemplates);
-        return newTemplates;
+    public void addTemplate(ECSTaskTemplate taskTemplate) {
+        List<ECSTaskTemplate> nonDynamic = getTemplates();
+        List<ECSTaskTemplate> result = new CopyOnWriteArrayList<>();
+
+        result.addAll(nonDynamic);
+        result.add(taskTemplate);
+        setTemplates(result);
     }
-
-
 
     private class ProvisioningCallback implements Callable<Node> {
 
@@ -415,21 +414,24 @@ public class ECSCloud extends Cloud {
      * @param template the template to add
      * @return the task definition created from the template
      */
-    public TaskDefinition addDynamicTemplate(ECSTaskTemplate template) {
+    public ECSTaskTemplate addDynamicTemplate(ECSTaskTemplate template) {
         TaskDefinition taskDefinition = getEcsService().registerTemplate(this.getDisplayName(), template);
         if(taskDefinition != null){
             LOGGER.log(Level.INFO, String.format("Task definition created or found: ARN: %s", taskDefinition.getTaskDefinitionArn()));
+            template.setDynamicTaskDefinition(taskDefinition.getTaskDefinitionArn());
             TaskTemplateMap.get().addTemplate(this, template);
         }
-        return taskDefinition;
+        return template;
     }
 
     /**
      * Remove a dynamic task template.
-     * @param t the template to remove
+     * @param template the template to remove
      */
-    public void removeDynamicTemplate(ECSTaskTemplate t) {
-        TaskTemplateMap.get().removeTemplate(this, t);
+    public void removeDynamicTemplate(ECSTaskTemplate template) {	
+        getEcsService().removeTemplate(template);
+
+        TaskTemplateMap.get().removeTemplate(this, template);
     }
 
     @Extension

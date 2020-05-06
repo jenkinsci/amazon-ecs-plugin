@@ -1,5 +1,7 @@
 package com.cloudbees.jenkins.plugins.amazonecs.pipeline;
 
+import com.amazonaws.services.codedeploy.model.ECSService;
+import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSCloud;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
 import com.cloudbees.jenkins.plugins.amazonecs.SerializableSupplier;
@@ -55,6 +57,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
         newTemplate = new ECSTaskTemplate(name,
                                           step.getLabel(),
                                           step.getTaskDefinitionOverride(),
+                                          null,
                                           step.getImage(),
                                           step.getRepositoryCredentials(),
                                           step.getLaunchType(),
@@ -89,8 +92,8 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
         final ECSTaskTemplate merged  = newTemplate.merge(parentTemplate);
 
         LOGGER.log(Level.INFO, "Registering task template with name {0}", new Object[] { newTemplate.getTemplateName() });
-        ecsCloud.addDynamicTemplate(merged);
-        getContext().newBodyInvoker().withContext(step).withCallback(new ECSTaskTemplateCallback(newTemplate)).start();
+        final ECSTaskTemplate withTaskARN = ecsCloud.addDynamicTemplate(merged);
+        getContext().newBodyInvoker().withContext(step).withCallback(new ECSTaskTemplateCallback(withTaskARN)).start();
         return false;
     }
 
@@ -220,5 +223,4 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
             }
         }
     }
-
 }
