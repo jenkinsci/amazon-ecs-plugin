@@ -30,15 +30,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -55,7 +52,6 @@ import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.cloudbees.jenkins.plugins.amazonecs.pipeline.TaskTemplateMap;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 
-import hudson.model.labels.LabelAtom;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -408,8 +404,8 @@ public class ECSCloud extends Cloud {
     /**
      * Adds a dynamic task template. Won't be displayed in UI, and persisted
      * separately from the cloud instance. Also creates a task definition for this
-     * template, adding the ARN to back to the template so that launching the agent
-     * will be faster.
+     * template, adding the ARN to back to the template so that we can delete the 
+     * exact task created once complete.
      * 
      * @param template the template to add
      * @return the task template with the newly created task definition ARN added

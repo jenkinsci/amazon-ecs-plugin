@@ -174,13 +174,17 @@ Declarative Pipeline support requires Jenkins 2.66+
 Declarative agents can be defined like shown below. You can also reuse pre-configured templates and override certain settings using `inheritFrom` to reference the _Label field_
 of the template that you want to use as preconfigured. Only one label is expected to be specified.
 
+When using inheritFrom, the label will not copied. Instead, a new label will be generated based on the following schema {job-name}-{job-run-number}-{5-random-chars} e.g. "pylint-543-b4f42". This guarantees that there will not be conflicts with the parent template or other runs of the same job, as well as making it easier to identify the labels in Jenkins.
+
+If you want to override the label, ensure that you are not going to conflict with other labels configured elsewhere. Templates for dynamic agents exist until the agent dies, meaning other jobs requesting the same label (including dynamic agents on other runs of the same job!) run the chance of provisioning the dynamic agent's ECSTask.
+
 _Note_: You have to configure list of settings to be allowed in the declarative pipeline first (see the Allowed Overrides setting). They are disabled by default for security reasons, to avoid non-privileged users to suddenly be able to change certain settings.
+
+If Jenkins is unexpectedly shut down there is a good chance that ECS Tasks for dynamic agents will not be cleaned up (de-registered) in AWS. This should not cause issues, but may come as a surprise when looking at the console.
 
 ## Usage
 
 The ECS agents can be used for any job and any type of job (Freestyle job, Maven job, Workflow job...), you just have to restrict the execution of the jobs on one of the labels used in the ECS Agent Template configuration. You can either restrict the job to run on a specific label only via the UI or directly in the pipeline.
-
-It is *highly* recommended that unique labels are specified in dynamic agents, especially if using inheritFrom. Dynamic agents create new templates, and an unchanged label means that either the dynamically created template or the parent template could be chosen as they share the same label. This can get even more confusing if your jobs are capable of running concurrently, where multiple templates will be created and exist at the same time. With multiple templates existing with the same label it will be difficult to predict what job runs will get 'correctly' provisioned.
 
 ```groovy
 
@@ -227,6 +231,41 @@ pipeline {
   }
 }
 ```
+
+Scripted Pipeline examples
+
+```groovy
+def dynamic_label = "${JOB_NAME}_${env.sha}"
+ecsTaskTemplate(
+    cloud: 'CloudNameAsConfiguredInManageClouds',
+    label: dynamic_label,
+    name: dynamic_label, // Reusing the label as a name makes sense as long as it's unique
+    containerUser: 'ubuntu',
+    remoteFSRoot: '/home/ubuntu',
+    overrides: [],
+    taskDefinitionOverride: "arn:aws:redacted:redacted:task-definition/${env.task}"
+) {
+  node(dynamic_label) {
+    stage("I dunno why you say goodbye"){
+      sh 'echo hello'
+    }
+  }
+}
+```
+
+```groovy
+pipeline{
+    agent {
+        ecs {
+          inheritFrom 'ecs_test'
+          cpu 1000
+        } 
+    }
+    stages{
+        stage("Here goes nothin"){
+          sh 'echo hello'
+        }
+    }
 
 ## FAQ
 

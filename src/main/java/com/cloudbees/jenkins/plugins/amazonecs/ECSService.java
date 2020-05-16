@@ -43,8 +43,6 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.AmazonECSClientBuilder;
 import com.amazonaws.services.ecs.model.*;
-import com.amazonaws.services.ecs.model.PlacementStrategy;
-import com.amazonaws.services.ecs.model.PlacementStrategyType;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 
@@ -151,21 +149,22 @@ class ECSService {
         if (template.getTaskDefinitionOverride() != null){
             TaskDefinition overrideTaskDefinition = findTaskDefinition(template.getTaskDefinitionOverride());
             if (overrideTaskDefinition == null) {
-                throw new RuntimeException("Could not find task definition family or ARN: " + template.getTaskDefinitionOverride());
+                LOGGER.log(Level.SEVERE, "Could not find task definition override: {0} for template: {1}", new Object[] {template.getTaskDefinitionOverride(), template.getDisplayName()});
+                throw new RuntimeException("Could not find task definition override family or ARN: " + template.getTaskDefinitionOverride());
             }
 
-            LOGGER.log(Level.FINE, "Found override task definition: {0}", new Object[] {overrideTaskDefinition.getTaskDefinitionArn()});
+            LOGGER.log(Level.FINE, "Found task definition override: {0}", new Object[] {overrideTaskDefinition.getTaskDefinitionArn()});
             return overrideTaskDefinition;
         }
 
         if (template.getDynamicTaskDefinition() != null){
             TaskDefinition overrideTaskDefinition = findTaskDefinition(template.getDynamicTaskDefinition());
             if (overrideTaskDefinition != null) {
-                LOGGER.log(Level.FINE, "Found override task definition: {0}", new Object[] {overrideTaskDefinition.getTaskDefinitionArn()});
+                LOGGER.log(Level.FINE, "Found dynamic agent task definition: {0}", new Object[] {overrideTaskDefinition.getTaskDefinitionArn()});
                 return overrideTaskDefinition;
             }
 
-            LOGGER.log(Level.INFO, "Could not find task definition family or ARN: {0}. This should have been created earlier, creating now...", new Object[] {template.getDynamicTaskDefinition()});
+            LOGGER.log(Level.WARNING, "Could not find dynamic agent's task definition family or ARN: {0}, creating a new one.", new Object[] {template.getDynamicTaskDefinition()});
         }
 
         final AmazonECS client = clientSupplier.get();
