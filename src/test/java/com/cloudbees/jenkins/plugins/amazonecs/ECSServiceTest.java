@@ -19,6 +19,12 @@ public class ECSServiceTest {
 
     @Test
     @Ignore
+    public void registerTemplate() {
+        
+    }
+
+    @Test
+    @Ignore
     public void testStopTask() {
 //        ECSService service = new ECSService("us-east-1");
 

@@ -30,15 +30,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -55,7 +52,6 @@ import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.cloudbees.jenkins.plugins.amazonecs.pipeline.TaskTemplateMap;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 
-import hudson.model.labels.LabelAtom;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -229,7 +225,7 @@ public class ECSCloud extends Cloud {
     public ECSTaskTemplate findParentTemplate(String parentLabel) {
         ECSTaskTemplate result = null;
         if(parentLabel == null){
-            LOGGER.log(Level.INFO, "No parent label supplied, looking for TaskTemplate name: 'template-default'");
+            LOGGER.log(Level.INFO, "No parent label supplied, looking for TaskTemplate with label 'template-default'");
             result = this.getTemplate("template-default");
             if(result == null) {
                 LOGGER.log(Level.INFO, "No task template label of 'template-default' found, searching by name 'template-default'");
@@ -357,15 +353,14 @@ public class ECSCloud extends Cloud {
         this.maxMemoryReservation = maxMemoryReservation;
     }
 
-    public List<ECSTaskTemplate> addTemplate(ECSTaskTemplate taskTemplate) {
-        List<ECSTaskTemplate> currentTemplates = getAllTemplates();
-        List<ECSTaskTemplate> newTemplates = new LinkedList<>(currentTemplates);
-        newTemplates.add(taskTemplate);
-        setTemplates(newTemplates);
-        return newTemplates;
+    public void addTemplate(ECSTaskTemplate taskTemplate) {
+        List<ECSTaskTemplate> nonDynamic = getTemplates();
+        List<ECSTaskTemplate> result = new CopyOnWriteArrayList<>();
+
+        result.addAll(nonDynamic);
+        result.add(taskTemplate);
+        setTemplates(result);
     }
-
-
 
     private class ProvisioningCallback implements Callable<Node> {
 
@@ -406,41 +401,33 @@ public class ECSCloud extends Cloud {
         }
     }
 
-
     /**
-     * Add a dynamic task template. Won't be displayed in UI, and persisted separately from the cloud instance.
+     * Adds a dynamic task template. Won't be displayed in UI, and persisted
+     * separately from the cloud instance. Also creates a task definition for this
+     * template, adding the ARN to back to the template so that we can delete the 
+     * exact task created once complete.
+     * 
      * @param template the template to add
-     * @return the task definition created from the template
+     * @return the task template with the newly created task definition ARN added
      */
-    public TaskDefinition  addDynamicTemplate(ECSTaskTemplate template) {
+    public ECSTaskTemplate addDynamicTemplate(ECSTaskTemplate template) {
         TaskDefinition taskDefinition = getEcsService().registerTemplate(this.getDisplayName(), template);
         if(taskDefinition != null){
-            LOGGER.log(Level.INFO, String.format("Task definition created: ARN: %s", taskDefinition.getTaskDefinitionArn()));
+            LOGGER.log(Level.INFO, String.format("Task definition created or found: ARN: %s", taskDefinition.getTaskDefinitionArn()));
+            template.setDynamicTaskDefinition(taskDefinition.getTaskDefinitionArn());
             TaskTemplateMap.get().addTemplate(this, template);
         }
-        return taskDefinition;
+        return template;
     }
 
     /**
      * Remove a dynamic task template.
-     * @param t the template to remove
-     * @return the task definition removed
+     * @param template the template to remove
      */
-    public TaskDefinition removeDynamicTemplate(ECSTaskTemplate t) {
-        TaskDefinition taskDefinition = getEcsService().removeTemplate(this.getDisplayName(), t);
-        if (taskDefinition == null) {
-            LOGGER.log(Level.SEVERE, "Unable to remove the task template/definition from from ECS");
-        }
-        TaskTemplateMap.get().removeTemplate(this, t);
-        return taskDefinition;
-    }
+    public void removeDynamicTemplate(ECSTaskTemplate template) {	
+        getEcsService().removeTemplate(template);
 
-    /**
-     * Remove a dynamic task template from the template map.
-     * @param t the template to remove
-     */
-    public void removeDynamicTemplateFromTemplateMap(ECSTaskTemplate t) {
-        TaskTemplateMap.get().removeTemplate(this, t);
+        TaskTemplateMap.get().removeTemplate(this, template);
     }
 
     @Extension

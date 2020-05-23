@@ -43,8 +43,6 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.AmazonECSClientBuilder;
 import com.amazonaws.services.ecs.model.*;
-import com.amazonaws.services.ecs.model.PlacementStrategy;
-import com.amazonaws.services.ecs.model.PlacementStrategyType;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 
@@ -145,8 +143,30 @@ class ECSService {
     /**
      * Looks whether the latest task definition matches the desired one. If yes, returns the full TaskDefinition of the existing one.
      * If no, register a new task definition with desired parameters and returns the new TaskDefinition.
+     * If a TaskDefinitionOverride is set, we only look to see if the task definition exists and return it.
      */
     TaskDefinition registerTemplate(final String cloudName, final ECSTaskTemplate template) {
+        if (template.getTaskDefinitionOverride() != null){
+            TaskDefinition overrideTaskDefinition = findTaskDefinition(template.getTaskDefinitionOverride());
+            if (overrideTaskDefinition == null) {
+                LOGGER.log(Level.SEVERE, "Could not find task definition override: {0} for template: {1}", new Object[] {template.getTaskDefinitionOverride(), template.getDisplayName()});
+                throw new RuntimeException("Could not find task definition override family or ARN: " + template.getTaskDefinitionOverride());
+            }
+
+            LOGGER.log(Level.FINE, "Found task definition override: {0}", new Object[] {overrideTaskDefinition.getTaskDefinitionArn()});
+            return overrideTaskDefinition;
+        }
+
+        if (template.getDynamicTaskDefinition() != null){
+            TaskDefinition overrideTaskDefinition = findTaskDefinition(template.getDynamicTaskDefinition());
+            if (overrideTaskDefinition != null) {
+                LOGGER.log(Level.FINE, "Found dynamic agent task definition: {0}", new Object[] {overrideTaskDefinition.getTaskDefinitionArn()});
+                return overrideTaskDefinition;
+            }
+
+            LOGGER.log(Level.WARNING, "Could not find dynamic agent's task definition family or ARN: {0}, creating a new one.", new Object[] {template.getDynamicTaskDefinition()});
+        }
+
         final AmazonECS client = clientSupplier.get();
 
         String familyName = fullQualifiedTemplateName(cloudName, template);
@@ -273,29 +293,42 @@ class ECSService {
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(request);
             LOGGER.log(Level.FINE, "Created Task Definition {0}: {1}", new Object[]{result.getTaskDefinition(), request});
             LOGGER.log(Level.INFO, "Created Task Definition: {0}", new Object[]{result.getTaskDefinition()});
+
+            if (template.getDynamicTaskDefinition() != null){
+                // if we couldn't find the the dynamic task definition earlier, we'll set it
+                // again here so it gets cleaned up once the task is finished
+                template.setDynamicTaskDefinition(result.getTaskDefinition().getTaskDefinitionArn());
+            }
             return result.getTaskDefinition();
         }
     }
 
-    TaskDefinition removeTemplate(final String cloudName, final ECSTaskTemplate template) {
+    /**
+     * Deregisters a task definition created for a template we are deleting. 
+     * It's expected that taskDefinitionArn is set
+     * We don't attempt to de-register anything if TaskDefinitionOverride isn't null
+     * 
+     * @param template       The template used to create the task definition
+     * @return The task definition if found, otherwise null
+     */
+    void removeTemplate(final ECSTaskTemplate template) {
         AmazonECS client = clientSupplier.get();
+        
+        //no task definition was created for this template to delete
+        if (template.getTaskDefinitionOverride() != null) {
+            return;
+        }
 
-        String familyName = fullQualifiedTemplateName(cloudName, template);
-
-        int            revision       = 0;
-        TaskDefinition taskDefinition = null;
+        String taskDefinitionArn = template.getDynamicTaskDefinition();
         try {
-            taskDefinition = findTaskDefinition(familyName);
-            if (taskDefinition != null) {
-                revision = taskDefinition.getRevision();
-                client.deregisterTaskDefinition(new DeregisterTaskDefinitionRequest().withTaskDefinition(familyName + ":" + revision));
+            if (taskDefinitionArn != null) {
+                client.deregisterTaskDefinition(
+                        new DeregisterTaskDefinitionRequest().withTaskDefinition(taskDefinitionArn));
             }
 
         } catch (ClientException e) {
-            LOGGER.log(Level.FINE, "Error removing task definition: " + familyName + ":" + revision, e);
-            LOGGER.log(Level.INFO, "Error removing task definition: " + familyName + ":" + revision);
+            LOGGER.log(Level.WARNING, "Error de-registering task definition: " + taskDefinitionArn, e);
         }
-        return taskDefinition;
     }
 
     /**

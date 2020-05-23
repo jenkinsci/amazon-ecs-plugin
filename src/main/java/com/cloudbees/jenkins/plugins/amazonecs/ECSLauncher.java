@@ -104,8 +104,7 @@ public class ECSLauncher extends JNLPLauncher {
         try {
             LOGGER.log(Level.FINE, "[{0}]: Creating Task in cluster {1}", new Object[]{agent.getNodeName(), agent.getClusterArn()});
 
-            TaskDefinition taskDefinition = getTaskDefinition(agent.getNodeName(), agent.getTemplate(), cloud, ecsService);
-
+            TaskDefinition taskDefinition = ecsService.registerTemplate(cloud.getDisplayName(), agent.getTemplate());
             Task startedTask = runECSTask(taskDefinition, cloud, agent.getTemplate(), ecsService, agent);
 
             LOGGER.log(INFO, "[{0}]: TaskArn: {1}", new Object[]{agent.getNodeName(), startedTask.getTaskArn()});
@@ -196,26 +195,6 @@ public class ECSLauncher extends JNLPLauncher {
         } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Could not save() agent: " + e.getMessage(), e);
         }
-    }
-
-    private TaskDefinition getTaskDefinition(String nodeName, ECSTaskTemplate template, ECSCloud cloud, ECSService ecsService) {
-        TaskDefinition taskDefinition;
-
-        if (template.getTaskDefinitionOverride() == null) {
-            taskDefinition = ecsService.registerTemplate(cloud.getDisplayName(), template);
-
-        } else {
-            LOGGER.log(Level.FINE, "[{0}]: Attempting to find task definition family or ARN: {1}", new Object[] {nodeName, template.getTaskDefinitionOverride()});
-
-            taskDefinition = ecsService.findTaskDefinition(template.getTaskDefinitionOverride());
-            if (taskDefinition == null) {
-                throw new RuntimeException("Could not find task definition family or ARN: " + template.getTaskDefinitionOverride());
-            }
-
-            LOGGER.log(Level.FINE, "[{0}]: Found task definition: {1}", new Object[] {nodeName, taskDefinition.getTaskDefinitionArn()});
-        }
-
-        return taskDefinition;
     }
 
     private Task runECSTask(TaskDefinition taskDefinition, ECSCloud cloud, ECSTaskTemplate template, ECSService ecsService, ECSSlave agent) throws IOException {

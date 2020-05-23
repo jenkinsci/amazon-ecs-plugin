@@ -1,5 +1,7 @@
 package com.cloudbees.jenkins.plugins.amazonecs.pipeline;
 
+import com.amazonaws.services.codedeploy.model.ECSService;
+import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSCloud;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
 import com.cloudbees.jenkins.plugins.amazonecs.SerializableSupplier;
@@ -55,6 +57,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
         newTemplate = new ECSTaskTemplate(name,
                                           step.getLabel(),
                                           step.getTaskDefinitionOverride(),
+                                          null,
                                           step.getImage(),
                                           step.getRepositoryCredentials(),
                                           step.getLaunchType(),
@@ -83,13 +86,13 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
         newTemplate.setLogDriver(step.getLogDriver());
 
         ECSTaskTemplate parentTemplate = ecsCloud.findParentTemplate(parentLabel);
-        if(parentTemplate == null){
-            LOGGER.log(Level.WARNING, "No parent template found. Hope you defined everything");
+        if(parentLabel != null && parentTemplate == null){
+            LOGGER.log(Level.WARNING, "InheritFrom specified as '{0}' but its template was not found. Continuing without a parent.", new Object[]{parentLabel});
         }
-        final ECSTaskTemplate merged  = newTemplate.merge(parentTemplate);
+        newTemplate  = newTemplate.merge(parentTemplate);
 
         LOGGER.log(Level.INFO, "Registering task template with name {0}", new Object[] { newTemplate.getTemplateName() });
-        ecsCloud.addDynamicTemplate(merged);
+        newTemplate = ecsCloud.addDynamicTemplate(newTemplate);
         getContext().newBodyInvoker().withContext(step).withCallback(new ECSTaskTemplateCallback(newTemplate)).start();
         return false;
     }
@@ -204,7 +207,6 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
          */
         protected void finished(StepContext context) throws Exception {
             Cloud c = Jenkins.get().getCloud(cloudName);
-            String override = taskTemplate.getTaskDefinitionOverride();
             if (c == null) {
                 LOGGER.log(Level.WARNING, "Cloud {0} no longer exists, cannot delete task template {1}",
                         new Object[] { cloudName, taskTemplate.getTemplateName() });
@@ -212,21 +214,13 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
             }
             if (c instanceof ECSCloud) {
                 ECSCloud ecsCloud = (ECSCloud) c;
-                if (override != null){
-                    LOGGER.log(Level.INFO, "Remove custom task template from map, not cloud {0}",
-                        new Object[] { c.name});
-                    ecsCloud.removeDynamicTemplateFromTemplateMap(taskTemplate);
-                    return;
-                }
-                LOGGER.log(Level.INFO, "Removing task template {1} from cloud {0}",
+                LOGGER.log(Level.INFO, "Removing task template {1} from internal map and AWS cloud {0}",
                     new Object[] { c.name, taskTemplate.getTemplateName() });
                 ecsCloud.removeDynamicTemplate(taskTemplate);
-
             } else {
                 LOGGER.log(Level.WARNING, "Cloud is not an ECSCloud: {0} {1}",
                         new String[] { c.name, c.getClass().getName() });
             }
         }
     }
-
 }
