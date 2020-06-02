@@ -32,6 +32,7 @@ Use the Jenkins plugin manager to install the [Amazon Elastic Container Service 
 There are currently the following example setups (also in this repo):
 
 -   [Fargate](examples/fargate) - ephemeral master and agents on Fargate
+-   [Fargate with CDK (by AWS)(https://github.com/aws-samples/jenkins-on-aws) - Jenkins Setup designed by AWS
 
 #### Amazon ECS cluster
 
@@ -291,6 +292,7 @@ If you are running a interesting setup or have public posts abour your setups us
 
 -   Slides: [Run Jenkins as managed product on ECS](https://www.slideshare.net/PhilippGarbe1/run-jenkins-as-managed-product-on-ecs-aws-meetup)
 -   [Youtube: Jenkins with Amazon ECS slaves](https://www.youtube.com/watch?v=v0b53cdrujs)
+- [AWS Blog - Jenkins onAWS](https://aws.amazon.com/blogs/opensource/why-jenkins-still-continuously-serves-developers/)
 
 ## Maintainers
 
