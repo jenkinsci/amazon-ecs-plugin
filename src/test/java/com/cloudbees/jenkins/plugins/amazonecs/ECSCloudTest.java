@@ -87,14 +87,15 @@ public class ECSCloudTest {
     public void addDynamicTemplateRegistersTemplate() throws Exception {
         ECSService ecsService = mock(ECSService.class);
 
-        ECSCloud cloud = new ECSCloud("mycloud", "mycluster",ecsService);
+        ECSCloud cloud = new ECSCloud("mycloud", "mycluster", ecsService);
         ECSTaskTemplate tt = getTaskTemplate();
-        TaskDefinition expected = new TaskDefinition();
-        expected.setTaskDefinitionArn(UUID.randomUUID().toString());
+        TaskDefinition expectedTask = new TaskDefinition();
+        expectedTask.setTaskDefinitionArn(UUID.randomUUID().toString());
+        String expected = expectedTask.getTaskDefinitionArn();
 
-        when(ecsService.registerTemplate(cloud.getDisplayName(), tt)).thenReturn(expected);
+        when(ecsService.registerTemplate(cloud.getDisplayName(), tt)).thenReturn(expectedTask);
 
-        TaskDefinition actual = cloud.addDynamicTemplate(tt);
+        String actual = cloud.addDynamicTemplate(tt).getDynamicTaskDefinition();
         assertEquals(expected,actual);
     }
 
@@ -116,7 +117,7 @@ public class ECSCloudTest {
         when(ecsService.findTaskDefinition(anyString())).thenReturn(null);
         ECSCloud cloud = new ECSCloud("mycloud", "mycluster",ecsService);
         cloud.setRegionName("us-east-1");
-        assertNull(cloud.removeDynamicTemplate(getTaskTemplate(Math.random() + "", "label1, label2, label3")));
+        cloud.removeDynamicTemplate(getTaskTemplate(Math.random() + "", "label1, label2, label3"));
     }
 
     @Test
@@ -144,6 +145,7 @@ public class ECSCloudTest {
                 templateName,
                 label,
                 "",
+                null,
                 "image",
                 "repositoryCredentials",
                 "launchType",

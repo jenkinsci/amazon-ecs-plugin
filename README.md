@@ -32,6 +32,7 @@ Use the Jenkins plugin manager to install the [Amazon Elastic Container Service 
 There are currently the following example setups (also in this repo):
 
 -   [Fargate](examples/fargate) - ephemeral master and agents on Fargate
+-   [Fargate with CDK (by AWS)](https://github.com/aws-samples/jenkins-on-aws) - Jenkins Setup designed by AWS
 
 #### Amazon ECS cluster
 
@@ -174,12 +175,17 @@ Declarative Pipeline support requires Jenkins 2.66+
 Declarative agents can be defined like shown below. You can also reuse pre-configured templates and override certain settings using `inheritFrom` to reference the _Label field_
 of the template that you want to use as preconfigured. Only one label is expected to be specified.
 
+When using inheritFrom, the label will not copied. Instead, a new label will be generated based on the following schema {job-name}-{job-run-number}-{5-random-chars} e.g. "pylint-543-b4f42". This guarantees that there will not be conflicts with the parent template or other runs of the same job, as well as making it easier to identify the labels in Jenkins.
+
+If you want to override the label, ensure that you are not going to conflict with other labels configured elsewhere. Templates for dynamic agents exist until the agent dies, meaning other jobs requesting the same label (including dynamic agents on other runs of the same job!) run the chance of provisioning the dynamic agent's ECSTask.
+
 _Note_: You have to configure list of settings to be allowed in the declarative pipeline first (see the Allowed Overrides setting). They are disabled by default for security reasons, to avoid non-privileged users to suddenly be able to change certain settings.
+
+If Jenkins is unexpectedly shut down there is a good chance that ECS Tasks for dynamic agents will not be cleaned up (de-registered) in AWS. This should not cause issues, but may come as a surprise when looking at the console.
 
 ## Usage
 
 The ECS agents can be used for any job and any type of job (Freestyle job, Maven job, Workflow job...), you just have to restrict the execution of the jobs on one of the labels used in the ECS Agent Template configuration. You can either restrict the job to run on a specific label only via the UI or directly in the pipeline.
-In addition, when configuring the cloud to run on, you must also
 
 ```groovy
 
@@ -227,6 +233,41 @@ pipeline {
 }
 ```
 
+Scripted Pipeline examples
+
+```groovy
+def dynamic_label = "${JOB_NAME}_${env.sha}"
+ecsTaskTemplate(
+    cloud: 'CloudNameAsConfiguredInManageClouds',
+    label: dynamic_label,
+    name: dynamic_label, // Reusing the label as a name makes sense as long as it's unique
+    containerUser: 'ubuntu',
+    remoteFSRoot: '/home/ubuntu',
+    overrides: [],
+    taskDefinitionOverride: "arn:aws:redacted:redacted:task-definition/${env.task}"
+) {
+  node(dynamic_label) {
+    stage("I dunno why you say goodbye"){
+      sh 'echo hello'
+    }
+  }
+}
+```
+
+```groovy
+pipeline{
+    agent {
+        ecs {
+          inheritFrom 'ecs_test'
+          cpu 1000
+        } 
+    }
+    stages{
+        stage("Here goes nothin"){
+          sh 'echo hello'
+        }
+    }
+
 ## FAQ
 
 ### My parallel jobs don't start at the same time
@@ -251,6 +292,7 @@ If you are running a interesting setup or have public posts abour your setups us
 
 -   Slides: [Run Jenkins as managed product on ECS](https://www.slideshare.net/PhilippGarbe1/run-jenkins-as-managed-product-on-ecs-aws-meetup)
 -   [Youtube: Jenkins with Amazon ECS slaves](https://www.youtube.com/watch?v=v0b53cdrujs)
+- [AWS Blog - Jenkins on AWS](https://aws.amazon.com/blogs/opensource/why-jenkins-still-continuously-serves-developers/)
 
 ## Maintainers
 
