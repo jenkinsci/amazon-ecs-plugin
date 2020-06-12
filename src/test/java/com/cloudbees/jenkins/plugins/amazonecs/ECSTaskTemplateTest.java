@@ -7,20 +7,27 @@ import org.apache.commons.lang.builder.EqualsBuilder;
 
 public class ECSTaskTemplateTest {
 
+    ECSTaskTemplate getParent() {
+        return new ECSTaskTemplate(
+                "parent-name", "parent-label",
+                null, null, "parent-image", "parent-repository-credentials", "FARGATE", "parent-network-mode", "parent-remoteFSRoot",
+                false, null, 0, 0, 0, null, null, false, false,
+                "parent-containerUser", null, null, null, null, null, null, null, null, null, 0);
+    }
+
+    ECSTaskTemplate getChild(String parent) {
+        return new ECSTaskTemplate(
+                "child-name", "child-label",
+                null, null, "child-image", "child-repository-credentials", "EC2", "child-network-mode", "child-remoteFSRoot",
+                false, null, 0, 0, 0, null, null, false, false,
+                "child-containerUser", null, null, null, null, null, null, null, null, parent, 0);
+    }
+
     @Test
     public void shouldMerge() throws Exception {
 
-        ECSTaskTemplate child = new ECSTaskTemplate(
-            "child-name", "child-label",
-            null, null, "child-image", "child-repository-credentials", "EC2", "child-network-mode", "child-remoteFSRoot",
-            false, null, 0, 0, 0, null, null, false, false,
-            "child-containerUser", null, null, null, null, null, null, null, null, "parent", 0);
-
-        ECSTaskTemplate parent = new ECSTaskTemplate(
-            "parent-name", "parent-label",
-            null, null, "parent-image", "parent-repository-credentials", "FARGATE", "parent-network-mode", "parent-remoteFSRoot",
-            false, null, 0, 0, 0, null, null, false, false,
-            "parent-containerUser", null, null, null, null, null, null, null, null, null, 0);
+        ECSTaskTemplate parent = getParent();
+        ECSTaskTemplate child = getChild("parent");
 
         ECSTaskTemplate expected = new ECSTaskTemplate(
             "child-name", "child-label",
@@ -36,17 +43,8 @@ public class ECSTaskTemplateTest {
     @Test
     public void shouldReturnSettingsFromParent() throws Exception {
 
-        ECSTaskTemplate child = new ECSTaskTemplate(
-            "child-name", "child-label",
-            null, null, "child-image", "child-repository-credentials", "EC2", "child-network-mode", "child-remoteFSRoot", // image is set to null
-            false, null, 0, 0, 0, null, null, false, false,
-            "child-containerUser", null, null, null, null, null, null, null, null, "parent", 0);
-
-        ECSTaskTemplate parent = new ECSTaskTemplate(
-            "parent-name", "parent-label",
-            null, null, "parent-image", "parent-repository-credentials", "FARGATE", "parent-network-mode", "parent-remoteFSRoot",
-            false, null, 0, 0, 0, null, null, false, false,
-            "parent-containerUser", null, null, null, null, null, null, null, null, null, 0);
+        ECSTaskTemplate parent = getParent();
+        ECSTaskTemplate child = getChild("parent");
 
         ECSTaskTemplate expected = new ECSTaskTemplate(
             "child-name", "child-label",
@@ -62,11 +60,7 @@ public class ECSTaskTemplateTest {
     @Test
     public void shouldReturnChildIfNoParent() throws Exception {
 
-        ECSTaskTemplate child = new ECSTaskTemplate(
-            "child-name", "child-label",
-            null, null, "child-image", "child-repository-credentials", "EC2", "child-network-mode", "child-remoteFSRoot",
-            false, null, 0, 0, 0, null, null, false, false,
-            "child-containerUser", null, null, null, null, null, null, null, null, null, 0); // inheritFrom is null
+        ECSTaskTemplate child = getChild(null);
 
         ECSTaskTemplate expected = new ECSTaskTemplate(
             "child-name", "child-label",
@@ -77,5 +71,30 @@ public class ECSTaskTemplateTest {
         ECSTaskTemplate result = child.merge(null);
 
         assertEquals(expected,result);
+    }
+
+    @Test
+    public void shouldOverrideEntrypoint() {
+        String entrypoint = "/bin/bash";
+
+        ECSTaskTemplate parent = getParent();
+        ECSTaskTemplate child = getChild("parent");
+
+        ECSTaskTemplate expected = new ECSTaskTemplate(
+                "child-name", "child-label",
+                null, null, "child-image", "child-repository-credentials", "EC2", "child-network-mode", "child-remoteFSRoot",
+                false, null, 0, 0, 0, null, null, false, false,
+                "child-containerUser", null, null, null, null, null, null, null, null, null, 0);
+
+        //Child entrypoint should equal to parent by default
+        parent.setEntrypoint(entrypoint);
+        expected.setEntrypoint(entrypoint);
+        assertTrue(EqualsBuilder.reflectionEquals(expected, child.merge(parent)));
+
+        //Forced empty entrypoint on child should take precedence
+        parent.setEntrypoint(entrypoint);
+        child.setEntrypoint("/bin/false");
+        expected.setEntrypoint("/bin/false");
+        assertTrue(EqualsBuilder.reflectionEquals(expected, child.merge(parent)));
     }
 }
