@@ -651,6 +651,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         boolean privileged = this.privileged ? this.privileged : parent.getPrivileged();
         String containerUser = isNullOrEmpty(this.containerUser) ? parent.getContainerUser() : this.containerUser;
         String logDriver = isNullOrEmpty(this.logDriver) ? parent.getLogDriver() : this.logDriver;
+        String entrypoint = isNullOrEmpty(this.entrypoint) ? parent.getEntrypoint() : this.entrypoint;
 
         // TODO probably merge lists with parent instead of overriding them
         List<LogDriverOption> logDriverOptions = isEmpty(this.logDriverOptions) ? parent.getLogDriverOptions() : this.logDriverOptions;
