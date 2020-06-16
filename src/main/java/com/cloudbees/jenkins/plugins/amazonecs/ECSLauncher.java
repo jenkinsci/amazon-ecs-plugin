@@ -38,10 +38,13 @@ import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.ecs.model.Failure;
 import com.amazonaws.services.ecs.model.RunTaskResult;
 import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.services.ecs.model.TaskDefinition;
+import com.amazonaws.waiters.WaiterTimedOutException;
+import com.amazonaws.waiters.WaiterUnrecoverableException;
 import com.google.common.base.Throwables;
 
 import org.apache.commons.lang.StringUtils;
@@ -113,39 +116,25 @@ public class ECSLauncher extends JNLPLauncher {
             LOGGER.log(INFO, "[{0}]: ContainerInstanceArn: {1}", new Object[]{agent.getNodeName(), startedTask.getContainerInstanceArn()});
 
             long timeout = System.currentTimeMillis() + Duration.ofSeconds(cloud.getSlaveTimeoutInSeconds()).toMillis();
-
-            boolean taskRunning = false;
-            Task task = null;
-            while (System.currentTimeMillis() < timeout) {
-
-                // Wait while PENDING
-                task = ecsService.describeTask(startedTask.getTaskArn(), startedTask.getClusterArn());
-
-                if (task != null) {
-                    String taskStatus = task.getLastStatus();
-                    LOGGER.log(Level.FINE, "[{0}]: Status of ECS Task is {1}", new Object[]{agent.getNodeName(), taskStatus});
-
-                    if (taskStatus.equals("RUNNING")) {
-                        taskRunning = true;
-                        break;
-                    }
-                    if (taskStatus.equals("STOPPED")) {
-                        LOGGER.log(Level.WARNING, "[{0}]: ECS Task stopped: {1}", new Object[]{agent.getNodeName(), task.getStoppedReason()});
-                        logger.printf("ECS Task stopped: %1$s%n", task.getStoppedReason());
-                        throw new IllegalStateException("Task stopped before coming online. TaskARN: " + task.getTaskArn());
-                    }
-                }
-
-                LOGGER.log(INFO, "[{0}]: Waiting for agent to start", new Object[]{agent.getNodeName()});
-                logger.printf("Waiting for agent to start: %1$s%n", agent.getNodeName());
-                Thread.sleep(cloud.getTaskPollingIntervalInSeconds() * 1000);
+            logger.printf("Waiting for agent to start: %1$s%n", agent.getNodeName());
+            try {
+                ecsService.WaitForTasksRunning(startedTask.getTaskArn(), startedTask.getClusterArn(), timeout, cloud.getTaskPollingIntervalInSeconds());
             }
-
-            if (!taskRunning) {
+            catch (WaiterTimedOutException exception){
+                Task task = null;
+                task = ecsService.describeTask(startedTask.getTaskArn(), startedTask.getClusterArn());
                 if (task != null) {
-                    LOGGER.log(SEVERE, "[{0}]: Task is not running. Last status: {1}, Exit code: {2}, Reason {3}", new Object[]{agent.getNodeName(), task.getLastStatus(), task.getContainers().get(0).getExitCode(), task.getContainers().get(0).getReason()});
+                    LOGGER.log(SEVERE, "[{0}]: Task is not running or took too long to start. Last status: {1}, Exit code: {2}, Reason {3}", new Object[]{agent.getNodeName(), task.getLastStatus(), task.getContainers().get(0).getExitCode(), task.getContainers().get(0).getReason()});
                 }
                 throw new IllegalStateException("Task took too long to start");
+            }
+            catch (WaiterUnrecoverableException exception){
+                LOGGER.log(Level.WARNING, MessageFormat.format("[{0}]: ECS Task stopped: {1}", new Object[]{agent.getNodeName(), startedTask.getTaskArn()}), exception);
+                throw new IllegalStateException("Task stopped before coming online. TaskARN: " + startedTask.getTaskArn());
+            }
+            catch (AmazonServiceException exception){
+                LOGGER.log(Level.SEVERE, MessageFormat.format("[{0}]: Unknown error trying to start ECS task {1}", new Object[]{agent.getNodeName()}), exception);
+                throw new IllegalStateException("Unknown error starting task " + startedTask.getTaskArn());
             }
 
             LOGGER.log(INFO, "[{0}]: Task started, waiting for agent to become online", new Object[]{agent.getNodeName()});

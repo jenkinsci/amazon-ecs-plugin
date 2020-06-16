@@ -43,6 +43,12 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.AmazonECSClientBuilder;
 import com.amazonaws.services.ecs.model.*;
+import com.amazonaws.services.ecs.waiters.AmazonECSWaiters;
+import com.amazonaws.waiters.FixedDelayStrategy;
+import com.amazonaws.waiters.PollingStrategy;
+import com.amazonaws.waiters.Waiter;
+import com.amazonaws.waiters.WaiterParameters;
+import com.cloudbees.jenkins.plugins.amazonecs.aws.MaxTimeRetryStrategy;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 
@@ -76,6 +82,10 @@ class ECSService {
                 clientConfiguration.setProxyUsername(proxy.getUserName());
                 clientConfiguration.setProxyPassword(proxy.getPassword());
             }
+
+            // Default is 3. 10 helps us actually utilize the SDK's backoff strategy
+            // The strategy will wait up to 20 seconds per request (after multiple failures)
+            clientConfiguration.setMaxErrorRetry(10);
 
             AmazonECSClientBuilder builder = AmazonECSClientBuilder
                     .standard()
@@ -127,6 +137,19 @@ class ECSService {
         } else {
             return result.getTasks().get(0);
         }
+    }
+
+    public void WaitForTasksRunning(String tasksArn, String clusterArn, long timeoutInMillis, int DelayBetweenPollsInSeconds) {
+        final AmazonECS client = clientSupplier.get();
+
+        Waiter<DescribeTasksRequest> describeTaskWaiter = new AmazonECSWaiters(client).tasksRunning();
+
+        describeTaskWaiter.run(new WaiterParameters<DescribeTasksRequest>(
+            new DescribeTasksRequest()
+                .withTasks(tasksArn)
+                .withCluster(clusterArn)
+                .withSdkClientExecutionTimeout((int)timeoutInMillis))
+            .withPollingStrategy(new PollingStrategy(new MaxTimeRetryStrategy(timeoutInMillis), new FixedDelayStrategy(DelayBetweenPollsInSeconds))));
     }
 
     public void stopTask(String taskArn, String clusterArn) {
