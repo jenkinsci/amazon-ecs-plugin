@@ -65,7 +65,7 @@ import hudson.slaves.SlaveComputer;
  *
  * @author Jan Roehrich <jan@roehrich.info>
  */
-class ECSService {
+public class ECSService {
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
 
     @Nonnull
@@ -139,7 +139,7 @@ class ECSService {
         }
     }
 
-    public void WaitForTasksRunning(String tasksArn, String clusterArn, long timeoutInMillis, int DelayBetweenPollsInSeconds) {
+    public void waitForTasksRunning(String tasksArn, String clusterArn, long timeoutInMillis, int DelayBetweenPollsInSeconds) {
         final AmazonECS client = clientSupplier.get();
 
         Waiter<DescribeTasksRequest> describeTaskWaiter = new AmazonECSWaiters(client).tasksRunning();
@@ -327,16 +327,16 @@ class ECSService {
     }
 
     /**
-     * Deregisters a task definition created for a template we are deleting. 
+     * Deregisters a task definition created for a template we are deleting.
      * It's expected that taskDefinitionArn is set
      * We don't attempt to de-register anything if TaskDefinitionOverride isn't null
-     * 
+     *
      * @param template       The template used to create the task definition
      * @return The task definition if found, otherwise null
      */
     void removeTemplate(final ECSTaskTemplate template) {
         AmazonECS client = clientSupplier.get();
-        
+
         //no task definition was created for this template to delete
         if (template.getTaskDefinitionOverride() != null) {
             return;

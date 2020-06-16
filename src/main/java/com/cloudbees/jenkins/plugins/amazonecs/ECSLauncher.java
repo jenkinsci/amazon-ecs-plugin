@@ -105,63 +105,12 @@ public class ECSLauncher extends JNLPLauncher {
         }
 
         try {
-            LOGGER.log(Level.FINE, "[{0}]: Creating Task in cluster {1}", new Object[]{agent.getNodeName(), agent.getClusterArn()});
-
-            TaskDefinition taskDefinition = ecsService.registerTemplate(cloud.getDisplayName(), agent.getTemplate());
-            Task startedTask = runECSTask(taskDefinition, cloud, agent.getTemplate(), ecsService, agent);
-
-            LOGGER.log(INFO, "[{0}]: TaskArn: {1}", new Object[]{agent.getNodeName(), startedTask.getTaskArn()});
-            LOGGER.log(INFO, "[{0}]: TaskDefinitionArn: {1}", new Object[]{agent.getNodeName(), startedTask.getTaskDefinitionArn()});
-            LOGGER.log(INFO, "[{0}]: ClusterArn: {1}", new Object[]{agent.getNodeName(), startedTask.getClusterArn()});
-            LOGGER.log(INFO, "[{0}]: ContainerInstanceArn: {1}", new Object[]{agent.getNodeName(), startedTask.getContainerInstanceArn()});
-
             long timeout = System.currentTimeMillis() + Duration.ofSeconds(cloud.getSlaveTimeoutInSeconds()).toMillis();
-            logger.printf("Waiting for agent to start: %1$s%n", agent.getNodeName());
-            try {
-                ecsService.WaitForTasksRunning(startedTask.getTaskArn(), startedTask.getClusterArn(), timeout, cloud.getTaskPollingIntervalInSeconds());
-            }
-            catch (WaiterTimedOutException exception){
-                Task task = null;
-                task = ecsService.describeTask(startedTask.getTaskArn(), startedTask.getClusterArn());
-                if (task != null) {
-                    LOGGER.log(SEVERE, "[{0}]: Task is not running or took too long to start. Last status: {1}, Exit code: {2}, Reason {3}", new Object[]{agent.getNodeName(), task.getLastStatus(), task.getContainers().get(0).getExitCode(), task.getContainers().get(0).getReason()});
-                }
-                throw new IllegalStateException("Task took too long to start");
-            }
-            catch (WaiterUnrecoverableException exception){
-                LOGGER.log(Level.WARNING, MessageFormat.format("[{0}]: ECS Task stopped: {1}", new Object[]{agent.getNodeName(), startedTask.getTaskArn()}), exception);
-                throw new IllegalStateException("Task stopped before coming online. TaskARN: " + startedTask.getTaskArn());
-            }
-            catch (AmazonServiceException exception){
-                LOGGER.log(Level.SEVERE, MessageFormat.format("[{0}]: Unknown error trying to start ECS task {1}", new Object[]{agent.getNodeName()}), exception);
-                throw new IllegalStateException("Unknown error starting task " + startedTask.getTaskArn());
-            }
 
-            LOGGER.log(INFO, "[{0}]: Task started, waiting for agent to become online", new Object[]{agent.getNodeName()});
+            launchECSTask(ecsComputer, listener, timeout);
 
             // now wait for agent to be online
-            while (System.currentTimeMillis() < timeout) {
-                SlaveComputer agentComputer = agent.getComputer();
-
-                if (agentComputer == null) {
-                    throw new IllegalStateException("Node was deleted, computer is null");
-                }
-                if (agentComputer.isOnline()) {
-                    break;
-                }
-                LOGGER.log(INFO, "[{0}]: Waiting for agent to connect", new Object[]{agent.getNodeName()});
-                logger.printf("Waiting for agent to connect: %1$s%n", agent.getNodeName());
-                Thread.sleep(1000);
-            }
-            SlaveComputer agentComputer = agent.getComputer();
-            if (agentComputer == null) {
-                throw new IllegalStateException("Node was deleted, computer is null");
-            }
-
-            if (!agentComputer.isOnline()) {
-                throw new IllegalStateException("Agent is not connected");
-            }
-            LOGGER.log(INFO, "[{0}]: Agent connected", new Object[]{agent.getNodeName()});
+            waitForAgent(agent, listener, timeout);
 
             computer.setAcceptingTasks(true);
 
@@ -184,6 +133,77 @@ public class ECSLauncher extends JNLPLauncher {
         } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Could not save() agent: " + e.getMessage(), e);
         }
+    }
+
+    protected Task launchECSTask(ECSComputer ecsComputer, TaskListener listener, long timeout) throws IOException, InterruptedException {
+        PrintStream logger = listener.getLogger();
+
+        ECSSlave agent = ecsComputer.getNode();
+        if (agent == null) {
+            throw new IllegalStateException("Node has been removed, cannot launch " + ecsComputer.getName());
+        }
+
+        LOGGER.log(Level.FINE, "[{0}]: Creating Task in cluster {1}", new Object[]{agent.getNodeName(), agent.getClusterArn()});
+
+        TaskDefinition taskDefinition = ecsService.registerTemplate(cloud.getDisplayName(), agent.getTemplate());
+        Task startedTask = runECSTask(taskDefinition, cloud, agent.getTemplate(), ecsService, agent);
+
+        LOGGER.log(INFO, "[{0}]: TaskArn: {1}", new Object[]{agent.getNodeName(), startedTask.getTaskArn()});
+        LOGGER.log(INFO, "[{0}]: TaskDefinitionArn: {1}", new Object[]{agent.getNodeName(), startedTask.getTaskDefinitionArn()});
+        LOGGER.log(INFO, "[{0}]: ClusterArn: {1}", new Object[]{agent.getNodeName(), startedTask.getClusterArn()});
+        LOGGER.log(INFO, "[{0}]: ContainerInstanceArn: {1}", new Object[]{agent.getNodeName(), startedTask.getContainerInstanceArn()});
+
+        logger.printf("Waiting for agent to start: %1$s%n", agent.getNodeName());
+        try {
+            ecsService.waitForTasksRunning(startedTask.getTaskArn(), startedTask.getClusterArn(), timeout, cloud.getTaskPollingIntervalInSeconds());
+        }
+        catch (WaiterTimedOutException exception){
+            Task task = null;
+            task = ecsService.describeTask(startedTask.getTaskArn(), startedTask.getClusterArn());
+            if (task != null) {
+                LOGGER.log(SEVERE, "[{0}]: Task is not running or took too long to start. Last status: {1}, Exit code: {2}, Reason {3}", new Object[]{agent.getNodeName(), task.getLastStatus(), task.getContainers().get(0).getExitCode(), task.getContainers().get(0).getReason()});
+            }
+            throw new IllegalStateException("Task took too long to start");
+        }
+        catch (WaiterUnrecoverableException exception){
+            LOGGER.log(Level.WARNING, MessageFormat.format("[{0}]: ECS Task stopped: {1}", agent.getNodeName(), startedTask.getTaskArn()), exception);
+            throw new IllegalStateException("Task stopped before coming online. TaskARN: " + startedTask.getTaskArn());
+        }
+        catch (AmazonServiceException exception){
+            LOGGER.log(Level.SEVERE, MessageFormat.format("[{0}]: Unknown error trying to start ECS task {1}", agent.getNodeName()), exception);
+            throw new IllegalStateException("Unknown error starting task " + startedTask.getTaskArn());
+        }
+
+        LOGGER.log(INFO, "[{0}]: Task started, waiting for agent to become online", new Object[]{agent.getNodeName()});
+
+        return startedTask;
+    }
+
+    protected void waitForAgent(ECSSlave agent, TaskListener listener, long timeout) throws InterruptedException {
+        PrintStream logger = listener.getLogger();
+
+        while (System.currentTimeMillis() < timeout) {
+            SlaveComputer agentComputer = agent.getComputer();
+
+            if (agentComputer == null) {
+                throw new IllegalStateException("Node was deleted, computer is null");
+            }
+            if (agentComputer.isOnline()) {
+                break;
+            }
+            LOGGER.log(INFO, "[{0}]: Waiting for agent to connect", new Object[]{agent.getNodeName()});
+            logger.printf("Waiting for agent to connect: %1$s%n", agent.getNodeName());
+            Thread.sleep(1000);
+        }
+        SlaveComputer agentComputer = agent.getComputer();
+        if (agentComputer == null) {
+            throw new IllegalStateException("Node was deleted, computer is null");
+        }
+
+        if (!agentComputer.isOnline()) {
+            throw new IllegalStateException("Agent is not connected");
+        }
+        LOGGER.log(INFO, "[{0}]: Agent connected", new Object[]{agent.getNodeName()});
     }
 
     private Task runECSTask(TaskDefinition taskDefinition, ECSCloud cloud, ECSTaskTemplate template, ECSService ecsService, ECSSlave agent) throws IOException {
