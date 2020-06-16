@@ -155,7 +155,7 @@ public class ECSLauncher extends JNLPLauncher {
 
         logger.printf("Waiting for agent to start: %1$s%n", agent.getNodeName());
         try {
-            ecsService.WaitForTasksRunning(startedTask.getTaskArn(), startedTask.getClusterArn(), timeout, cloud.getTaskPollingIntervalInSeconds());
+            ecsService.waitForTasksRunning(startedTask.getTaskArn(), startedTask.getClusterArn(), timeout, cloud.getTaskPollingIntervalInSeconds());
         }
         catch (WaiterTimedOutException exception){
             Task task = null;

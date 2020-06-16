@@ -139,7 +139,7 @@ public class ECSService {
         }
     }
 
-    public void WaitForTasksRunning(String tasksArn, String clusterArn, long timeoutInMillis, int DelayBetweenPollsInSeconds) {
+    public void waitForTasksRunning(String tasksArn, String clusterArn, long timeoutInMillis, int DelayBetweenPollsInSeconds) {
         final AmazonECS client = clientSupplier.get();
 
         Waiter<DescribeTasksRequest> describeTaskWaiter = new AmazonECSWaiters(client).tasksRunning();
