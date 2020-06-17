@@ -63,7 +63,7 @@ import hudson.slaves.SlaveComputer;
 /**
  * Encapsulates interactions with Amazon ECS.
  *
- * @author Jan Roehrich <jan@roehrich.info>
+ * @author Jan Roehrich {@literal <jan@roehrich.info> }
  */
 public class ECSService {
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());

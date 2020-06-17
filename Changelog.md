@@ -2,6 +2,14 @@
 
 ## vNext
 
+## 1.35 / 1.36
+
+-   allow certain classes to be used from other plugins (#192)
+-   fix entrypoint overrode (3196)
+-   Ignore template name and memory form field validation if a task definition override is used (#172)
+-   Use AWS SDK backoff (#193)
+-   Known issue: #187 NPE after restart
+
 ## 1.34
 
 -   support PlatformVersion as ECS parameter (#176)

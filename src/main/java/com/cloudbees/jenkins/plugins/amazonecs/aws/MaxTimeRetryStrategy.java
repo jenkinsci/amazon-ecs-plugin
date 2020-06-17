@@ -14,7 +14,7 @@ public class MaxTimeRetryStrategy implements PollingStrategy.RetryStrategy {
      * Constructs a new MaxTimeRetryStrategy with the given
      * default length of time to keep retrying
      *
-     * @param defaultMaxAttempts
+     * @param defaultMaxTime
      */
     public MaxTimeRetryStrategy(long defaultMaxTime) {
         this.EndTime = System.currentTimeMillis() + defaultMaxTime;
