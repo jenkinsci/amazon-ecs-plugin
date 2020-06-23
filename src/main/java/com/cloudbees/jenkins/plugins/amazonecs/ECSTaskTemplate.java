@@ -980,6 +980,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
             for (LaunchType launchType: LaunchType.values()) {
                 options.add(launchType.toString());
             }
+            options.add("Default Capacity Provider");
             return options;
         }
 

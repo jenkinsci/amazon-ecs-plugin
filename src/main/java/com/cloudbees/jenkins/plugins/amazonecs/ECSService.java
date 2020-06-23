@@ -406,7 +406,7 @@ public class ECSService {
 
         RunTaskRequest req = new RunTaskRequest()
                 .withTaskDefinition(taskDefinition.getTaskDefinitionArn())
-                .withLaunchType(LaunchType.fromValue(template.getLaunchType()))
+                //.withLaunchType(LaunchType.fromValue(template.getLaunchType()))
                 .withOverrides(new TaskOverride()
                         .withContainerOverrides(new ContainerOverride()
                                 .withName(agentContainerName)
@@ -418,6 +418,10 @@ public class ECSService {
 
         if (template.getLaunchType() != null && template.getLaunchType().equals("FARGATE")) {
             req.withPlatformVersion(template.getPlatformVersion());
+        }
+
+        if (! template.getLaunchType().equals("Default Capacity Provider")) {
+            req.withLaunchType(LaunchType.fromValue(template.getLaunchType()));
         }
 
         if (taskDefinition.getNetworkMode() != null && taskDefinition.getNetworkMode().equals("awsvpc")) {
