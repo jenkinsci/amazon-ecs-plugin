@@ -239,6 +239,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private final String launchType;
 
     /**
+     * Container OS
+     */
+    private final String containerOS;
+
+    /**
      * Task network mode
      */
     private final String networkMode;
@@ -302,6 +307,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            String image,
                            @Nullable final String repositoryCredentials,
                            String launchType,
+                           String containerOS,
                            String networkMode,
                            @Nullable String remoteFSRoot,
                            boolean uniqueRemoteFSRoot,
@@ -349,6 +355,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.memoryReservation = memoryReservation;
         this.cpu = cpu;
         this.launchType = launchType;
+        this.containerOS = containerOS;
         this.networkMode = networkMode;
         this.subnets = subnets;
         this.securityGroups = securityGroups;
@@ -528,6 +535,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         return launchType;
     }
 
+    public String getContainerOS() {
+        if (StringUtils.trimToNull(this.containerOS) == null) {
+            return "Unix";
+        }
+        return containerOS;
+    }
+
     public String getNetworkMode() {
         return networkMode;
     }
@@ -631,6 +645,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         String image = isNullOrEmpty(this.image) ? parent.getImage() : this.image;
         String repositoryCredentials = isNullOrEmpty(this.repositoryCredentials) ? parent.getRepositoryCredentials() : this.repositoryCredentials;
         String launchType = isNullOrEmpty(this.launchType) ? parent.getLaunchType() : this.launchType;
+        String containerOS = isNullOrEmpty(this.containerOS) ? parent.getContainerOS() : this.containerOS;
         String networkMode = isNullOrEmpty(this.networkMode) ? parent.getNetworkMode() : this.networkMode;
         String remoteFSRoot = isNullOrEmpty(this.remoteFSRoot) ? parent.getRemoteFSRoot() : this.remoteFSRoot;
 
@@ -671,6 +686,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        image,
                                                        repositoryCredentials,
                                                        launchType,
+                                                       containerOS,
                                                        networkMode,
                                                        remoteFSRoot,
                                                        uniqueRemoteFSRoot,
@@ -980,6 +996,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
             for (LaunchType launchType: LaunchType.values()) {
                 options.add(launchType.toString());
             }
+            return options;
+        }
+
+        public ListBoxModel doFillContainerOSItems() {
+            final ListBoxModel options = new ListBoxModel();
+            options.add("Unix");
+            options.add("Windows");
             return options;
         }
 

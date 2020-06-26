@@ -30,6 +30,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private String taskDefinitionOverride;
     private String image;
     private String launchType;
+    private String containerOS;
     private String remoteFSRoot;
     private boolean uniqueRemoteFSRoot;
     private String platformVersion;
@@ -106,6 +107,12 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     public void setLaunchType(String launchType) {
         this.launchType = launchType;
         overrides.add("launchType");
+    }
+
+    @DataBoundSetter
+    public void setContainerOS(String containerOS) {
+        this.containerOS = containerOS;
+        overrides.add("containerOS");
     }
 
     public String getRemoteFSRoot() {
@@ -340,6 +347,10 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
 
         if (!StringUtils.isEmpty(launchType)) {
             argMap.put("launchType", launchType);
+        }
+
+        if (!StringUtils.isEmpty(containerOS)) {
+            argMap.put("containerOS", containerOS);
         }
 
         if (!StringUtils.isEmpty(remoteFSRoot)) {

@@ -81,6 +81,7 @@ public class ECSSlaveTest {
             "image",
             "repositoryCredentials",
             "launchType",
+            "containerOS",
             "networkMode",
             "remoteFSRoot",
             false,

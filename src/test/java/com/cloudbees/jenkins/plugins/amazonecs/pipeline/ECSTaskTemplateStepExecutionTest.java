@@ -73,6 +73,7 @@ public class ECSTaskTemplateStepExecutionTest {
                 UUID.randomUUID().toString(),
                 UUID.randomUUID().toString(),
                 UUID.randomUUID().toString(),
+                UUID.randomUUID().toString(),
                 false,
                 null,
                 r.nextInt(123),
@@ -102,6 +103,7 @@ public class ECSTaskTemplateStepExecutionTest {
 
         step.setImage(expected.getImage());
         step.setLaunchType(expected.getLaunchType());
+        step.setContainerOS(expected.getContainerOS());
         step.setTaskDefinitionOverride(expected.getTaskDefinitionOverride());
         step.setRepositoryCredentials(expected.getRepositoryCredentials());
         step.setNetworkMode(expected.getNetworkMode());
@@ -146,6 +148,7 @@ public class ECSTaskTemplateStepExecutionTest {
                 "image",
                 "repositoryCredentials",
                 "launchType",
+                "containerOS",
                 "networkMode",
                 "remoteFSRoot",
                 false,

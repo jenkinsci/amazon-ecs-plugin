@@ -50,6 +50,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private String repositoryCredentials;
     private String image;
     private String launchType;
+    private String containerOS;
     private String networkMode;
     private String remoteFSRoot;
     private boolean uniqueRemoteFSRoot;
@@ -132,8 +133,17 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
         this.launchType = launchType;
     }
 
+    @DataBoundSetter
+    public void setContainerOS(String containerOS) {
+        this.containerOS = containerOS;
+    }
+
     public String getLaunchType() {
         return launchType;
+    }
+
+    public String getContainerOS() {
+        return containerOS;
     }
 
     @DataBoundSetter
@@ -390,6 +400,13 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
             for (LaunchType launchType : LaunchType.values()) {
                 options.add(launchType.toString());
             }
+            return options;
+        }
+
+        public ListBoxModel doFillContainerOSItems() {
+            final ListBoxModel options = new ListBoxModel();
+            options.add("Unix");
+            options.add("Windows");
             return options;
         }
 

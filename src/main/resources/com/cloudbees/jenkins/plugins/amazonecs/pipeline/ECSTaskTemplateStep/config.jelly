@@ -48,6 +48,9 @@
   <f:entry name="launchType" title="${%Launch type}" field="launchType">
     <f:select />
   </f:entry>
+  <f:entry name="containerOS" title="${%Container OS}" field="containerOS" description="OS of the inbound agent.">
+    <f:select />
+  </f:entry>
   <f:entry name="networkMode" title="${%Network mode}" field="networkMode">
     <f:select />
   </f:entry>

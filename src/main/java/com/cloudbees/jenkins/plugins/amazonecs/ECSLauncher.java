@@ -210,7 +210,7 @@ public class ECSLauncher extends JNLPLauncher {
 
         LOGGER.log(Level.INFO, "[{0}]: Starting agent with task definition {1}}", new Object[]{agent.getNodeName(), taskDefinition.getTaskDefinitionArn()});
 
-        RunTaskResult runTaskResult = ecsService.runEcsTask(agent, template, cloud.getCluster(), getDockerRunCommand(agent, cloud.getJenkinsUrl()), taskDefinition);
+        RunTaskResult runTaskResult = ecsService.runEcsTask(agent, template, cloud.getCluster(), getDockerRunCommand(agent, cloud.getJenkinsUrl(), template.getContainerOS()), taskDefinition);
 
         if (!runTaskResult.getFailures().isEmpty()) {
             LOGGER.log(Level.WARNING, "[{0}]: Failure to run task with definition {1} on ECS cluster {2}", new Object[]{agent.getNodeName(), taskDefinition.getTaskDefinitionArn(), cloud.getCluster()});
@@ -229,7 +229,12 @@ public class ECSLauncher extends JNLPLauncher {
         return task;
     }
 
-    private Collection<String> getDockerRunCommand(ECSSlave slave, String jenkinsUrl) {
+    private Collection<String> getDockerRunCommand(ECSSlave slave, String jenkinsUrl, String containerOS) {
+        SlaveComputer agent = slave.getComputer();
+        if (agent == null) {
+            throw new IllegalStateException("Node was deleted, computer is null");
+        }
+
         Collection<String> command = new ArrayList<>();
         command.add("-url");
         command.add(jenkinsUrl);
@@ -237,11 +242,13 @@ public class ECSLauncher extends JNLPLauncher {
             command.add("-tunnel");
             command.add(tunnel);
         }
-        SlaveComputer agent = slave.getComputer();
-        if (agent == null) {
-            throw new IllegalStateException("Node was deleted, computer is null");
+        if (containerOS.equals("Windows")){
+            command.add("-Secret");
         }
         command.add(agent.getJnlpMac());
+        if (containerOS.equals("Windows")){
+            command.add("-Name");
+        }
         command.add(agent.getName());
         return command;
     }
