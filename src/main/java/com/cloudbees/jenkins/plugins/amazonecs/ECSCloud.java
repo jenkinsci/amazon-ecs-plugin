@@ -114,7 +114,7 @@ public class ECSCloud extends Cloud {
         throw new IllegalArgumentException("'" + name + "' is not an ECS cloud but " + cloud);
         }
 
-    synchronized ECSService getEcsService() {
+    public synchronized ECSService getEcsService() {
         if (ecsService == null) {
             ecsService = new ECSService(credentialsId, regionName);
         }
@@ -404,9 +404,9 @@ public class ECSCloud extends Cloud {
     /**
      * Adds a dynamic task template. Won't be displayed in UI, and persisted
      * separately from the cloud instance. Also creates a task definition for this
-     * template, adding the ARN to back to the template so that we can delete the 
+     * template, adding the ARN to back to the template so that we can delete the
      * exact task created once complete.
-     * 
+     *
      * @param template the template to add
      * @return the task template with the newly created task definition ARN added
      */
@@ -424,7 +424,7 @@ public class ECSCloud extends Cloud {
      * Remove a dynamic task template.
      * @param template the template to remove
      */
-    public void removeDynamicTemplate(ECSTaskTemplate template) {	
+    public void removeDynamicTemplate(ECSTaskTemplate template) {
         getEcsService().removeTemplate(template);
 
         TaskTemplateMap.get().removeTemplate(this, template);
