@@ -267,7 +267,8 @@ pipeline{
           sh 'echo hello'
         }
     }
-
+}
+```
 ## FAQ
 
 ### My parallel jobs don't start at the same time
