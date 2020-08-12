@@ -24,6 +24,7 @@ import java.util.Set;
 
 import com.amazonaws.services.ecs.model.LaunchType;
 import com.amazonaws.services.ecs.model.NetworkMode;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.EFSMountPointEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.EnvironmentEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.ExtraHostEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.LogDriverOption;
@@ -71,6 +72,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private List<EnvironmentEntry> environments;
     private List<ExtraHostEntry> extraHosts;
     private List<MountPointEntry> mountPoints;
+    private List<EFSMountPointEntry> efsMountPoints;
     private List<PortMappingEntry> portMappings;
     private List<PlacementStrategyEntry> placementStrategies;
 
@@ -323,6 +325,15 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     @DataBoundSetter
     public void setMountPoints(List<MountPointEntry> mountPoints) {
         this.mountPoints = mountPoints;
+    }
+
+    public List<EFSMountPointEntry> getEfsMountPoints() {
+        return efsMountPoints;
+    }
+
+    @DataBoundSetter
+    public void setEfsMountPoints(List<EFSMountPointEntry> efsMountPoints) {
+        this.efsMountPoints = efsMountPoints;
     }
 
     public List<PortMappingEntry> getPortMappings() {

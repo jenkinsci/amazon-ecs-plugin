@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>3.56</version>
+        <version>4.4</version>
         <relativePath />
     </parent>
 
@@ -34,7 +34,7 @@
     <url>https://github.com/jenkinsci/amazon-ecs-plugin</url>
 
     <properties>
-        <jenkins.version>2.176.1</jenkins.version>
+        <jenkins.version>2.204.6</jenkins.version>
         <java.level>8</java.level>
         <mockito.version>3.2.4</mockito.version>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -90,8 +90,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.176.x</artifactId>
-                <version>4</version>
+                <artifactId>bom-2.204.x</artifactId>
+                <version>11</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -103,7 +103,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>aws-java-sdk</artifactId>
-            <version>1.11.723</version>
+            <version>1.11.821</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>

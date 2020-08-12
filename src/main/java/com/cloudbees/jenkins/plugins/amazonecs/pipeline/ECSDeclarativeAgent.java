@@ -1,5 +1,6 @@
 package com.cloudbees.jenkins.plugins.amazonecs.pipeline;
 
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgent;
@@ -10,6 +11,7 @@ import org.jenkinsci.plugins.variant.OptionalExtension;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.EFSMountPointEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.EnvironmentEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.ExtraHostEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.LogDriverOption;
@@ -50,6 +52,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private List<EnvironmentEntry> environments;
     private List<ExtraHostEntry> extraHosts;
     private List<MountPointEntry> mountPoints;
+    private List<EFSMountPointEntry> efsMountPoints;
     private List<PortMappingEntry> portMappings;
 
     private ArrayList<String> overrides = new ArrayList<String>();
@@ -308,6 +311,16 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         overrides.add("mountPoints");
     }
 
+    public List<EFSMountPointEntry> getEfsMountPoints() {
+        return efsMountPoints;
+    }
+
+    @DataBoundSetter
+    public void setEfsMountPoints(List<EFSMountPointEntry> efsMountPoints) {
+        this.efsMountPoints = efsMountPoints;
+        overrides.add("efsMountPoints");
+    }
+
     public List<PortMappingEntry> getPortMappings() {
         return portMappings;
     }
@@ -412,6 +425,10 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
 
         if (mountPoints != null && mountPoints.size() > 0) {
             argMap.put("mountPoints", mountPoints);
+        }
+
+        if (efsMountPoints != null && efsMountPoints.size() > 0) {
+            argMap.put("efsMountPoints", efsMountPoints);
         }
 
         if (portMappings != null && portMappings.size() > 0) {

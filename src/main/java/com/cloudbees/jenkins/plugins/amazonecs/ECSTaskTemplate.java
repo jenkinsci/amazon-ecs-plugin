@@ -27,6 +27,10 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 
 import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
+import com.amazonaws.services.ecs.model.EFSAuthorizationConfig;
+import com.amazonaws.services.ecs.model.EFSAuthorizationConfigIAM;
+import com.amazonaws.services.ecs.model.EFSTransitEncryption;
+import com.amazonaws.services.ecs.model.EFSVolumeConfiguration;
 import com.amazonaws.services.ecs.model.HostEntry;
 import com.amazonaws.services.ecs.model.HostVolumeProperties;
 import com.amazonaws.services.ecs.model.KeyValuePair;
@@ -49,6 +53,7 @@ import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -234,6 +239,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private List<MountPointEntry> mountPoints;
 
     /**
+     * Container mount points connecting to EFS
+     */
+    private List<EFSMountPointEntry> efsMountPoints;
+
+    /**
      * Task launch type
      */
     private final String launchType;
@@ -318,6 +328,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
                            @Nullable List<MountPointEntry> mountPoints,
+                           @Nullable List<EFSMountPointEntry> efsMountPoints,
                            @Nullable List<PortMappingEntry> portMappings,
                            @Nullable String executionRole,
                            @Nullable List<PlacementStrategyEntry> placementStrategies,
@@ -359,6 +370,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.environments = environments;
         this.extraHosts = extraHosts;
         this.mountPoints = mountPoints;
+        this.efsMountPoints = efsMountPoints;
         this.portMappings = portMappings;
         this.executionRole = executionRole;
         this.placementStrategies = placementStrategies;
@@ -658,6 +670,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         List<EnvironmentEntry> environments = isEmpty(this.environments) ? parent.getEnvironments() : this.environments;
         List<ExtraHostEntry> extraHosts = isEmpty(this.extraHosts) ? parent.getExtraHosts() : this.extraHosts;
         List<MountPointEntry> mountPoints = isEmpty(this.mountPoints) ? parent.getMountPoints() : this.mountPoints;
+        List<EFSMountPointEntry> efsMountPoints = isEmpty(this.efsMountPoints) ? parent.getEfsMountPoints() : this.efsMountPoints;
         List<PortMappingEntry> portMappings = isEmpty(this.portMappings) ? parent.getPortMappings() : this.portMappings;
         List<PlacementStrategyEntry> placementStrategies = isEmpty(this.placementStrategies) ? parent.getPlacementStrategies() : this.placementStrategies;
 
@@ -687,6 +700,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        environments,
                                                        extraHosts,
                                                        mountPoints,
+                                                       efsMountPoints,
                                                        portMappings,
                                                        executionRole,
                                                        placementStrategies,
@@ -737,6 +751,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         return mountPoints;
     }
 
+    public List<EFSMountPointEntry> getEfsMountPoints() {
+        return efsMountPoints;
+    }
+
     Collection<Volume> getVolumeEntries() {
         Collection<Volume> vols = new LinkedList<Volume>();
         if (null != mountPoints ) {
@@ -752,24 +770,69 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                      .withHost(hostVolume));
             }
         }
+
+        if (null != efsMountPoints) {
+            for (EFSMountPointEntry mount : efsMountPoints) {
+                if (StringUtils.isEmpty(mount.name)) {
+                    continue;
+                }
+
+                EFSAuthorizationConfig efsAuthorizationConfig = null;
+                if (StringUtils.isNotEmpty(mount.accessPointId)) {
+                    efsAuthorizationConfig = new EFSAuthorizationConfig()
+                            .withAccessPointId(mount.accessPointId)
+                            .withIam(BooleanUtils.isTrue(mount.iam)
+                                    ? EFSAuthorizationConfigIAM.ENABLED
+                                    : EFSAuthorizationConfigIAM.DISABLED
+                            );
+                }
+
+                EFSVolumeConfiguration efsVolumeConfiguration = new EFSVolumeConfiguration()
+                        .withFileSystemId(mount.fileSystemId)
+                        .withRootDirectory(mount.rootDirectory)
+                        .withAuthorizationConfig(efsAuthorizationConfig)
+                        .withTransitEncryption(BooleanUtils.isTrue(mount.transitEncryption)
+                                ? EFSTransitEncryption.ENABLED
+                                : EFSTransitEncryption.DISABLED
+                        );
+
+                vols.add(new Volume().withName(mount.name)
+                                     .withEfsVolumeConfiguration(efsVolumeConfiguration));
+            }
+        }
+
         return vols;
     }
 
     Collection<MountPoint> getMountPointEntries() {
-        if (null == mountPoints || mountPoints.isEmpty())
-            return null;
         Collection<MountPoint> mounts = new ArrayList<MountPoint>();
-        for (MountPointEntry mount : mountPoints) {
-            String src = mount.name;
-            String path = mount.containerPath;
-            Boolean ro = mount.readOnly;
-            if (StringUtils.isEmpty(src) || StringUtils.isEmpty(path))
-                continue;
-            mounts.add(new MountPoint().withSourceVolume(src)
-                                       .withContainerPath(path)
-                                       .withReadOnly(ro));
+        if (null != mountPoints) {
+            for (MountPointEntry mount : mountPoints) {
+                String src = mount.name;
+                String path = mount.containerPath;
+                Boolean ro = mount.readOnly;
+                if (StringUtils.isEmpty(src) || StringUtils.isEmpty(path))
+                    continue;
+                mounts.add(new MountPoint().withSourceVolume(src)
+                        .withContainerPath(path)
+                        .withReadOnly(ro));
+            }
         }
-        return mounts;
+
+        if (null != efsMountPoints) {
+            for (EFSMountPointEntry mount : efsMountPoints) {
+                String src = mount.name;
+                String path = mount.containerPath;
+                Boolean ro = mount.readOnly;
+                if (StringUtils.isEmpty(src) || StringUtils.isEmpty(path))
+                    continue;
+                mounts.add(new MountPoint().withSourceVolume(src)
+                        .withContainerPath(path)
+                        .withReadOnly(ro));
+            }
+        }
+
+        return mounts.isEmpty() ? null : mounts;
     }
 
     Collection<PortMapping> getPortMappingEntries() {
@@ -883,6 +946,51 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         }
     }
 
+    public static class EFSMountPointEntry extends AbstractDescribableImpl<EFSMountPointEntry> implements Serializable {
+        private static final long serialVersionUID = -7894407420920480113L;
+        public String name, containerPath, fileSystemId, rootDirectory, accessPointId;
+        public Boolean transitEncryption, iam, readOnly;
+
+        @DataBoundConstructor
+        public EFSMountPointEntry(String name,
+                                  String containerPath,
+                                  Boolean readOnly,
+                                  String fileSystemId,
+                                  String rootDirectory,
+                                  String accessPointId,
+                                  Boolean transitEncryption,
+                                  Boolean iam) {
+            this.name = name;
+            this.containerPath = containerPath;
+            this.readOnly = readOnly;
+            this.fileSystemId = fileSystemId;
+            this.rootDirectory = rootDirectory;
+            this.accessPointId = accessPointId;
+            this.transitEncryption = transitEncryption;
+            this.iam = iam;
+        }
+
+        @Override
+        public String toString() {
+            return "EFSMountPointEntry{name:" + name +
+                    ", containerPath:" + containerPath +
+                    ", readOnly:" + readOnly +
+                    ", fileSystemId:" + fileSystemId +
+                    ", rootDirectory:" + rootDirectory +
+                    ", accessPointId:" + accessPointId +
+                    ", transitEncryption:" + transitEncryption +
+                    ", iam:" + iam + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<EFSMountPointEntry> {
+            @Override
+            public String getDisplayName() {
+                return "EFSMountPointEntry";
+            }
+        }
+    }
+
     public static class PortMappingEntry extends AbstractDescribableImpl<PortMappingEntry> implements Serializable {
         private static final long serialVersionUID = 8223725139080497839L;
         public Integer containerPort, hostPort;
@@ -972,7 +1080,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
         @Override
         public String getDisplayName() {
-            return Messages.template();
+            return com.cloudbees.jenkins.plugins.amazonecs.Messages.template();
         }
 
         public ListBoxModel doFillLaunchTypeItems() {
@@ -1139,6 +1247,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (mountPoints != null ? !mountPoints.equals(that.mountPoints) : that.mountPoints != null) {
             return false;
         }
+        if (efsMountPoints != null ? !efsMountPoints.equals(that.efsMountPoints) : that.efsMountPoints != null) {
+            return false;
+        }
         if (launchType != null ? !launchType.equals(that.launchType) : that.launchType != null) {
             return false;
         }
@@ -1191,6 +1302,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + (repositoryCredentials != null ? repositoryCredentials.hashCode() : 0);
         result = 31 * result + (jvmArgs != null ? jvmArgs.hashCode() : 0);
         result = 31 * result + (mountPoints != null ? mountPoints.hashCode() : 0);
+        result = 31 * result + (efsMountPoints != null ? efsMountPoints.hashCode() : 0);
         result = 31 * result + (launchType != null ? launchType.hashCode() : 0);
         result = 31 * result + (networkMode != null ? networkMode.hashCode() : 0);
         result = 31 * result + (privileged ? 1 : 0);
