@@ -187,8 +187,11 @@
           <f:entry title="${%Read Only}" field="readOnly">
             <f:checkbox />
           </f:entry>
-          <f:entry title="${%File System ID}" field="fileSystemId">
-            <f:textbox value="${instance.fileSystemId}" />
+          <f:entry name="fileSystemId" title="${%File System ID}" field="fileSystemId">
+            <f:select />
+          </f:entry>
+          <f:entry name="accessPointId"  title="${%Access Point ID}" field="accessPointId">
+            <f:select />
           </f:entry>
           <f:entry title="${%Root Directory}" field="rootDirectory">
             <f:textbox value="${instance.rootDirectory}" />
@@ -196,10 +199,7 @@
           <f:entry title="${%Transit Encryption}" field="transitEncryption">
             <f:checkbox />
           </f:entry>
-          <f:entry title="${%Access Point ID}" field="accessPointId">
-            <f:textbox value="${instance.accessPointId}" />
-          </f:entry>
-          <f:entry title="${%IAM}" field="iam">
+          <f:entry title="${%EFS IAM Authorization}" field="iam">
             <f:checkbox />
           </f:entry>
           <f:entry title="">

@@ -45,7 +45,11 @@ import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.RepositoryCredentials;
 import com.amazonaws.services.ecs.model.Volume;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import com.amazonaws.services.elasticfilesystem.model.AccessPointDescription;
+import com.amazonaws.services.elasticfilesystem.model.FileSystemDescription;
+import com.cloudbees.jenkins.plugins.amazonecs.aws.EFSService;
 import hudson.Extension;
+import hudson.RelativePath;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
@@ -69,12 +73,15 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -984,9 +991,66 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
         @Extension
         public static class DescriptorImpl extends Descriptor<EFSMountPointEntry> {
+            private static final Logger LOGGER = Logger.getLogger(EFSMountPointEntry.class.getName());
+
             @Override
             public String getDisplayName() {
                 return "EFSMountPointEntry";
+            }
+
+            public ListBoxModel doFillFileSystemIdItems(
+                    @RelativePath("../..") @QueryParameter String credentialsId,
+                    @RelativePath("../..") @QueryParameter String regionName
+            ) {
+                EFSService efsService = new EFSService(credentialsId, regionName);
+                try {
+                    List<FileSystemDescription> allFileSystems = efsService.getAllFileSystems();
+                    allFileSystems.sort(Comparator.comparing(FileSystemDescription::getName));
+                    final ListBoxModel options = new ListBoxModel();
+                    for (final FileSystemDescription fileSystemDescription : allFileSystems) {
+                        options.add(
+                                optionalName(fileSystemDescription.getName(), fileSystemDescription.getFileSystemId()),
+                                fileSystemDescription.getFileSystemId()
+                        );
+                    }
+                    return options;
+                } catch (RuntimeException e) {
+                    LOGGER.log(Level.INFO, "Exception fetching file systems for credentials=" + credentialsId + ", regionName=" + regionName, e);
+                    return new ListBoxModel();
+                }
+            }
+
+            public ListBoxModel doFillAccessPointIdItems(
+                    @RelativePath("../..") @QueryParameter String credentialsId,
+                    @RelativePath("../..") @QueryParameter String regionName,
+                    @QueryParameter String fileSystemId
+            ) {
+                EFSService efsService = new EFSService(credentialsId, regionName);
+                try {
+                    List<AccessPointDescription> accessPoints = efsService.getAccessPointsForFileSystem(fileSystemId);
+                    accessPoints.sort(Comparator.comparing(AccessPointDescription::getName));
+                    final ListBoxModel options = new ListBoxModel();
+
+                    options.add("None", "");
+                    for (final AccessPointDescription accessPointDescription : accessPoints) {
+                        options.add(
+                                optionalName(accessPointDescription.getName(), accessPointDescription.getAccessPointId()),
+                                accessPointDescription.getAccessPointId()
+                        );
+                    }
+                    return options;
+                } catch (RuntimeException e) {
+                    LOGGER.log(Level.INFO, "Exception fetching access points for credentials=" + credentialsId + ", regionName=" + regionName, e);
+                    return new ListBoxModel();
+                }
+            }
+
+            private String optionalName(String name, String id) {
+                if (StringUtils.isEmpty(name)) {
+                    return id;
+                }
+
+                return name + " (" + id + ")";
             }
         }
     }
