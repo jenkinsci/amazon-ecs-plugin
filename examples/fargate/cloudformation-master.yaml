@@ -177,6 +177,12 @@ Resources:
             Resource: !Sub "arn:aws:ecs:*:*:task/*" # "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/*"
           -
             Action:
+              - "elasticfilesystem:DescribeAccessPoints"
+              - "elasticfilesystem:DescribeFileSystems"
+            Effect: Allow
+            Resource: !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*"
+          -
+            Action:
               - "iam:PassRole"
             Effect: Allow
             Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/*"

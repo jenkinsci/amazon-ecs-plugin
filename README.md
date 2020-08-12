@@ -158,6 +158,11 @@ TaskRole:
                                 ecs:cluster:
                                     - !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/<clusterName>"
                         Resource: !Sub "arn:aws:ecs:*:*:task/*" # "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/*"
+                      - Action:
+                            - "elasticfilesystem:DescribeAccessPoints"
+                            - "elasticfilesystem:DescribeFileSystems"
+                        Effect: Allow
+                        Resource: !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*"
 ```
 
 ### Agent
