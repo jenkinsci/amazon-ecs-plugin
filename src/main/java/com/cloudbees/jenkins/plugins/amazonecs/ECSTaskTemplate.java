@@ -25,6 +25,7 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
+import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
 import com.amazonaws.services.ecs.model.HostEntry;
@@ -41,8 +42,12 @@ import com.amazonaws.services.ecs.model.PortMapping;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.RepositoryCredentials;
 import com.amazonaws.services.ecs.model.Volume;
+import com.amazonaws.services.ecs.model.DescribeClustersRequest;
+import com.amazonaws.services.ecs.model.DescribeClustersResult;
+import com.amazonaws.services.ecs.model.Cluster;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import hudson.Extension;
+import hudson.RelativePath;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
@@ -72,6 +77,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.Collections;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -1024,11 +1030,24 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
         @Extension
         public static class DescriptorImpl extends Descriptor<CapacityProviderStrategyEntry> {
-            public ListBoxModel doFillProviderItems(@QueryParameter String credentialsId, @QueryParameter String regionName, @QueryParameter String cluster) {
+            public ListBoxModel doFillProviderItems(
+                @RelativePath("../..") @QueryParameter String credentialsId,
+                @RelativePath("../..") @QueryParameter String regionName,
+                @RelativePath("../..") @QueryParameter String cluster
+            ){
+                ECSService ecsService = new ECSService(credentialsId, regionName);
+                final AmazonECS client = ecsService.getAmazonECSClient();
+                final List<Cluster> allClusters = new ArrayList<Cluster>();
+                DescribeClustersResult result = client.describeClusters(new DescribeClustersRequest().withClusters(cluster));
+                allClusters.addAll(result.getClusters());
                 final ListBoxModel options = new ListBoxModel();
-                // Need to get these values dynamically from the selected cluster if possible
-                options.add("FARGATE");
-                options.add("FARGATE_SPOT");
+                for ( Cluster c : allClusters) {
+                    List<String> item = c.getCapacityProviders();
+                    Collections.sort(item);
+                    for (String provider : item) {
+                        options.add(provider);
+                    }
+                }
                 return options;
             }
             @Override
