@@ -31,7 +31,6 @@ import com.amazonaws.services.ecs.model.HostEntry;
 import com.amazonaws.services.ecs.model.HostVolumeProperties;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.LaunchType;
-import com.amazonaws.services.ecs.model.Compatibility;
 import com.amazonaws.services.ecs.model.CapacityProviderStrategyItem;
 import com.amazonaws.services.ecs.model.LinuxParameters;
 import com.amazonaws.services.ecs.model.MountPoint;
