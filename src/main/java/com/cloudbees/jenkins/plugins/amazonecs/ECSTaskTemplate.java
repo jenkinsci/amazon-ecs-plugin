@@ -31,6 +31,8 @@ import com.amazonaws.services.ecs.model.HostEntry;
 import com.amazonaws.services.ecs.model.HostVolumeProperties;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.LaunchType;
+import com.amazonaws.services.ecs.model.Compatibility;
+import com.amazonaws.services.ecs.model.CapacityProviderStrategyItem;
 import com.amazonaws.services.ecs.model.LinuxParameters;
 import com.amazonaws.services.ecs.model.MountPoint;
 import com.amazonaws.services.ecs.model.NetworkMode;
@@ -239,6 +241,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private final String launchType;
 
     /**
+     * Use default capacity provider will omit launch types and capacity stragies
+     *
+     */
+    private boolean defaultCapacityProvider;
+
+    /**
      * Task network mode
      */
     private final String networkMode;
@@ -269,7 +277,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private List<ExtraHostEntry> extraHosts;
     private List<PortMappingEntry> portMappings;
     private List<PlacementStrategyEntry> placementStrategies;
-
+    private List<CapacityProviderStrategyEntry> capacityProviderStrategies;
 
 
     /**
@@ -301,7 +309,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            @Nullable String dynamicTaskDefinitionOverride,
                            String image,
                            @Nullable final String repositoryCredentials,
-                           String launchType,
+                           @Nullable String launchType,
+                           boolean defaultCapacityProvider,
+                           @Nullable List<CapacityProviderStrategyEntry> capacityProviderStrategies,
                            String networkMode,
                            @Nullable String remoteFSRoot,
                            boolean uniqueRemoteFSRoot,
@@ -349,6 +359,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.memoryReservation = memoryReservation;
         this.cpu = cpu;
         this.launchType = launchType;
+        this.defaultCapacityProvider = defaultCapacityProvider;
+        this.capacityProviderStrategies = capacityProviderStrategies;
         this.networkMode = networkMode;
         this.subnets = subnets;
         this.securityGroups = securityGroups;
@@ -425,6 +437,15 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     }
 
     public boolean isFargate() {
+        if (!this.defaultCapacityProvider && this.capacityProviderStrategies != null && ! this.capacityProviderStrategies.isEmpty()) {
+            for (CapacityProviderStrategyEntry capacityProviderStrategy : this.capacityProviderStrategies) {
+                String provider = capacityProviderStrategy.provider;
+                if (provider.contains(LaunchType.FARGATE.toString())) {
+                    return true;
+                }
+            }
+            return false;
+        }
         return StringUtils.trimToNull(this.launchType) != null && launchType.equals(LaunchType.FARGATE.toString());
     }
 
@@ -487,6 +508,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
     public boolean getAssignPublicIp() {
         return assignPublicIp;
+    }
+
+    public boolean getDefaultCapacityProvider() {
+        return defaultCapacityProvider;
     }
 
     public String getDnsSearchDomains() {
@@ -613,6 +638,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         return placementStrategies;
     }
 
+    public List<CapacityProviderStrategyEntry> getCapacityProviderStrategies() {
+        return capacityProviderStrategies;
+    }
+
     /**
      * This merge does not take an into consideration the child intentionally setting empty values for parameters like "entrypoint" - in fact
      * it's not uncommon to override the entrypoint of a container and set it to blank so you can use your own entrypoint as part of the command.
@@ -631,6 +660,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         String image = isNullOrEmpty(this.image) ? parent.getImage() : this.image;
         String repositoryCredentials = isNullOrEmpty(this.repositoryCredentials) ? parent.getRepositoryCredentials() : this.repositoryCredentials;
         String launchType = isNullOrEmpty(this.launchType) ? parent.getLaunchType() : this.launchType;
+        boolean defaultCapacityProvider = this.defaultCapacityProvider ? this.defaultCapacityProvider : parent.getDefaultCapacityProvider();
         String networkMode = isNullOrEmpty(this.networkMode) ? parent.getNetworkMode() : this.networkMode;
         String remoteFSRoot = isNullOrEmpty(this.remoteFSRoot) ? parent.getRemoteFSRoot() : this.remoteFSRoot;
 
@@ -660,6 +690,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         List<MountPointEntry> mountPoints = isEmpty(this.mountPoints) ? parent.getMountPoints() : this.mountPoints;
         List<PortMappingEntry> portMappings = isEmpty(this.portMappings) ? parent.getPortMappings() : this.portMappings;
         List<PlacementStrategyEntry> placementStrategies = isEmpty(this.placementStrategies) ? parent.getPlacementStrategies() : this.placementStrategies;
+        List<CapacityProviderStrategyEntry> capacityProviderStrategies = isEmpty(this.capacityProviderStrategies) ? parent.getCapacityProviderStrategies() : this.capacityProviderStrategies;
 
         String executionRole = isNullOrEmpty(this.executionRole) ? parent.getExecutionRole() : this.executionRole;
         String taskrole = isNullOrEmpty(this.taskrole) ? parent.getTaskrole() : this.taskrole;
@@ -671,6 +702,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        image,
                                                        repositoryCredentials,
                                                        launchType,
+                                                       defaultCapacityProvider,
+                                                       capacityProviderStrategies,
                                                        networkMode,
                                                        remoteFSRoot,
                                                        uniqueRemoteFSRoot,
@@ -800,6 +833,22 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                        .withField(field));
         }
         return placements;
+    }
+
+    Collection<CapacityProviderStrategyItem> getCapacityProviderStrategyEntries() {
+        if (null == capacityProviderStrategies || capacityProviderStrategies.isEmpty())
+            return null;
+        Collection<CapacityProviderStrategyItem> stragies = new ArrayList<CapacityProviderStrategyItem>();
+        for (CapacityProviderStrategyEntry capacityProviderStrategy : this.capacityProviderStrategies) {
+            String provider = capacityProviderStrategy.provider;
+            int base = capacityProviderStrategy.base;
+            int weight = capacityProviderStrategy.weight;
+
+            stragies.add(new CapacityProviderStrategyItem().withCapacityProvider(provider)
+                                       .withWeight(weight)
+                                       .withBase(base));
+        }
+        return stragies;
     }
 
     public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> implements Serializable {
@@ -952,6 +1001,43 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                 if (!type.contentEquals("random") && field.isEmpty()) {
                     return FormValidation.error("Field needs to be set when using Type other then random");
                 }
+                return FormValidation.ok();
+            }
+        }
+    }
+
+    public static class CapacityProviderStrategyEntry extends AbstractDescribableImpl<CapacityProviderStrategyEntry> implements Serializable {
+        //private static final long serialVersionUID = 4195862080979262875L;
+        public String provider;
+        public int base, weight;
+
+        @DataBoundConstructor
+        public CapacityProviderStrategyEntry(String provider, int base, int weight) {
+            this.base = base;
+            this.weight = weight;
+            this.provider = provider;
+        }
+
+        @Override
+        public String toString() {
+            return "CapacityProviderStrategyEntry{" + provider + "base: " + base + "weight: " + weight + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<CapacityProviderStrategyEntry> {
+            public ListBoxModel doFillProviderItems(@QueryParameter String credentialsId, @QueryParameter String regionName, @QueryParameter String cluster) {
+                final ListBoxModel options = new ListBoxModel();
+                // Need to get these values dynamically from the selected cluster if possible
+                options.add("FARGATE");
+                options.add("FARGATE_SPOT");
+                return options;
+            }
+            @Override
+            public String getDisplayName() {
+                return "CapacityProviderStrategyEntry";
+            }
+
+            public FormValidation doCheckField(@QueryParameter("base") int base, @QueryParameter("weight") int weight, @QueryParameter("provider") String provider) throws IOException, ServletException {
                 return FormValidation.ok();
             }
         }
@@ -1142,6 +1228,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (launchType != null ? !launchType.equals(that.launchType) : that.launchType != null) {
             return false;
         }
+        if (defaultCapacityProvider != that.defaultCapacityProvider) {
+            return false;
+        }
+        if (capacityProviderStrategies != null ? !capacityProviderStrategies.equals(that.capacityProviderStrategies) : that.capacityProviderStrategies != null) {
+            return false;
+        }
         if (networkMode != null ? !networkMode.equals(that.networkMode) : that.networkMode != null) {
             return false;
         }
@@ -1192,6 +1284,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + (jvmArgs != null ? jvmArgs.hashCode() : 0);
         result = 31 * result + (mountPoints != null ? mountPoints.hashCode() : 0);
         result = 31 * result + (launchType != null ? launchType.hashCode() : 0);
+        result = 31 * result + (defaultCapacityProvider ? 1 : 0);
+        result = 31 * result + (capacityProviderStrategies != null ? capacityProviderStrategies.hashCode() : 0);
         result = 31 * result + (networkMode != null ? networkMode.hashCode() : 0);
         result = 31 * result + (privileged ? 1 : 0);
         result = 31 * result + (uniqueRemoteFSRoot ? 1 : 0);

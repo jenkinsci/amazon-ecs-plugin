@@ -30,6 +30,7 @@ import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.LogDriverOption;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.MountPointEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.PortMappingEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.PlacementStrategyEntry;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.CapacityProviderStrategyEntry;
 import com.google.common.collect.ImmutableSet;
 import hudson.model.Run;
 import java.util.logging.Level;
@@ -50,6 +51,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private String repositoryCredentials;
     private String image;
     private String launchType;
+    private boolean defaultCapacityProvider;
     private String networkMode;
     private String remoteFSRoot;
     private boolean uniqueRemoteFSRoot;
@@ -73,6 +75,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private List<MountPointEntry> mountPoints;
     private List<PortMappingEntry> portMappings;
     private List<PlacementStrategyEntry> placementStrategies;
+    private List<CapacityProviderStrategyEntry> capacityProviderStrategies;
 
     private List<String> overrides;
 
@@ -236,6 +239,15 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     }
 
     @DataBoundSetter
+    public void setDefaultCapacityProvider(boolean defaultCapacityProvider) {
+        this.defaultCapacityProvider = defaultCapacityProvider;
+    }
+
+    public boolean getDefaultCapacityProvider() {
+        return defaultCapacityProvider;
+    }
+
+    @DataBoundSetter
     public void setPrivileged(boolean privileged) {
         this.privileged = privileged;
     }
@@ -342,6 +354,16 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     public void setPlacementStrategies(List<PlacementStrategyEntry> placementStrategies) {
         this.placementStrategies = placementStrategies;
     }
+
+    public List<CapacityProviderStrategyEntry> getCapacityProviderStrategies() {
+        return capacityProviderStrategies;
+    }
+
+    @DataBoundSetter
+    public void setCapacityProviderStrategy(List<CapacityProviderStrategyEntry> capacityProviderStrategies) {
+        this.capacityProviderStrategies = capacityProviderStrategies;
+    }
+    
 
     @DataBoundSetter
     public void setOverrides(List<String> overrides) {
