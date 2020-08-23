@@ -246,7 +246,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private final String launchType;
 
     /**
-     * Use default capacity provider will omit launch types and capacity stragies
+     * Use default capacity provider will omit launch types and capacity strategies
      *
      */
     private boolean defaultCapacityProvider;
