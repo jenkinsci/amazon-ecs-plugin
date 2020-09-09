@@ -307,8 +307,8 @@ public class ECSService {
 
             if (template.isFargate()) {
                 request
-                        .withRequiresCompatibilities("FARGATE")
-                        .withNetworkMode("awsvpc")
+                        .withRequiresCompatibilities(LaunchType.FARGATE.toString())
+                        .withNetworkMode(NetworkMode.Awsvpc.toString())
                         .withMemory(String.valueOf(template.getMemoryConstraint()))
                         .withCpu(String.valueOf(template.getCpu()));
             }

@@ -131,6 +131,7 @@ TaskRole:
                         Resource: "*"
                       - Action:
                             - "ecs:ListContainerInstances"
+                            - "ecs:DescribeClusters"
                         Effect: Allow
                         Resource:
                             - !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/<clusterName>"
