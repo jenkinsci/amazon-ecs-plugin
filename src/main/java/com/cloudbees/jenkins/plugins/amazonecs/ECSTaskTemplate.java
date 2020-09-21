@@ -1005,7 +1005,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                 EFSService efsService = new EFSService(credentialsId, regionName);
                 try {
                     List<FileSystemDescription> allFileSystems = efsService.getAllFileSystems();
-                    allFileSystems.sort(Comparator.comparing(FileSystemDescription::getName));
+                    allFileSystems.sort(Comparator.comparing(FileSystemDescription::getName, Comparator.nullsFirst(Comparator.naturalOrder())));
                     final ListBoxModel options = new ListBoxModel();
                     for (final FileSystemDescription fileSystemDescription : allFileSystems) {
                         options.add(
@@ -1028,7 +1028,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                 EFSService efsService = new EFSService(credentialsId, regionName);
                 try {
                     List<AccessPointDescription> accessPoints = efsService.getAccessPointsForFileSystem(fileSystemId);
-                    accessPoints.sort(Comparator.comparing(AccessPointDescription::getName));
+                    accessPoints.sort(Comparator.comparing(AccessPointDescription::getName, Comparator.nullsFirst(Comparator.naturalOrder())));
                     final ListBoxModel options = new ListBoxModel();
 
                     options.add("None", "");
