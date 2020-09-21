@@ -88,7 +88,7 @@ public class ECSCloud extends Cloud {
     private int retentionTimeout = DescriptorImpl.DEFAULT_RETENTION_TIMEOUT;
     private int slaveTimeoutInSeconds = DescriptorImpl.DEFAULT_SLAVE_TIMEOUT_IN_SECONDS;
     private int taskPollingIntervalInSeconds = DescriptorImpl.DEFAULT_TASK_POLLING_INTERVAL_IN_SECONDS;
-    private ECSService ecsService;
+    private transient ECSService ecsService;
     private String allowedOverrides;
     private int maxCpu;
     private int maxMemory;
