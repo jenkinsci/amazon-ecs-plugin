@@ -81,6 +81,7 @@ public class ECSCloud extends Cloud {
     private final String credentialsId;
     private final String cluster;
     private String regionName;
+    private String assumedRoleARN;
     @CheckForNull
     private String tunnel;
     private String jenkinsUrl;
@@ -155,9 +156,18 @@ public class ECSCloud extends Cloud {
         return regionName;
     }
 
+    public String getAssumedRoleARN() {
+        return assumedRoleARN;
+    }
+
     @DataBoundSetter
     public void setRegionName(String regionName) {
         this.regionName = regionName;
+    }
+
+    @DataBoundSetter
+    public void setAssumedRoleARN(String assumedRoleARN) {
+        this.assumedRoleARN = assumedRoleARN;
     }
 
     public String getTunnel() {

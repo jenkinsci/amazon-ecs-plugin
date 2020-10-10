@@ -41,6 +41,10 @@
     <f:select />
   </f:entry>
 
+  <f:entry field="assumedRoleARN" title="${%Assumed Role ARN}">
+    <f:textbox />
+  </f:entry>
+
   <f:advanced>
     <f:entry field="allowedOverrides" title="${%Allowed declarative settings}" description="Settings allowed to be used in the declarative pipeline. Use all for unrestricted use. Always include label, otherwise no agent can be defined. The default is none for security reasons, which fully disables the use of declarative settings.">
       <f:textbox />
