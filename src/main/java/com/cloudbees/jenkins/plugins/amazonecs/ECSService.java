@@ -37,6 +37,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
@@ -44,6 +46,11 @@ import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.AmazonECSClientBuilder;
 import com.amazonaws.services.ecs.model.*;
 import com.amazonaws.services.ecs.waiters.AmazonECSWaiters;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenService;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
+import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
+import com.amazonaws.services.securitytoken.model.AssumeRoleResult;
+import com.amazonaws.services.securitytoken.model.Credentials;
 import com.amazonaws.waiters.FixedDelayStrategy;
 import com.amazonaws.waiters.PollingStrategy;
 import com.amazonaws.waiters.Waiter;
@@ -71,7 +78,7 @@ public class ECSService {
     @Nonnull
     private final Supplier<AmazonECS> clientSupplier;
 
-    public ECSService(String credentialsId, String regionName) {
+    public ECSService(String credentialsId, String assumedRoleArn, String regionName) {
         this.clientSupplier = () -> {
             ProxyConfiguration proxy = Jenkins.get().proxy;
             ClientConfiguration clientConfiguration = new ClientConfiguration();
@@ -102,12 +109,38 @@ public class ECSService {
                 builder
                         .withCredentials(credentials);
             }
+            else if (StringUtils.isNotBlank(assumedRoleArn)) {
+                builder.withCredentials(getCredentialsForRole(assumedRoleArn, regionName));
+            }
+
             LOGGER.log(Level.FINE, "Selected Region: {0}", regionName);
 
             return builder.build();
         };
     }
-    public ECSService(Supplier<AmazonECS> clientSupplier){
+
+    @CheckForNull
+    private AWSStaticCredentialsProvider getCredentialsForRole(String roleArn, String regionName) {
+        AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard()
+                .withRegion(regionName)
+                .build();
+
+        AssumeRoleRequest roleRequest = new AssumeRoleRequest()
+                .withRoleArn(roleArn)
+                .withRoleSessionName("jenkins-role-session");
+
+        AssumeRoleResult roleResponse = stsClient.assumeRole(roleRequest);
+        Credentials sessionCredentials = roleResponse.getCredentials();
+
+        BasicSessionCredentials awsCredentials = new BasicSessionCredentials(
+                sessionCredentials.getAccessKeyId(),
+                sessionCredentials.getSecretAccessKey(),
+                sessionCredentials.getSessionToken());
+
+        return new AWSStaticCredentialsProvider(awsCredentials);
+    }
+
+    public ECSService(Supplier<AmazonECS> clientSupplier) {
         this.clientSupplier = clientSupplier;
     }
 

@@ -81,7 +81,7 @@ public class ECSCloud extends Cloud {
     private final String credentialsId;
     private final String cluster;
     private String regionName;
-    private String assumedRoleARN;
+    private String assumedRoleArn;
     @CheckForNull
     private String tunnel;
     private String jenkinsUrl;
@@ -96,9 +96,10 @@ public class ECSCloud extends Cloud {
     private int maxMemoryReservation;
 
     @DataBoundConstructor
-    public ECSCloud(String name, @Nonnull String credentialsId, String cluster) {
+    public ECSCloud(String name, @Nonnull String credentialsId, String assumedRoleArn, String cluster) {
         super(name);
         this.credentialsId = credentialsId;
+        this.assumedRoleArn = assumedRoleArn;
         this.cluster = cluster;
     }
 
@@ -106,6 +107,7 @@ public class ECSCloud extends Cloud {
         super(name);
         this.cluster = cluster;
         this.credentialsId = null;
+        this.assumedRoleArn = null;
         this.ecsService = ecsService;
     }
 
@@ -117,7 +119,7 @@ public class ECSCloud extends Cloud {
 
     synchronized ECSService getEcsService() {
         if (ecsService == null) {
-            ecsService = new ECSService(credentialsId, regionName);
+            ecsService = new ECSService(credentialsId, assumedRoleArn, regionName);
         }
         return ecsService;
     }
@@ -156,8 +158,8 @@ public class ECSCloud extends Cloud {
         return regionName;
     }
 
-    public String getAssumedRoleARN() {
-        return assumedRoleARN;
+    public String getAssumedRoleArn() {
+        return assumedRoleArn;
     }
 
     @DataBoundSetter
@@ -166,8 +168,8 @@ public class ECSCloud extends Cloud {
     }
 
     @DataBoundSetter
-    public void setAssumedRoleARN(String assumedRoleARN) {
-        this.assumedRoleARN = assumedRoleARN;
+    public void setAssumedRoleArn(String assumedRoleArn) {
+        this.assumedRoleArn = assumedRoleArn;
     }
 
     public String getTunnel() {
@@ -465,8 +467,8 @@ public class ECSCloud extends Cloud {
             return options;
         }
 
-        public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId, @QueryParameter String regionName) {
-            ECSService ecsService = new ECSService(credentialsId, regionName);
+        public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId, @QueryParameter String assumedRoleArn, @QueryParameter String regionName) {
+            ECSService ecsService = new ECSService(credentialsId, assumedRoleArn, regionName);
             try {
                 final AmazonECS client = ecsService.getAmazonECSClient();
                 final List<String> allClusterArns = new ArrayList<String>();

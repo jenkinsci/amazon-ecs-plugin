@@ -33,16 +33,16 @@
     <c:select />
   </f:entry>
 
+  <f:entry field="assumedRoleArn" title="${%Assumed Role ARN}">
+    <f:textbox />
+  </f:entry>
+
   <f:entry field="regionName" title="${%Amazon ECS Region Name}" description="AWS regionName for ECS. If not specified, use us-east-1.">
     <f:select />
   </f:entry>
 
   <f:entry field="cluster" title="${%ECS Cluster}">
     <f:select />
-  </f:entry>
-
-  <f:entry field="assumedRoleARN" title="${%Assumed Role ARN}">
-    <f:textbox />
   </f:entry>
 
   <f:advanced>
