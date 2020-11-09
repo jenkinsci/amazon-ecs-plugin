@@ -3,6 +3,10 @@
 [![Build Status](https://ci.jenkins.io/job/Plugins/job/amazon-ecs-plugin/job/master/badge/icon)](https://ci.jenkins.io/job/Plugins/job/amazon-ecs-plugin/job/master/)
 [![Join the chat at https://gitter.im/jenkinsci/amazon-ecs-plugin](https://badges.gitter.im/jenkinsci/amazon-ecs-plugin.svg)](https://gitter.im/jenkinsci/amazon-ecs-plugin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+## Project Status
+This project is looking for maintainers, see also https://github.com/jenkinsci/amazon-ecs-plugin/issues/200
+If you want to adopt this plugin see https://www.jenkins.io/doc/developer/plugin-governance/adopt-a-plugin/
+
 ## About
 
 This Jenkins plugin uses [Amazon Elastic Container Service](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html) to host jobs execution inside docker containers.
