@@ -414,7 +414,8 @@ public class ECSService {
                                 .withEnvironment(envNodeName)
                                 .withEnvironment(envNodeSecret)))
                 .withPlacementStrategy(template.getPlacementStrategyEntries())
-                .withCluster(clusterArn);
+                .withCluster(clusterArn)
+                .withPropagateTags(PropagateTags.TASK_DEFINITION);
 
         if (template.getLaunchType() != null && template.getLaunchType().equals("FARGATE")) {
             req.withPlatformVersion(template.getPlatformVersion());
