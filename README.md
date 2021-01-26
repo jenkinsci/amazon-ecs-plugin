@@ -323,7 +323,14 @@ To run locally, execute the following command and open the browser [http://local
   mvn -e hpi:run
 ```
 
-### Debugging The plugin in an editor:
+### Debugging the plugin in an editor
+
+#### IntelliJ IDEA
+
+In the Maven dialog right click `hpi:run` and select `Debug`. 
+The IDE will stop at any breakpoints you have set inside the plugin.
+
+#### Other
 
 the
 
