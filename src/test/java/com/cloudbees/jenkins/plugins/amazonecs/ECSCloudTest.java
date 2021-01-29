@@ -35,7 +35,7 @@ public class ECSCloudTest {
         List<ECSTaskTemplate> templates = new ArrayList<>();
         templates.add(getTaskTemplate("my-template","label"));
 
-        ECSCloud sut = new ECSCloud("mycloud", "", "mycluster");
+        ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
         sut.setTemplates(templates);
         sut.setRegionName("eu-west-1");
         sut.setJenkinsUrl("http://jenkins.local");
@@ -51,7 +51,7 @@ public class ECSCloudTest {
 
         List<ECSTaskTemplate> templates = new ArrayList<>();
 
-        ECSCloud sut = new ECSCloud("mycloud", "", "mycluster");
+        ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
         sut.setTemplates(templates);
         sut.setRegionName("eu-west-1");
         sut.setJenkinsUrl("http://jenkins.local");
@@ -101,7 +101,7 @@ public class ECSCloudTest {
 
     @Test
     public void provisionByLabelInheritFromUsingListOfLabels() throws Exception {
-        ECSCloud            cloud    = new ECSCloud("mycloud", "", "mycluster");
+        ECSCloud            cloud    = new ECSCloud("mycloud", "", "", "mycluster");
         ECSTaskTemplate expected = getTaskTemplate("somename","label1 label2 label3");
 
         List<ECSTaskTemplate> currentTemplates = cloud.getTemplates();
@@ -123,7 +123,7 @@ public class ECSCloudTest {
     @Test
     public void isAllowedOverride_empty_returnsFalse() throws Exception {
 
-        ECSCloud sut = new ECSCloud("mycloud", "", "mycluster");
+        ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
 
         Assert.assertFalse(sut.isAllowedOverride("label"));
     }
@@ -131,7 +131,7 @@ public class ECSCloudTest {
     @Test
     public void isAllowedOverride_label_returnsTrue() throws Exception {
 
-        ECSCloud sut = new ECSCloud("mycloud", "", "mycluster");
+        ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
         sut.setAllowedOverrides("label");
 
         Assert.assertTrue(sut.isAllowedOverride("label"));

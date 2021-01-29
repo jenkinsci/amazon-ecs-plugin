@@ -27,7 +27,7 @@
 
     <groupId>com.cloudbees.jenkins.plugins</groupId>
     <artifactId>amazon-ecs</artifactId>
-    <version>1.37-SNAPSHOT</version>
+    <version>1.38-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>Amazon Elastic Container Service (ECS) / Fargate plugin</name>
     <description>Jenkins plugin to run dynamic agents in a Amazon ECS/Docker environment</description>
