@@ -43,6 +43,30 @@
   <f:entry name="launchType" title="${%Launch type}" field="launchType">
     <f:select />
   </f:entry>
+  <f:entry title="${%Default Capacity Provider}" field="defaultCapacityProvider" description="Use Default Capacity Provider. This will ignore Capacity provider strategy and use launch type value to set require capabilities">
+    <f:checkbox />
+  </f:entry>
+  <f:entry field="capacityProviderStrategies" title="${%Capacity provider strategy}">
+    <f:repeatable field="capacityProviderStrategies">
+      <table width="100%">
+        <f:entry field="base" title="${%Base}">
+          <f:textbox default="0"/>
+        </f:entry>
+        <f:entry field="weight" title="${%Weight}">
+          <f:textbox default="0"/>
+        </f:entry>
+        <f:entry name="provider" title="${%Provider}" field="provider">
+          <f:select />
+        </f:entry>
+
+        <f:entry>
+          <div align="right">
+            <f:repeatableDeleteButton />
+          </div>
+        </f:entry>
+      </table>
+    </f:repeatable>
+  </f:entry>
   <f:entry name="networkMode" title="${%Network mode}" field="networkMode">
     <f:select />
   </f:entry>

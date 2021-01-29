@@ -149,6 +149,8 @@ public class ECSCloudTest {
                 "image",
                 "repositoryCredentials",
                 "launchType",
+                false,
+                null,
                 "networkMode",
                 "remoteFSRoot",
                 false,

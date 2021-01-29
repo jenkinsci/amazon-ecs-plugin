@@ -340,8 +340,8 @@ public class ECSService {
 
             if (template.isFargate()) {
                 request
-                        .withRequiresCompatibilities(template.getLaunchType())
-                        .withNetworkMode("awsvpc")
+                        .withRequiresCompatibilities(LaunchType.FARGATE.toString())
+                        .withNetworkMode(NetworkMode.Awsvpc.toString())
                         .withMemory(String.valueOf(template.getMemoryConstraint()))
                         .withCpu(String.valueOf(template.getCpu()));
             }
@@ -439,7 +439,6 @@ public class ECSService {
 
         RunTaskRequest req = new RunTaskRequest()
                 .withTaskDefinition(taskDefinition.getTaskDefinitionArn())
-                .withLaunchType(LaunchType.fromValue(template.getLaunchType()))
                 .withOverrides(new TaskOverride()
                         .withContainerOverrides(new ContainerOverride()
                                 .withName(agentContainerName)
@@ -448,8 +447,13 @@ public class ECSService {
                                 .withEnvironment(envNodeSecret)))
                 .withPlacementStrategy(template.getPlacementStrategyEntries())
                 .withCluster(clusterArn);
-
-        if (template.getLaunchType() != null && template.getLaunchType().equals("FARGATE")) {
+        if ( ! template.getDefaultCapacityProvider() && template.getCapacityProviderStrategies() == null ) {
+            req.withLaunchType(LaunchType.fromValue(template.getLaunchType()));
+        }
+        if ( ! template.getDefaultCapacityProvider() && template.getCapacityProviderStrategies() != null ) {
+            req.withCapacityProviderStrategy(template.getCapacityProviderStrategyEntries());
+        }
+        if (template.isFargate()) {
             req.withPlatformVersion(template.getPlatformVersion());
         }
 
