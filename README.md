@@ -299,7 +299,7 @@ If you are running a interesting setup or have public posts abour your setups us
 - Slides: [Run Jenkins as managed product on ECS](https://www.slideshare.net/PhilippGarbe1/run-jenkins-as-managed-product-on-ecs-aws-meetup)
 - [Youtube: Jenkins with Amazon ECS slaves](https://www.youtube.com/watch?v=v0b53cdrujs)
 - [AWS Blog - Jenkins on AWS](https://aws.amazon.com/blogs/opensource/why-jenkins-still-continuously-serves-developers/)
-- [Running Jenkins jobs in AWS ECS with slave agents](https://tomgregory.com/jenkins-jobs-in-aws-ecs-with-slave-agents/)
+- [Running Jenkins jobs in AWS ECS with agents](https://tomgregory.com/jenkins-jobs-in-aws-ecs-with-slave-agents/)
 ## Maintainers
 
 Andreas Sieferlinger ([GitHub](https://github.com/webratz) [Twitter](https://twitter.com/webratz))  
