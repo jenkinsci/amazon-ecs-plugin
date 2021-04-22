@@ -136,7 +136,7 @@ public class ECSService {
         clientConfiguration.setMaxErrorRetry(10);
 
         AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard()
-                .withClientConfiguration(ClientConfiguration)
+                .withClientConfiguration(clientConfiguration)
                 .withRegion(regionName)
                 .build();
 
