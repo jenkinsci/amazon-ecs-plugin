@@ -121,7 +121,22 @@ public class ECSService {
 
     @CheckForNull
     private AWSStaticCredentialsProvider getCredentialsForRole(String roleArn, String regionName) {
+        ProxyConfiguration proxy = Jenkins.get().proxy;
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+
+        if (proxy != null) {
+            clientConfiguration.setProxyHost(proxy.name);
+            clientConfiguration.setProxyPort(proxy.port);
+            clientConfiguration.setProxyUsername(proxy.getUserName());
+            clientConfiguration.setProxyPassword(proxy.getPassword());
+        }
+
+        // Default is 3. 10 helps us actually utilize the SDK's backoff strategy
+        // The strategy will wait up to 20 seconds per request (after multiple failures)
+        clientConfiguration.setMaxErrorRetry(10);
+
         AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard()
+                .withClientConfiguration(ClientConfiguration)
                 .withRegion(regionName)
                 .build();
 
