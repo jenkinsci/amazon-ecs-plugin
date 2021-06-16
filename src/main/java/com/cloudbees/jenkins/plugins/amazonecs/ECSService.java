@@ -75,6 +75,9 @@ import hudson.slaves.SlaveComputer;
 public class ECSService {
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
 
+    private static final String AWS_TAG_JENKINS_LABEL_KEY = "jenkins.label";
+    private static final String AWS_TAG_JENKINS_TEMPLATENAME_KEY = "jenkins.templatename";
+
     @Nonnull
     private final Supplier<AmazonECS> clientSupplier;
 
@@ -320,9 +323,13 @@ public class ECSService {
             LOGGER.log(Level.FINE, "Task Definition already exists: {0}", new Object[]{currentTaskDefinition.getTaskDefinitionArn()});
             return currentTaskDefinition;
         } else {
+            Tag jenkinsLabelTag = new Tag().withKey(AWS_TAG_JENKINS_LABEL_KEY).withValue(template.getLabel());
+            Tag jenkinsTemplateNameTag =
+                    new Tag().withKey(AWS_TAG_JENKINS_TEMPLATENAME_KEY).withValue(template.getTemplateName());
             final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()
                     .withFamily(familyName)
                     .withVolumes(template.getVolumeEntries())
+                    .withTags(jenkinsLabelTag, jenkinsTemplateNameTag)
                     .withContainerDefinitions(def);
 
             //If network mode is default, that means Null in the request, so do not set.
