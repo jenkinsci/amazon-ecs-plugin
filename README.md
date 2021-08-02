@@ -75,8 +75,8 @@ One or several ECS agent templates can be defined for the Amazon EC2 Container S
 -   `Template name` is used (prefixed with the cloud's name) for the task definition in ECS.
 -   `Label`: agent labels used in conjunction with the job level configuration "Restrict where the project can be run / Label expression". ECS agent label could identify the Docker image used for the agent (e.g. `docker` for the jenkinsci/inbound-agent).
 -   `Docker image`: identifier of the Docker image to use to create the agents
-    `Filesystem root`: working directory used by Jenkins (e.g. `/home/jenkins/`).
-    `Memory`: number of MiB of memory reserved for the container. If your container attempts to exceed the memory allocated here, the container is killed.
+-   `Filesystem root`: working directory used by Jenkins (e.g. `/home/jenkins/`).
+-   `Memory`: number of MiB of memory reserved for the container. If your container attempts to exceed the memory allocated here, the container is killed.
 -   The number of `cpu units` to reserve for the container. A container instance has 1,024 cpu units for every CPU core.
     Advanced Configuration
 
