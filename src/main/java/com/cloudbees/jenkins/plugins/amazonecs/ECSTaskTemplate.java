@@ -86,6 +86,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -171,6 +172,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
      * @see ContainerDefinition#withCpu(Integer)
      */
     private final int cpu;
+
+    /**
+     * The ephemeral storage settings to use for tasks run with the task definition.
+     *
+     * @see com.amazonaws.services.ecs.model.TaskDefinition#withEphemeralStorage
+     */
+    private Integer ephemeralStorageSizeInGiB;
 
     /**
      * Sets the size of Share Memory (in MiB) using the
@@ -367,6 +375,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            int memory,
                            int memoryReservation,
                            int cpu,
+                           @Nullable Integer ephemeralStorageSizeInGiB,
                            @Nullable String subnets,
                            @Nullable String securityGroups,
                            boolean assignPublicIp,
@@ -409,6 +418,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.memory = memory;
         this.memoryReservation = memoryReservation;
         this.cpu = cpu;
+        this.ephemeralStorageSizeInGiB = ephemeralStorageSizeInGiB;
         this.launchType = launchType;
         this.operatingSystemFamily = operatingSystemFamily;
         this.cpuArchitecture = cpuArchitecture;
@@ -562,6 +572,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     }
 
     public int getSharedMemorySize() { return sharedMemorySize; }
+
+    public Integer getEphemeralStorageSizeInGiB() {
+        return ephemeralStorageSizeInGiB;
+    }
 
     public String getSubnets() {
         return subnets;
@@ -763,6 +777,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         int memory = this.memory == 0 ? parent.getMemory() : this.memory;
         int memoryReservation = this.memoryReservation == 0 ? parent.getMemoryReservation() : this.memoryReservation;
         int cpu = this.cpu == 0 ? parent.getCpu() : this.cpu;
+        Integer ephemeralStorageSizeInGiB = this.ephemeralStorageSizeInGiB == null ? parent.getEphemeralStorageSizeInGiB() : this.ephemeralStorageSizeInGiB;
         int sharedMemorySize = this.sharedMemorySize == 0 ? parent.getSharedMemorySize() : this.sharedMemorySize;
         String subnets = isNullOrEmpty(this.subnets) ? parent.getSubnets() : this.subnets;
         String securityGroups = isNullOrEmpty(this.securityGroups) ? parent.getSecurityGroups() : this.securityGroups;
@@ -809,6 +824,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        memory,
                                                        memoryReservation,
                                                        cpu,
+                                                       ephemeralStorageSizeInGiB,
                                                        subnets,
                                                        securityGroups,
                                                        assignPublicIp,
@@ -1464,6 +1480,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (cpu != that.cpu) {
             return false;
         }
+        if (!Objects.equals(ephemeralStorageSizeInGiB, that.ephemeralStorageSizeInGiB)) {
+            return false;
+        }
         if (sharedMemorySize != that.sharedMemorySize) {
             return false;
         }
@@ -1579,6 +1598,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + memory;
         result = 31 * result + memoryReservation;
         result = 31 * result + cpu;
+        result = 31 * result + (ephemeralStorageSizeInGiB != null ? ephemeralStorageSizeInGiB : 0);
         result = 31 * result + sharedMemorySize;
         result = 31 * result + (platformVersion != null ? platformVersion.hashCode() : 0);
         result = 31 * result + (subnets != null ? subnets.hashCode() : 0);

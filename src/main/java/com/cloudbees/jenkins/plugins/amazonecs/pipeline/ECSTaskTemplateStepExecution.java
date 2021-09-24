@@ -70,6 +70,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getMemory(),
                                           step.getMemoryReservation(),
                                           step.getCpu(),
+                                          step.getEphemeralStorageSizeInGiB(),
                                           step.getSubnets(),
                                           step.getSecurityGroups(),
                                           step.getAssignPublicIp(),

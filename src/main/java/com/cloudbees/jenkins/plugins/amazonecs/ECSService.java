@@ -324,6 +324,11 @@ public class ECSService extends BaseAWSService {
                         .withNetworkMode(NetworkMode.Awsvpc.toString())
                         .withMemory(String.valueOf(template.getMemoryConstraint()))
                         .withCpu(String.valueOf(template.getCpu()));
+                if (template.getEphemeralStorageSizeInGiB() != null && template.getEphemeralStorageSizeInGiB() > 0) {
+                    request.withEphemeralStorage(new EphemeralStorage()
+                            .withSizeInGiB(template.getEphemeralStorageSizeInGiB())
+                    );
+                }
             }
 
             final RegisterTaskDefinitionResult result = client.registerTaskDefinition(request);

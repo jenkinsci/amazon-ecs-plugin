@@ -82,6 +82,7 @@ public class ECSTaskTemplateStepExecutionTest {
                 r.nextInt(123),
                 r.nextInt(456),
                 r.nextInt(1024),
+                r.nextInt(200),
                 UUID.randomUUID().toString(),
                 UUID.randomUUID().toString(),
                 r.nextBoolean(),
@@ -120,6 +121,7 @@ public class ECSTaskTemplateStepExecutionTest {
         step.setMemory(expected.getMemory());
         step.setMemoryReservation(expected.getMemoryReservation());
         step.setCpu(expected.getCpu());
+        step.setEphemeralStorageSizeInGiB(expected.getEphemeralStorageSizeInGiB());
         step.setSubnets(expected.getSubnets());
         step.setSecurityGroups(expected.getSecurityGroups());
         step.setAssignPublicIp(expected.getAssignPublicIp());
@@ -168,6 +170,7 @@ public class ECSTaskTemplateStepExecutionTest {
                 0,
                 0,
                 0,
+                null,
                 null,
                 null,
                 false,
