@@ -42,6 +42,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private boolean assignPublicIp;
     private boolean privileged;
     private String containerUser;
+    private String kernelCapabilities;
     private String executionRole;
     private String taskrole;
     private String inheritFrom;
@@ -228,6 +229,16 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         overrides.add("containerUser");
     }
 
+    public String getKernelCapabilities() {
+        return kernelCapabilities;
+    }
+
+    @DataBoundSetter
+    public void setKernelCapabilities(String kernelCapabilities) {
+        this.kernelCapabilities = kernelCapabilities;
+        overrides.add("kernelCapabilities");
+    }
+
     public String getExecutionRole() {
         return executionRole;
     }
@@ -380,6 +391,10 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
 
         if (!StringUtils.isEmpty(containerUser)) {
             argMap.put("containerUser", containerUser);
+        }
+
+        if (!StringUtils.isEmpty(kernelCapabilities)) {
+            argMap.put("kernelCapabilities", kernelCapabilities);
         }
 
         if (!StringUtils.isEmpty(executionRole)) {

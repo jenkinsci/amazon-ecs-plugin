@@ -90,6 +90,7 @@ public class ECSTaskTemplateStepExecutionTest {
                 null,
                 null,
                 null,
+                null,
                 UUID.randomUUID().toString(),
                 null,
                 "override-task-role",
@@ -118,6 +119,7 @@ public class ECSTaskTemplateStepExecutionTest {
         step.setAssignPublicIp(expected.getAssignPublicIp());
         step.setPrivileged(expected.getPrivileged());
         step.setContainerUser(expected.getContainerUser());
+        step.setKernelCapabilities(expected.getKernelCapabilities());
         step.setLogDriverOptions(expected.getLogDriverOptions());
         step.setEnvironments(expected.getEnvironments());
         step.setExtraHosts(expected.getExtraHosts());
@@ -161,6 +163,7 @@ public class ECSTaskTemplateStepExecutionTest {
                 null,
                 false,
                 false,
+                null,
                 null,
                 null,
                 null,

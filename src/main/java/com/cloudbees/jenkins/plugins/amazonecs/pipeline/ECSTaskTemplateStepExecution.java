@@ -75,6 +75,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getAssignPublicIp(),
                                           step.getPrivileged(),
                                           step.getContainerUser(),
+                                          step.getKernelCapabilities(),
                                           step.getLogDriverOptions(),
                                           step.getEnvironments(),
                                           step.getExtraHosts(),
