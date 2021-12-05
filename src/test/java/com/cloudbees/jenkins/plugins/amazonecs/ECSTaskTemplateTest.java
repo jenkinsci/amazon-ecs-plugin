@@ -12,7 +12,7 @@ public class ECSTaskTemplateTest {
                 "parent-name", "parent-label",
                 null, null, "parent-image", "parent-repository-credentials", "FARGATE", false, null, "parent-network-mode", "parent-remoteFSRoot",
                 false, null, 0, 0, 0, null, null, false, false,
-                "parent-containerUser", null, null, null, null, null, null, null, null, null, 0);
+                "parent-containerUser", null, null, null, null, null, null, null, null, null, 0, false);
     }
 
     ECSTaskTemplate getChild(String parent) {
@@ -20,7 +20,7 @@ public class ECSTaskTemplateTest {
                 "child-name", "child-label",
                 null, null, "child-image", "child-repository-credentials", "EC2", false, null, "child-network-mode", "child-remoteFSRoot",
                 false, null, 0, 0, 0, null, null, false, false,
-                "child-containerUser", null, null, null, null, null, null, null, null, parent, 0);
+                "child-containerUser", null, null, null, null, null, null, null, null, parent, 0, false);
     }
 
     @Test
@@ -33,7 +33,7 @@ public class ECSTaskTemplateTest {
             "child-name", "child-label",
             null, null, "child-image", "child-repository-credentials", "EC2", false, null, "child-network-mode", "child-remoteFSRoot",
             false, null, 0, 0, 0, null, null, false, false,
-            "child-containerUser", null, null, null, null, null, null, null, null, null, 0);
+            "child-containerUser", null, null, null, null, null, null, null, null, null, 0, false);
 
 
         ECSTaskTemplate result = child.merge(parent);
@@ -50,7 +50,7 @@ public class ECSTaskTemplateTest {
             "child-name", "child-label",
             null, null, "child-image", "child-repository-credentials", "EC2", false, null, "child-network-mode", "child-remoteFSRoot",
             false, null, 0, 0, 0, null, null, false, false,
-            "child-containerUser", null, null, null, null, null, null, null, null, null, 0);
+            "child-containerUser", null, null, null, null, null, null, null, null, null, 0, false);
 
         ECSTaskTemplate result = child.merge(parent);
 
@@ -66,7 +66,7 @@ public class ECSTaskTemplateTest {
             "child-name", "child-label",
             null, null, "child-image", "child-repository-credentials", "EC2", false, null, "child-network-mode", "child-remoteFSRoot",
             false, null, 0, 0, 0, null, null, false, false,
-            "child-containerUser", null, null, null, null, null, null, null, null, null, 0);
+            "child-containerUser", null, null, null, null, null, null, null, null, null, 0, false);
 
         ECSTaskTemplate result = child.merge(null);
 
@@ -84,7 +84,7 @@ public class ECSTaskTemplateTest {
                 "child-name", "child-label",
                 null, null, "child-image", "child-repository-credentials", "EC2", false, null, "child-network-mode", "child-remoteFSRoot",
                 false, null, 0, 0, 0, null, null, false, false,
-                "child-containerUser", null, null, null, null, null, null, null, null, null, 0);
+                "child-containerUser", null, null, null, null, null, null, null, null, null, 0, false);
 
         //Child entrypoint should equal to parent by default
         parent.setEntrypoint(entrypoint);

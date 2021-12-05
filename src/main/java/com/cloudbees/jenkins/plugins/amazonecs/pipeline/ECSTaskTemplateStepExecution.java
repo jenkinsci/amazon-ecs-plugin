@@ -1,7 +1,5 @@
 package com.cloudbees.jenkins.plugins.amazonecs.pipeline;
 
-import com.amazonaws.services.codedeploy.model.ECSService;
-import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSCloud;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
 import com.cloudbees.jenkins.plugins.amazonecs.SerializableSupplier;
@@ -84,7 +82,8 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getPlacementStrategies(),
                                           step.getTaskrole(),
                                           step.getInheritFrom(),
-                                          step.getSharedMemorySize());
+                                          step.getSharedMemorySize(),
+                                          step.getEnableExecuteCommand());
         newTemplate.setLogDriver(step.getLogDriver());
 
         ECSTaskTemplate parentTemplate = ecsCloud.findParentTemplate(parentLabel);
