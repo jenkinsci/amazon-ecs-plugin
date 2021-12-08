@@ -8,7 +8,6 @@ import hudson.slaves.Cloud;
 import hudson.slaves.CloudProvisioningListener;
 import hudson.slaves.NodeProvisioner;
 import jenkins.model.Jenkins;
-import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
 import java.util.Collection;
@@ -25,16 +24,6 @@ import java.util.logging.Logger;
 public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
     private static final Logger LOGGER = Logger.getLogger(ECSProvisioningStrategy.class.getName());
 
-    private int maxNodes;
-
-
-    @DataBoundConstructor
-    public ECSProvisioningStrategy(int maxNodes) {
-        this.maxNodes = maxNodes;
-    }
-
-    public ECSProvisioningStrategy() {}
-
     /**
      * Takes a provisioning decision for a single label. Determines how many ECS tasks to start based solely on
      * queue length and how many agents are in the process of connecting.
@@ -47,10 +36,6 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
         Label label = state.getLabel();
 
         int excessWorkload = snap.getQueueLength() - snap.getAvailableExecutors() - snap.getConnectingExecutors();
-
-        if (Jenkins.get().clouds.size() > maxNodes) {
-            return  NodeProvisioner.StrategyDecision.PROVISIONING_COMPLETED;
-        }
 
         CLOUD:
         for (Cloud c : Jenkins.get().clouds) {
@@ -67,6 +52,13 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
                 CauseOfBlockage causeOfBlockage = cl.canProvision(c, label, excessWorkload);
                 if (causeOfBlockage != null) {
                     continue CLOUD;
+                }
+            }
+
+            if (c instanceof ECSCloud) {
+                Boolean isAtLimit = ((ECSCloud) c).isAtLimit(snap.getOnlineExecutors(), snap.getConnectingExecutors());
+                if ( isAtLimit ) {
+                    return NodeProvisioner.StrategyDecision.PROVISIONING_COMPLETED; //maxNodes provisioned
                 }
             }
 

@@ -58,6 +58,9 @@
     <f:entry field="maxMemoryReservation" title="${%Maximum declarative memoryReservation}" description="Maximum memoryReservation that can be configured in declarative agent. 0 means unlimited.">
       <f:textbox />
     </f:entry>
+    <f:entry field="maxNodes" title="${%Maximum Nodes}" description="Maximum number of nodes provisioned by ECS. 0 means unlimited.">
+      <f:textbox />
+    </f:entry>
     <f:entry field="tunnel" title="${%Tunnel connection through}" help="/help/system-config/master-slave/jnlp-tunnel.html">
       <f:textbox />
     </f:entry>

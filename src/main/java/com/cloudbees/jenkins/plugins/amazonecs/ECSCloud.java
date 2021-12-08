@@ -52,6 +52,7 @@ import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.cloudbees.jenkins.plugins.amazonecs.pipeline.TaskTemplateMap;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 
+import hudson.model.*;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -59,10 +60,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import hudson.Extension;
-import hudson.model.Computer;
-import hudson.model.Descriptor;
-import hudson.model.Label;
-import hudson.model.Node;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.util.FormValidation;
@@ -94,6 +91,7 @@ public class ECSCloud extends Cloud {
     private int maxCpu;
     private int maxMemory;
     private int maxMemoryReservation;
+    private int maxNodes = DescriptorImpl.DEFAULT_MAXIMUM_NODES;
 
     @DataBoundConstructor
     public ECSCloud(String name, @Nonnull String credentialsId, String assumedRoleArn, String cluster) {
@@ -203,11 +201,21 @@ public class ECSCloud extends Cloud {
 
     @Override
     public boolean canProvision(Label label) {
-        return getTemplate(label) != null;
+        return getTemplate(label) != null;  // and is at limit != false
     }
 
     public boolean canProvision(String label) {
         return getTemplate(label) != null;
+    }
+
+    public boolean isAtLimit(int onlineExecutors, int connectingExecutors) {
+       // maxNodes equals 0 indicates that we don't have restriction on number of nodes.
+        if (maxNodes != 0) {
+            if (onlineExecutors + connectingExecutors >= maxNodes ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private ECSTaskTemplate getTemplate(Label label) {
@@ -365,6 +373,15 @@ public class ECSCloud extends Cloud {
         this.maxMemoryReservation = maxMemoryReservation;
     }
 
+    public int getMaxNodes() {
+        return maxNodes;
+    }
+
+    @DataBoundSetter
+    public void setMaxNodes(int maxNodes) {
+        this.maxNodes = maxNodes;
+    }
+
     public void addTemplate(ECSTaskTemplate taskTemplate) {
         List<ECSTaskTemplate> nonDynamic = getTemplates();
         List<ECSTaskTemplate> result = new CopyOnWriteArrayList<>();
@@ -449,6 +466,7 @@ public class ECSCloud extends Cloud {
         public static final int DEFAULT_TASK_POLLING_INTERVAL_IN_SECONDS = 1;
         public static final String DEFAULT_ALLOWED_OVERRIDES = "";
         private static String CLOUD_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
+        private static final int DEFAULT_MAXIMUM_NODES = 5;
 
         @Override
         public String getDisplayName() {
