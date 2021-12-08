@@ -52,7 +52,6 @@ import com.amazonaws.services.ecs.model.TaskDefinition;
 import com.cloudbees.jenkins.plugins.amazonecs.pipeline.TaskTemplateMap;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 
-import hudson.model.*;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -60,6 +59,10 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import hudson.Extension;
+import hudson.model.Computer;
+import hudson.model.Descriptor;
+import hudson.model.Label;
+import hudson.model.Node;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.util.FormValidation;
@@ -201,7 +204,7 @@ public class ECSCloud extends Cloud {
 
     @Override
     public boolean canProvision(Label label) {
-        return getTemplate(label) != null;  // and is at limit != false
+        return getTemplate(label) != null;
     }
 
     public boolean canProvision(String label) {
