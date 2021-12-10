@@ -469,7 +469,7 @@ public class ECSCloud extends Cloud {
         public static final int DEFAULT_TASK_POLLING_INTERVAL_IN_SECONDS = 1;
         public static final String DEFAULT_ALLOWED_OVERRIDES = "";
         private static String CLOUD_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
-        private static final int DEFAULT_MAXIMUM_NODES = 5;
+        private static final int DEFAULT_MAXIMUM_NODES = 2;
 
         @Override
         public String getDisplayName() {
