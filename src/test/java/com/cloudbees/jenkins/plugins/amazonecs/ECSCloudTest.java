@@ -210,6 +210,7 @@ public class ECSCloudTest {
                 null,
                 null,
                 null,
-                0);
+                0,
+                false);
     }
 }

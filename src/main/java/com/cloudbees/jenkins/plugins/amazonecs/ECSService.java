@@ -456,6 +456,9 @@ public class ECSService {
         if (template.isFargate()) {
             req.withPlatformVersion(template.getPlatformVersion());
         }
+        if (template.isFargate() || template.isEC2()) {
+            req.setEnableExecuteCommand(template.isEnableExecuteCommand());
+        }
 
         if (taskDefinition.getNetworkMode() != null && taskDefinition.getNetworkMode().equals("awsvpc")) {
             AwsVpcConfiguration awsVpcConfiguration = new AwsVpcConfiguration();

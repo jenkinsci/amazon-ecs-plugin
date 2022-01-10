@@ -46,6 +46,7 @@ jenkins:
                     subnets: ${SUBNETS}
                     templateName: "build-example"
                     uniqueRemoteFSRoot: false
+                    enableExecuteCommand: false
 security:
   sSHD:
     port: -1
