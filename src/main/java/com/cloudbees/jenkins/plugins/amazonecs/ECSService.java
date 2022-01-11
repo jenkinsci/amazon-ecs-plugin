@@ -75,6 +75,9 @@ import hudson.slaves.SlaveComputer;
 public class ECSService {
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
 
+    private static final String AWS_TAG_JENKINS_LABEL_KEY = "jenkins.label";
+    private static final String AWS_TAG_JENKINS_TEMPLATENAME_KEY = "jenkins.templatename";
+
     @Nonnull
     private final Supplier<AmazonECS> clientSupplier;
 
@@ -320,9 +323,13 @@ public class ECSService {
             LOGGER.log(Level.FINE, "Task Definition already exists: {0}", new Object[]{currentTaskDefinition.getTaskDefinitionArn()});
             return currentTaskDefinition;
         } else {
+            Tag jenkinsLabelTag = new Tag().withKey(AWS_TAG_JENKINS_LABEL_KEY).withValue(template.getLabel());
+            Tag jenkinsTemplateNameTag =
+                    new Tag().withKey(AWS_TAG_JENKINS_TEMPLATENAME_KEY).withValue(template.getTemplateName());
             final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()
                     .withFamily(familyName)
                     .withVolumes(template.getVolumeEntries())
+                    .withTags(jenkinsLabelTag, jenkinsTemplateNameTag)
                     .withContainerDefinitions(def);
 
             //If network mode is default, that means Null in the request, so do not set.
@@ -437,8 +444,12 @@ public class ECSService {
 
         LOGGER.log(Level.FINE, "Found container definition with {0} container(s). Assuming first container is the Jenkins agent: {1}", new Object[]{taskDefinition.getContainerDefinitions().size(), agentContainerName});
 
+        Tag jenkinsLabelTag = new Tag().withKey(AWS_TAG_JENKINS_LABEL_KEY).withValue(template.getLabel());
+        Tag jenkinsTemplateNameTag =
+                new Tag().withKey(AWS_TAG_JENKINS_TEMPLATENAME_KEY).withValue(template.getTemplateName());
         RunTaskRequest req = new RunTaskRequest()
                 .withTaskDefinition(taskDefinition.getTaskDefinitionArn())
+                .withTags(jenkinsLabelTag, jenkinsTemplateNameTag)
                 .withOverrides(new TaskOverride()
                         .withContainerOverrides(new ContainerOverride()
                                 .withName(agentContainerName)
