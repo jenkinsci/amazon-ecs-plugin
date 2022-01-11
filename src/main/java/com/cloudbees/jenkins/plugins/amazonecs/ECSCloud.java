@@ -94,7 +94,7 @@ public class ECSCloud extends Cloud {
     private int maxCpu;
     private int maxMemory;
     private int maxMemoryReservation;
-    private int maxNodes = DescriptorImpl.DEFAULT_MAXIMUM_NODES;
+    private int maxAgents = DescriptorImpl.DEFAULT_MAXIMUM_AGENTS;
 
     @DataBoundConstructor
     public ECSCloud(String name, @Nonnull String credentialsId, String assumedRoleArn, String cluster) {
@@ -212,9 +212,9 @@ public class ECSCloud extends Cloud {
     }
 
     public boolean isAtLimit(int onlineExecutors, int connectingExecutors) {
-       // maxNodes equals 0 indicates that we don't have restriction on number of nodes.
-        if (maxNodes != 0) {
-            if (onlineExecutors + connectingExecutors >= maxNodes ) {
+       // maxAgents equals 0 indicates that we don't have restriction on number of nodes.
+        if (maxAgents != 0) {
+            if (onlineExecutors + connectingExecutors >= maxAgents ) {
                 return true;
             }
         }
@@ -376,13 +376,13 @@ public class ECSCloud extends Cloud {
         this.maxMemoryReservation = maxMemoryReservation;
     }
 
-    public int getMaxNodes() {
-        return maxNodes;
+    public int getMaxAgents() {
+        return maxAgents;
     }
 
     @DataBoundSetter
-    public void setMaxNodes(int maxNodes) {
-        this.maxNodes = maxNodes;
+    public void setMaxAgents(int maxAgents) {
+        this.maxAgents = maxAgents;
     }
 
     public void addTemplate(ECSTaskTemplate taskTemplate) {
@@ -469,7 +469,7 @@ public class ECSCloud extends Cloud {
         public static final int DEFAULT_TASK_POLLING_INTERVAL_IN_SECONDS = 1;
         public static final String DEFAULT_ALLOWED_OVERRIDES = "";
         private static String CLOUD_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
-        private static final int DEFAULT_MAXIMUM_NODES = 5;
+        private static final int DEFAULT_MAXIMUM_AGENTS = 0; //Unlimited
 
         @Override
         public String getDisplayName() {

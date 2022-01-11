@@ -144,6 +144,7 @@ public class ECSCloudTest {
         templates.add(getTaskTemplate("my-template","label"));
 
         ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
+        sut.setMaxAgents(3);
         sut.setTemplates(templates);
         sut.setRegionName("eu-west-1");
         sut.setJenkinsUrl("http://jenkins.local");
