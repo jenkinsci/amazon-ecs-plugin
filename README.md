@@ -22,7 +22,7 @@ The scope of the plugin is only using existing and pre-configured AWS Infrastruc
 
 ### Requirements
 
--   Jenkins with at least version 2.176.1
+-   Jenkins with at least version 2.249.3
 -   AWS Account
 
 ### Plugin install
@@ -305,6 +305,7 @@ If you are running a interesting setup or have public posts abour your setups us
 Andreas Sieferlinger ([GitHub](https://github.com/webratz) [Twitter](https://twitter.com/webratz))  
 Philipp Garbe ([GitHub](https://github.com/pgarbe), [Twitter](https://twitter.com/pgarbe))  
 Marky Jackson ([GitHub](https://github.com/markyjackson-taulia), [Twitter](https://twitter.com/MarkyJackson3))
+Stephen Erickson ([GitHub](https://github.com/stericson))
 
 ## Developing
 
