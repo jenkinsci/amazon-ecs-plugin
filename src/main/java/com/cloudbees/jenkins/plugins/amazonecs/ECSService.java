@@ -34,14 +34,9 @@ import java.util.logging.Logger;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
-import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.RegionUtils;
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.AmazonECSClientBuilder;
 import com.amazonaws.services.ecs.model.*;
@@ -55,16 +50,14 @@ import com.amazonaws.waiters.FixedDelayStrategy;
 import com.amazonaws.waiters.PollingStrategy;
 import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
+import com.cloudbees.jenkins.plugins.amazonecs.aws.BaseAWSService;
 import com.cloudbees.jenkins.plugins.amazonecs.aws.MaxTimeRetryStrategy;
-import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 
 import hudson.AbortException;
-import hudson.ProxyConfiguration;
-import jenkins.model.Jenkins;
 import hudson.slaves.SlaveComputer;
 
 /**
@@ -72,7 +65,7 @@ import hudson.slaves.SlaveComputer;
  *
  * @author Jan Roehrich {@literal <jan@roehrich.info> }
  */
-public class ECSService {
+public class ECSService extends BaseAWSService {
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
 
     private static final String AWS_TAG_JENKINS_LABEL_KEY = "jenkins.label";
@@ -83,23 +76,9 @@ public class ECSService {
 
     public ECSService(String credentialsId, String assumedRoleArn, String regionName) {
         this.clientSupplier = () -> {
-            ProxyConfiguration proxy = Jenkins.get().proxy;
-            ClientConfiguration clientConfiguration = new ClientConfiguration();
-
-            if (proxy != null) {
-                clientConfiguration.setProxyHost(proxy.name);
-                clientConfiguration.setProxyPort(proxy.port);
-                clientConfiguration.setProxyUsername(proxy.getUserName());
-                clientConfiguration.setProxyPassword(proxy.getPassword());
-            }
-
-            // Default is 3. 10 helps us actually utilize the SDK's backoff strategy
-            // The strategy will wait up to 20 seconds per request (after multiple failures)
-            clientConfiguration.setMaxErrorRetry(10);
-
             AmazonECSClientBuilder builder = AmazonECSClientBuilder
                     .standard()
-                    .withClientConfiguration(clientConfiguration)
+                    .withClientConfiguration(createClientConfiguration())
                     .withRegion(regionName);
 
             AmazonWebServicesCredentials credentials = getCredentials(credentialsId);
@@ -149,19 +128,6 @@ public class ECSService {
 
     AmazonECS getAmazonECSClient() {
         return clientSupplier.get();
-    }
-
-    Region getRegion(String regionName) {
-        if (StringUtils.isNotEmpty(regionName)) {
-            return RegionUtils.getRegion(regionName);
-        } else {
-            return Region.getRegion(Regions.US_EAST_1);
-        }
-    }
-
-    @CheckForNull
-    private AmazonWebServicesCredentials getCredentials(@Nullable String credentialsId) {
-        return AWSCredentialsHelper.getCredentials(credentialsId, Jenkins.get());
     }
 
     public Task describeTask(String taskArn, String clusterArn) {
