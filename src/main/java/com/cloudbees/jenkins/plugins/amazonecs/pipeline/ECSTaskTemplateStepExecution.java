@@ -78,6 +78,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getEnvironments(),
                                           step.getExtraHosts(),
                                           step.getMountPoints(),
+                                          step.getEfsMountPoints(),
                                           step.getPortMappings(),
                                           step.getExecutionRole(),
                                           step.getPlacementStrategies(),
