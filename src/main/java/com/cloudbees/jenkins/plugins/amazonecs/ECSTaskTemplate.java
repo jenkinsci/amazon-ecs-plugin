@@ -313,6 +313,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
     private String inheritFrom;
 
+    /**
+     * Enable command execution during runtime (comparable to a `docker exec ...`).
+     * Cf. https://aws.amazon.com/blogs/containers/new-using-amazon-ecs-exec-access-your-containers-fargate-ec2/
+     */
+    private boolean enableExecuteCommand;
+
     @DataBoundConstructor
     public ECSTaskTemplate(String templateName,
                            @Nullable String label,
@@ -345,7 +351,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            @Nullable List<PlacementStrategyEntry> placementStrategies,
                            @Nullable String taskrole,
                            @Nullable String inheritFrom,
-                           int sharedMemorySize) {
+                           int sharedMemorySize,
+                           boolean enableExecuteCommand) {
         // if the user enters a task definition override, always prefer to use it, rather than the jenkins template.
         if (taskDefinitionOverride != null && !taskDefinitionOverride.trim().isEmpty()) {
             this.taskDefinitionOverride = taskDefinitionOverride.trim();
@@ -391,6 +398,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.inheritFrom = inheritFrom;
         this.sharedMemorySize = sharedMemorySize;
         this.dynamicTaskDefinitionOverride = StringUtils.trimToNull(dynamicTaskDefinitionOverride);
+        this.enableExecuteCommand = enableExecuteCommand;
     }
 
     @DataBoundSetter
@@ -465,6 +473,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
             return false;
         }
         return StringUtils.trimToNull(this.launchType) != null && launchType.equals(LaunchType.FARGATE.toString());
+    }
+
+    public boolean isEC2() {
+        return StringUtils.trimToNull(this.launchType) != null && launchType.equals(LaunchType.EC2.toString());
     }
 
     public String getLabel() {
@@ -570,7 +582,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
     public String getLaunchType() {
         if (StringUtils.trimToNull(this.launchType) == null) {
-            return LaunchType.EC2.toString();
+            return LaunchType.
+                    EC2.toString();
         }
         return launchType;
     }
@@ -588,6 +601,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     }
 
     public String getTemplateName() {return templateName; }
+
+    public boolean isEnableExecuteCommand() {
+        return enableExecuteCommand;
+    }
 
     @Override
     public String toString() {
@@ -717,6 +734,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
         String executionRole = isNullOrEmpty(this.executionRole) ? parent.getExecutionRole() : this.executionRole;
         String taskrole = isNullOrEmpty(this.taskrole) ? parent.getTaskrole() : this.taskrole;
+        boolean enableExecuteCommand = this.enableExecuteCommand ? true : parent.isEnableExecuteCommand();
 
         ECSTaskTemplate merged = new ECSTaskTemplate(templateName,
                                                        label,
@@ -749,7 +767,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        placementStrategies,
                                                        taskrole,
                                                        null,
-                                                        sharedMemorySize);
+                                                        sharedMemorySize,
+                                                        enableExecuteCommand);
         merged.setLogDriver(logDriver);
         merged.setEntrypoint(entrypoint);
 
@@ -1339,6 +1358,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + (logDriver != null ? logDriver.hashCode() : 0);
         result = 31 * result + (logDriverOptions != null ? logDriverOptions.hashCode() : 0);
         result = 31 * result + (inheritFrom != null ? inheritFrom.hashCode() : 0);
+        result = 31 * result + (enableExecuteCommand ? 1 : 0);
         return result;
     }
 }

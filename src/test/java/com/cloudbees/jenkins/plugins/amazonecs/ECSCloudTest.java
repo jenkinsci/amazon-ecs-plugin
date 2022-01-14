@@ -5,7 +5,6 @@ import com.amazonaws.services.ecs.model.TaskDefinition;
 import hudson.model.labels.LabelAtom;
 import hudson.slaves.NodeProvisioner.PlannedNode;
 import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -16,7 +15,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -137,6 +135,47 @@ public class ECSCloudTest {
         Assert.assertTrue(sut.isAllowedOverride("label"));
     }
 
+    @Test
+    public void isAtLimit_returnsTrue () {
+        int onlineExecutors = 6;
+        int connectingExecutors = 2;
+
+        List<ECSTaskTemplate> templates = new ArrayList<>();
+        templates.add(getTaskTemplate("my-template","label"));
+
+        ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
+        sut.setMaxAgents(3);
+        sut.setTemplates(templates);
+        sut.setRegionName("eu-west-1");
+        sut.setJenkinsUrl("http://jenkins.local");
+        sut.setSlaveTimeoutInSeconds(5);
+        sut.setRetentionTimeout(5);
+
+        Boolean isAtLimit = sut.isAtLimit(onlineExecutors, connectingExecutors);
+
+        Assert.assertTrue(isAtLimit);
+    }
+
+    @Test
+    public void isAtLimit_returnsFalse () {
+        int onlineExecutors = 3;
+        int connectingExecutors = 0;
+
+        List<ECSTaskTemplate> templates = new ArrayList<>();
+        templates.add(getTaskTemplate("my-template","label"));
+
+        ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
+        sut.setTemplates(templates);
+        sut.setRegionName("eu-west-1");
+        sut.setJenkinsUrl("http://jenkins.local");
+        sut.setSlaveTimeoutInSeconds(5);
+        sut.setRetentionTimeout(5);
+
+        Boolean isAtLimit = sut.isAtLimit(onlineExecutors, connectingExecutors);
+
+        Assert.assertFalse(isAtLimit);
+    }
+
     private ECSTaskTemplate getTaskTemplate() {
         return getTaskTemplate(UUID.randomUUID().toString(),UUID.randomUUID().toString());
     }
@@ -173,6 +212,7 @@ public class ECSCloudTest {
                 null,
                 null,
                 null,
-                0);
+                0,
+                false);
     }
 }

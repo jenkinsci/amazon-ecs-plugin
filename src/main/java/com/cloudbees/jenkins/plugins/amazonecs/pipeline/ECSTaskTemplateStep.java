@@ -69,6 +69,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private String executionRole;
     private String taskrole;
     private String inheritFrom;
+    private boolean enableExecuteCommand;
     private String logDriver;
     private List<LogDriverOption> logDriverOptions;
     private List<EnvironmentEntry> environments;
@@ -300,6 +301,15 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
 
     public String getInheritFrom() {
         return inheritFrom;
+    }
+
+    @DataBoundSetter
+    public void setEnableExecuteCommand(boolean enableExecuteCommand) {
+        this.enableExecuteCommand = enableExecuteCommand;
+    }
+
+    public boolean getEnableExecuteCommand() {
+        return enableExecuteCommand;
     }
 
     public String getLogDriver() {
