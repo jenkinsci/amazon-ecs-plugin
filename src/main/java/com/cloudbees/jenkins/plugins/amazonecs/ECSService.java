@@ -264,6 +264,10 @@ public class ECSService {
         if (template.getContainerUser() != null)
             def.withUser(template.getContainerUser());
 
+        if (template.getKernelCapabilities() != null) {
+            def.withLinuxParameters(new LinuxParameters().withCapabilities(new KernelCapabilities().withAdd(Arrays.asList(template.getKernelCapabilities().split(",")))));
+        }
+
         if (template.getRepositoryCredentials() != null)
             def.withRepositoryCredentials(new RepositoryCredentials().withCredentialsParameter(template.getRepositoryCredentials()));
 

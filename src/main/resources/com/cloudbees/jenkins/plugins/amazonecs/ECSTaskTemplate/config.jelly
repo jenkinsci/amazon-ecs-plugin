@@ -125,6 +125,9 @@
     <f:entry title="${%ContainerUser}" field="containerUser">
       <f:textbox />
     </f:entry>
+    <f:entry title="${%Add Kernel Capabilities}" field="kernelCapabilities" description="List of kernel capabilities to be added, separated by comma">
+      <f:textbox />
+    </f:entry>
     <f:entry title="${%Logging Driver}" field="logDriver">
       <f:textbox />
     </f:entry>

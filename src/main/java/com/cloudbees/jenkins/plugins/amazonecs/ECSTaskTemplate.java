@@ -273,10 +273,16 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private final String platformVersion;
 
     /**
-     * User for conatiner
+     * User for container
      */
     @Nullable
     private String containerUser;
+
+    /**
+     * List of kernel capabilities to be added
+     */
+    @Nullable
+    private String kernelCapabilities;
 
     private List<EnvironmentEntry> environments;
     private List<ExtraHostEntry> extraHosts;
@@ -335,6 +341,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            boolean assignPublicIp,
                            boolean privileged,
                            @Nullable String containerUser,
+                           @Nullable String kernelCapabilities,
                            @Nullable List<LogDriverOption> logDriverOptions,
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
@@ -379,6 +386,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.assignPublicIp = assignPublicIp;
         this.privileged = privileged;
         this.containerUser = StringUtils.trimToNull(containerUser);
+        this.kernelCapabilities = StringUtils.trimToNull(kernelCapabilities);
         this.logDriverOptions = logDriverOptions;
         this.environments = environments;
         this.extraHosts = extraHosts;
@@ -426,6 +434,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     @DataBoundSetter
     public void setContainerUser(String containerUser) {
         this.containerUser = StringUtils.trimToNull(containerUser);
+    }
+
+    @DataBoundSetter
+    public void setKernelCapabilities(String kernelCapabilities) {
+        this.kernelCapabilities = StringUtils.trimToNull(kernelCapabilities);
     }
 
     @DataBoundSetter
@@ -561,6 +574,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
     public String getContainerUser() {
         return containerUser;
+    }
+
+    public String getKernelCapabilities() {
+        return kernelCapabilities;
     }
 
     public String getLaunchType() {
@@ -702,6 +719,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         // Bug potential here. If I intenionally set it false in the child, then it will be ignored and take the parent. Need null to mean 'unset'
         boolean privileged = this.privileged ? this.privileged : parent.getPrivileged();
         String containerUser = isNullOrEmpty(this.containerUser) ? parent.getContainerUser() : this.containerUser;
+        String kernelCapabilities = isNullOrEmpty(this.kernelCapabilities) ? parent.getKernelCapabilities() : this.kernelCapabilities;
         String logDriver = isNullOrEmpty(this.logDriver) ? parent.getLogDriver() : this.logDriver;
         String entrypoint = isNullOrEmpty(this.entrypoint) ? parent.getEntrypoint() : this.entrypoint;
 
@@ -739,6 +757,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        assignPublicIp,
                                                        privileged,
                                                        containerUser,
+                                                       kernelCapabilities,
                                                        logDriverOptions,
                                                        environments,
                                                        extraHosts,
@@ -1278,6 +1297,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (containerUser != null ? !containerUser.equals(that.containerUser) : that.containerUser != null) {
             return false;
         }
+        if (kernelCapabilities != null ? !kernelCapabilities.equals(that.kernelCapabilities) : that.kernelCapabilities != null) {
+            return false;
+        }
         if (environments != null ? !environments.equals(that.environments) : that.environments != null) {
             return false;
         }
@@ -1328,6 +1350,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + (privileged ? 1 : 0);
         result = 31 * result + (uniqueRemoteFSRoot ? 1 : 0);
         result = 31 * result + (containerUser != null ? containerUser.hashCode() : 0);
+        result = 31 * result + (kernelCapabilities != null ? kernelCapabilities.hashCode() : 0);
         result = 31 * result + (environments != null ? environments.hashCode() : 0);
         result = 31 * result + (extraHosts != null ? extraHosts.hashCode() : 0);
         result = 31 * result + (portMappings != null ? portMappings.hashCode() : 0);
