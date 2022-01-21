@@ -81,6 +81,8 @@ public class ECSSlaveTest {
             "image",
             "repositoryCredentials",
             "launchType",
+            "operatingSystemFamily",
+            "cpuArchitecture",
             false,
             null,
             "networkMode",

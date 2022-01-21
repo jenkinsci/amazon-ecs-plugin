@@ -48,6 +48,12 @@
   <f:entry name="launchType" title="${%Launch type}" field="launchType">
     <f:select />
   </f:entry>
+  <f:entry name="operatingSystemFamily" title="${%Operating System Family}" field="operatingSystemFamily">
+    <f:select />
+  </f:entry>
+  <f:entry name="cpuArchitecture" title="${%CPU Architecture}" field="cpuArchitecture">
+    <f:select />
+  </f:entry>
   <f:entry name="networkMode" title="${%Network mode}" field="networkMode">
     <f:select />
   </f:entry>

@@ -36,6 +36,8 @@ import com.amazonaws.services.ecs.model.HostEntry;
 import com.amazonaws.services.ecs.model.HostVolumeProperties;
 import com.amazonaws.services.ecs.model.KeyValuePair;
 import com.amazonaws.services.ecs.model.LaunchType;
+import com.amazonaws.services.ecs.model.OSFamily;
+import com.amazonaws.services.ecs.model.CPUArchitecture;
 import com.amazonaws.services.ecs.model.CapacityProviderStrategyItem;
 import com.amazonaws.services.ecs.model.LinuxParameters;
 import com.amazonaws.services.ecs.model.MountPoint;
@@ -49,6 +51,7 @@ import com.amazonaws.services.ecs.model.Volume;
 import com.amazonaws.services.ecs.model.DescribeClustersRequest;
 import com.amazonaws.services.ecs.model.DescribeClustersResult;
 import com.amazonaws.services.ecs.model.Cluster;
+
 import static com.google.common.base.Strings.isNullOrEmpty;
 import com.amazonaws.services.elasticfilesystem.model.AccessPointDescription;
 import com.amazonaws.services.elasticfilesystem.model.FileSystemDescription;
@@ -262,6 +265,16 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private final String launchType;
 
     /**
+     * Task operating system family type
+     */
+    private final String operatingSystemFamily;
+
+    /**
+     * Task CPU architecture type
+     */
+    private final String cpuArchitecture;
+
+    /**
      * Use default capacity provider will omit launch types and capacity strategies
      *
      */
@@ -343,6 +356,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            String image,
                            @Nullable final String repositoryCredentials,
                            @Nullable String launchType,
+                           @Nullable String operatingSystemFamily,
+                           @Nullable String cpuArchitecture,
                            boolean defaultCapacityProvider,
                            @Nullable List<CapacityProviderStrategyEntry> capacityProviderStrategies,
                            String networkMode,
@@ -395,6 +410,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.memoryReservation = memoryReservation;
         this.cpu = cpu;
         this.launchType = launchType;
+        this.operatingSystemFamily = operatingSystemFamily;
+        this.cpuArchitecture = cpuArchitecture;
         this.defaultCapacityProvider = defaultCapacityProvider;
         this.capacityProviderStrategies = capacityProviderStrategies;
         this.networkMode = networkMode;
@@ -606,6 +623,23 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         return launchType;
     }
 
+    public String getOperatingSystemFamily() {
+        if (StringUtils.trimToNull(this.operatingSystemFamily) == null) {
+            return OSFamily.
+                    LINUX.toString();
+        }
+        return operatingSystemFamily;
+    }
+
+    public String getCpuArchitecture() {
+        if (StringUtils.trimToNull(this.cpuArchitecture) == null) {
+            return CPUArchitecture.
+                    X86_64.toString();
+        }
+        return cpuArchitecture;
+    }
+
+
     public String getNetworkMode() {
         return networkMode;
     }
@@ -717,6 +751,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         String image = isNullOrEmpty(this.image) ? parent.getImage() : this.image;
         String repositoryCredentials = isNullOrEmpty(this.repositoryCredentials) ? parent.getRepositoryCredentials() : this.repositoryCredentials;
         String launchType = isNullOrEmpty(this.launchType) ? parent.getLaunchType() : this.launchType;
+        String operatingSystemFamily = isNullOrEmpty(this.operatingSystemFamily) ? parent.getOperatingSystemFamily() : this.operatingSystemFamily;
+        String cpuArchitecture = isNullOrEmpty(this.cpuArchitecture) ? parent.getCpuArchitecture() : this.cpuArchitecture;
         boolean defaultCapacityProvider = this.defaultCapacityProvider ? this.defaultCapacityProvider : parent.getDefaultCapacityProvider();
         String networkMode = isNullOrEmpty(this.networkMode) ? parent.getNetworkMode() : this.networkMode;
         String remoteFSRoot = isNullOrEmpty(this.remoteFSRoot) ? parent.getRemoteFSRoot() : this.remoteFSRoot;
@@ -762,6 +798,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        image,
                                                        repositoryCredentials,
                                                        launchType,
+                                                       operatingSystemFamily,
+                                                       cpuArchitecture,
                                                        defaultCapacityProvider,
                                                        capacityProviderStrategies,
                                                        networkMode,
@@ -1297,6 +1335,22 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
             return options;
         }
 
+        public ListBoxModel doFillOperatingSystemFamilyItems() {
+            final ListBoxModel options = new ListBoxModel();
+            for (OSFamily operatingSystemFamily: OSFamily.values()) {
+                options.add(operatingSystemFamily.toString());
+            }
+            return options;
+        }
+
+        public ListBoxModel doFillCpuArchitectureItems() {
+            final ListBoxModel options = new ListBoxModel();
+            for (CPUArchitecture cpuArchitecture: CPUArchitecture.values()) {
+                options.add(cpuArchitecture.toString());
+            }
+            return options;
+        }
+
         public ListBoxModel doFillNetworkModeItems() {
             final ListBoxModel options = new ListBoxModel();
 
@@ -1326,6 +1380,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         public FormValidation doCheckSubnetsLaunchType(@QueryParameter("subnets") String subnets, @QueryParameter("launchType") String launchType) throws IOException, ServletException {
             if (launchType.contentEquals(LaunchType.FARGATE.toString())) {
                 return FormValidation.error("Subnets need to be set, when using FARGATE");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckOperatingSystemFamilyLaunchType(@QueryParameter("operatingSystemFamily") String operatingSystemFamily, @QueryParameter("launchType") String launchType) throws IOException, ServletException {
+            if (launchType.contentEquals(LaunchType.FARGATE.toString())) {
+                return FormValidation.error("Operating system family need to be set, when using FARGATE");
             }
             return FormValidation.ok();
         }
@@ -1459,6 +1520,12 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (launchType != null ? !launchType.equals(that.launchType) : that.launchType != null) {
             return false;
         }
+        if (operatingSystemFamily != null ? !operatingSystemFamily.equals(that.operatingSystemFamily) : that.operatingSystemFamily != null) {
+            return false;
+        }
+        if (cpuArchitecture != null ? !cpuArchitecture.equals(that.cpuArchitecture) : that.cpuArchitecture != null) {
+            return false;
+        }
         if (defaultCapacityProvider != that.defaultCapacityProvider) {
             return false;
         }
@@ -1519,6 +1586,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + (mountPoints != null ? mountPoints.hashCode() : 0);
         result = 31 * result + (efsMountPoints != null ? efsMountPoints.hashCode() : 0);
         result = 31 * result + (launchType != null ? launchType.hashCode() : 0);
+        result = 31 * result + (operatingSystemFamily != null ? operatingSystemFamily.hashCode() : 0);
+        result = 31 * result + (cpuArchitecture != null ? cpuArchitecture.hashCode() : 0);
         result = 31 * result + (defaultCapacityProvider ? 1 : 0);
         result = 31 * result + (capacityProviderStrategies != null ? capacityProviderStrategies.hashCode() : 0);
         result = 31 * result + (networkMode != null ? networkMode.hashCode() : 0);

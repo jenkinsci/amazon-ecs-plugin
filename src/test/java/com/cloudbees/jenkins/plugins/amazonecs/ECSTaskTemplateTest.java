@@ -10,7 +10,7 @@ public class ECSTaskTemplateTest {
     ECSTaskTemplate getParent() {
         return new ECSTaskTemplate(
                 "parent-name", "parent-label",
-                null, null, "parent-image", "parent-repository-credentials", "FARGATE", false, null, "parent-network-mode", "parent-remoteFSRoot",
+                null, null, "parent-image", "parent-repository-credentials", "FARGATE", "LINUX", "X86_64",false, null, "parent-network-mode", "parent-remoteFSRoot",
                 false, null, 0, 0, 0, null, null, false, false,
                 "parent-containerUser", "parent-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false);
     }
@@ -18,7 +18,7 @@ public class ECSTaskTemplateTest {
     ECSTaskTemplate getChild(String parent) {
         return new ECSTaskTemplate(
                 "child-name", "child-label",
-                null, null, "child-image", "child-repository-credentials", "EC2", false, null, "child-network-mode", "child-remoteFSRoot",
+                null, null, "child-image", "child-repository-credentials", "EC2", "LINUX", "X86_64",false, null, "child-network-mode", "child-remoteFSRoot",
                 false, null, 0, 0, 0, null, null, false, false,
                 "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, parent, 0, false);
     }
@@ -31,7 +31,7 @@ public class ECSTaskTemplateTest {
 
         ECSTaskTemplate expected = new ECSTaskTemplate(
             "child-name", "child-label",
-            null, null, "child-image", "child-repository-credentials", "EC2", false, null, "child-network-mode", "child-remoteFSRoot",
+            null, null, "child-image", "child-repository-credentials", "EC2", "LINUX", "X86_64",false, null, "child-network-mode", "child-remoteFSRoot",
             false, null, 0, 0, 0, null, null, false, false,
             "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false);
 
@@ -48,7 +48,7 @@ public class ECSTaskTemplateTest {
 
         ECSTaskTemplate expected = new ECSTaskTemplate(
             "child-name", "child-label",
-            null, null, "child-image", "child-repository-credentials", "EC2", false, null, "child-network-mode", "child-remoteFSRoot",
+            null, null, "child-image", "child-repository-credentials", "EC2", "LINUX", "X86_64",false, null, "child-network-mode", "child-remoteFSRoot",
             false, null, 0, 0, 0, null, null, false, false,
             "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false);
 
@@ -64,7 +64,7 @@ public class ECSTaskTemplateTest {
 
         ECSTaskTemplate expected = new ECSTaskTemplate(
             "child-name", "child-label",
-            null, null, "child-image", "child-repository-credentials", "EC2", false, null, "child-network-mode", "child-remoteFSRoot",
+            null, null, "child-image", "child-repository-credentials", "EC2", "LINUX", "X86_64",false, null, "child-network-mode", "child-remoteFSRoot",
             false, null, 0, 0, 0, null, null, false, false,
             "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false);
 
@@ -82,7 +82,7 @@ public class ECSTaskTemplateTest {
 
         ECSTaskTemplate expected = new ECSTaskTemplate(
                 "child-name", "child-label",
-                null, null, "child-image", "child-repository-credentials", "EC2", false, null, "child-network-mode", "child-remoteFSRoot",
+                null, null, "child-image", "child-repository-credentials", "EC2", "LINUX", "X86_64",false, null, "child-network-mode", "child-remoteFSRoot",
                 false, null, 0, 0, 0, null, null, false, false,
                 "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false);
 

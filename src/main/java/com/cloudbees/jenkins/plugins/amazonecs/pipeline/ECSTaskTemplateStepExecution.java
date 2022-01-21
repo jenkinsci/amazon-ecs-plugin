@@ -59,6 +59,8 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getImage(),
                                           step.getRepositoryCredentials(),
                                           step.getLaunchType(),
+                                          step.getOperatingSystemFamily(),
+                                          step.getCpuArchitecture(),
                                           step.getDefaultCapacityProvider(),
                                           step.getCapacityProviderStrategies(),
                                           step.getNetworkMode(),

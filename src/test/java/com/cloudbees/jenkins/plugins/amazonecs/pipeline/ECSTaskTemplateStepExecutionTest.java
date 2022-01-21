@@ -71,6 +71,8 @@ public class ECSTaskTemplateStepExecutionTest {
                 "image-override",
                 UUID.randomUUID().toString(),
                 UUID.randomUUID().toString(),
+                "LINUX",
+                "X86_64",
                 false,
                 null,
                 UUID.randomUUID().toString(),
@@ -107,6 +109,8 @@ public class ECSTaskTemplateStepExecutionTest {
 
         step.setImage(expected.getImage());
         step.setLaunchType(expected.getLaunchType());
+        step.setOperatingSystemFamily(expected.getOperatingSystemFamily());
+        step.setCpuArchitecture(expected.getCpuArchitecture());
         step.setTaskDefinitionOverride(expected.getTaskDefinitionOverride());
         step.setRepositoryCredentials(expected.getRepositoryCredentials());
         step.setNetworkMode(expected.getNetworkMode());
@@ -153,6 +157,8 @@ public class ECSTaskTemplateStepExecutionTest {
                 "image",
                 "repositoryCredentials",
                 "launchType",
+                "operatingSystemFamily",
+                "cpuArchitecture",
                 false,
                 null,
                 "networkMode",

@@ -52,6 +52,8 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private String repositoryCredentials;
     private String image;
     private String launchType;
+    private String operatingSystemFamily;
+    private String cpuArchitecture;
     private boolean defaultCapacityProvider;
     private String networkMode;
     private String remoteFSRoot;
@@ -141,6 +143,25 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
 
     public String getLaunchType() {
         return launchType;
+    }
+
+
+    @DataBoundSetter
+    public void setOperatingSystemFamily(String operatingSystemFamily) {
+        this.operatingSystemFamily = operatingSystemFamily;
+    }
+
+    public String getOperatingSystemFamily() {
+        return operatingSystemFamily;
+    }
+
+    @DataBoundSetter
+    public void setCpuArchitecture(String cpuArchitecture) {
+        this.cpuArchitecture = cpuArchitecture;
+    }
+
+    public String getCpuArchitecture() {
+        return cpuArchitecture;
     }
 
     @DataBoundSetter
