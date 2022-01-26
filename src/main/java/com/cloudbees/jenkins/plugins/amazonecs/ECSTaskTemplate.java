@@ -1391,6 +1391,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
             return FormValidation.ok();
         }
 
+        public FormValidation doCheckCpuArchitectureLaunchType(@QueryParameter("cpuArchitecture") String cpuArchitecture, @QueryParameter("launchType") String launchType) throws IOException, ServletException {
+            if (launchType.contentEquals(LaunchType.FARGATE.toString())) {
+                return FormValidation.error("CPU architecture need to be set, when using FARGATE");
+            }
+            return FormValidation.ok();
+        }
+
         public FormValidation doCheckSubnetsNetworkMode(@QueryParameter("subnets") String subnets, @QueryParameter("networkMode") String networkMode) throws IOException, ServletException {
             if (networkMode.equals(NetworkMode.Awsvpc.toString()) && subnets.isEmpty()) {
                 return FormValidation.error("Subnets need to be set when using awsvpc network mode");
