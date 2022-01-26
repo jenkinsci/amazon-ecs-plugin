@@ -188,6 +188,8 @@ public class ECSCloudTest {
                 "image",
                 "repositoryCredentials",
                 "launchType",
+                "operatingSystemFamily",
+                "cpuArchitecture",
                 false,
                 null,
                 "networkMode",

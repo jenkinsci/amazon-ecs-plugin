@@ -43,6 +43,12 @@
   <f:entry name="launchType" title="${%Launch type}" field="launchType">
     <f:select />
   </f:entry>
+  <f:entry name="operatingSystemFamily" title="${%Operating System Family}" field="operatingSystemFamily">
+    <f:select />
+  </f:entry>
+  <f:entry name="cpuArchitecture" title="${%CPU Architecture}" field="cpuArchitecture">
+    <f:select />
+  </f:entry>
   <f:entry title="${%Default Capacity Provider}" field="defaultCapacityProvider" description="Use Default Capacity Provider. This will ignore Capacity provider strategy and use launch type value to set require capabilities">
     <f:checkbox />
   </f:entry>

@@ -317,6 +317,9 @@ public class ECSService extends BaseAWSService {
 
             if (template.isFargate()) {
                 request
+                        .withRuntimePlatform(new RuntimePlatform()
+                                .withOperatingSystemFamily(template.getOperatingSystemFamily())
+                                .withCpuArchitecture(template.getCpuArchitecture()))
                         .withRequiresCompatibilities(LaunchType.FARGATE.toString())
                         .withNetworkMode(NetworkMode.Awsvpc.toString())
                         .withMemory(String.valueOf(template.getMemoryConstraint()))
