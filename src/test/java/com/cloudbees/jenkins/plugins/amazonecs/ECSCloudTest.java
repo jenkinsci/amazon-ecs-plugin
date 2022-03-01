@@ -113,7 +113,7 @@ public class ECSCloudTest {
     public void removeJunkTemplateProducesNoError() throws Exception {
         ECSService ecsService = mock(ECSService.class);
         when(ecsService.findTaskDefinition(anyString())).thenReturn(null);
-        ECSCloud cloud = new ECSCloud("mycloud", "mycluster",ecsService);
+        ECSCloud cloud = new ECSCloud("mycloud", "mycluster", ecsService);
         cloud.setRegionName("us-east-1");
         cloud.removeDynamicTemplate(getTaskTemplate(Math.random() + "", "label1, label2, label3"));
     }
@@ -199,6 +199,7 @@ public class ECSCloudTest {
                 0,
                 0,
                 0,
+                null,
                 null,
                 null,
                 false,

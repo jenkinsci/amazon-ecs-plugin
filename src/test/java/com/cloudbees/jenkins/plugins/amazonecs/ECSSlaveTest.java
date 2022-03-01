@@ -94,6 +94,7 @@ public class ECSSlaveTest {
             0,
             null,
             null,
+            null,
             false,
             false,
             null,

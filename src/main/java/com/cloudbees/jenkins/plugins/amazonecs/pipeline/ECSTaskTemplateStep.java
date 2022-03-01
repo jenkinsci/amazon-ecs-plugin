@@ -62,6 +62,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private int memory;
     private int memoryReservation;
     private int cpu;
+    private Integer ephemeralStorageSizeInGiB;
     private int sharedMemorySize;
     private String subnets;
     private String securityGroups;
@@ -225,6 +226,15 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
 
     public int getCpu() {
         return cpu;
+    }
+
+    @DataBoundSetter
+    public void setEphemeralStorageSizeInGiB(Integer ephemeralStorageSizeInGiB) {
+        this.ephemeralStorageSizeInGiB = ephemeralStorageSizeInGiB;
+    }
+
+    public Integer getEphemeralStorageSizeInGiB() {
+        return ephemeralStorageSizeInGiB;
     }
 
     @DataBoundSetter
