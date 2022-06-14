@@ -95,6 +95,7 @@ public class ECSCloud extends Cloud {
     private int maxMemory;
     private int maxMemoryReservation;
     private int maxAgents = DescriptorImpl.DEFAULT_MAXIMUM_AGENTS;
+    private int numExecutors;
 
     @DataBoundConstructor
     public ECSCloud(String name, @Nonnull String credentialsId, String assumedRoleArn, String cluster) {
@@ -282,7 +283,7 @@ public class ECSCloud extends Cloud {
                                 Computer.threadPoolForRemoting.submit(
                                         new ProvisioningCallback(merged, agentName)
                                 ),
-                                1
+                                numExecutors
                         )
                 );
             }
@@ -356,6 +357,15 @@ public class ECSCloud extends Cloud {
     @DataBoundSetter
     public void setMaxCpu(int maxCpu) {
         this.maxCpu = maxCpu;
+    }
+
+    public int getNumExecutors() {
+        return numExecutors;
+    }
+
+    @DataBoundSetter
+    public void setNumExecutors(int numExecutors) {
+        this.numExecutors = numExecutors;
     }
 
     public int getMaxMemory() {

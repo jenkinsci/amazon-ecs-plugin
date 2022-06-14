@@ -36,6 +36,7 @@ public class ECSCloudTest {
         ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
         sut.setTemplates(templates);
         sut.setRegionName("eu-west-1");
+        sut.setNumExecutors(1);
         sut.setJenkinsUrl("http://jenkins.local");
         sut.setSlaveTimeoutInSeconds(5);
         sut.setRetentionTimeout(5);
@@ -52,6 +53,7 @@ public class ECSCloudTest {
         ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
         sut.setTemplates(templates);
         sut.setRegionName("eu-west-1");
+        sut.setNumExecutors(1);
         sut.setJenkinsUrl("http://jenkins.local");
         sut.setSlaveTimeoutInSeconds(5);
         sut.setRetentionTimeout(5);
@@ -147,6 +149,7 @@ public class ECSCloudTest {
         sut.setMaxAgents(3);
         sut.setTemplates(templates);
         sut.setRegionName("eu-west-1");
+        sut.setNumExecutors(1);
         sut.setJenkinsUrl("http://jenkins.local");
         sut.setSlaveTimeoutInSeconds(5);
         sut.setRetentionTimeout(5);
@@ -167,6 +170,7 @@ public class ECSCloudTest {
         ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
         sut.setTemplates(templates);
         sut.setRegionName("eu-west-1");
+        sut.setNumExecutors(1);
         sut.setJenkinsUrl("http://jenkins.local");
         sut.setSlaveTimeoutInSeconds(5);
         sut.setRetentionTimeout(5);

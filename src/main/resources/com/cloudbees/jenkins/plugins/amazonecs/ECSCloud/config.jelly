@@ -67,6 +67,9 @@
     <f:entry field="jenkinsUrl" title="${%Alternative Jenkins URL}" description="If needed, the Jenkins URL can be overwritten with this property (e.g. to support other HTTP(S) endpoints due to reverse proxies or firewalling). By default the URL from the global Jenkins configuration is used.">
       <f:textbox />
     </f:entry>
+    <f:entry title="${%Number of executors per agent}" field="numExecutors">
+    <f:textbox default="1"/>
+  </f:entry>
     <f:entry field="slaveTimeoutInSeconds" title="${%ECS task creation timeout}" description="Timeout (in seconds) for ECS task to be created, useful if you use large docker agent image, because the host will take more time to pull the docker image">
       <f:textbox default="${descriptor.defaultSlaveTimeoutInSeconds}" />
     </f:entry>
