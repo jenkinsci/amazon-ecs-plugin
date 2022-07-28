@@ -300,6 +300,7 @@ public class ECSService extends BaseAWSService {
                     .withFamily(familyName)
                     .withVolumes(template.getVolumeEntries())
                     .withTags(jenkinsLabelTag, jenkinsTemplateNameTag)
+                    .withTags(template.getTags())
                     .withContainerDefinitions(def);
 
             //If network mode is default, that means Null in the request, so do not set.
@@ -428,6 +429,7 @@ public class ECSService extends BaseAWSService {
         RunTaskRequest req = new RunTaskRequest()
                 .withTaskDefinition(taskDefinition.getTaskDefinitionArn())
                 .withTags(jenkinsLabelTag, jenkinsTemplateNameTag)
+                .withTags(template.getTags())
                 .withOverrides(new TaskOverride()
                         .withContainerOverrides(new ContainerOverride()
                                 .withName(agentContainerName)
