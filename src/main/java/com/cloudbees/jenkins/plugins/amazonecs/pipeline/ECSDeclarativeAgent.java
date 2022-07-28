@@ -29,6 +29,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
 
     private String label;
     private String cloud;
+    private String agentContainerName;
     private String taskDefinitionOverride;
     private String image;
     private String launchType;
@@ -80,6 +81,16 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     public void setCloud(String cloud) {
         this.cloud = cloud;
         overrides.add("cloud");
+    }
+
+    public String getAgentContainerName() {
+        return agentContainerName;
+    }
+
+    @DataBoundSetter
+    public void setAgentContainerName(String agentContainerName) {
+        this.agentContainerName = agentContainerName;
+        overrides.add("agentContainerName");
     }
 
     public String getTaskDefinitionOverride() {

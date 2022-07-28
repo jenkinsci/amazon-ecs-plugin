@@ -67,6 +67,7 @@ public class ECSTaskTemplateStepExecutionTest {
                 "template-name",
                 "child-label",
                 UUID.randomUUID().toString(),
+                UUID.randomUUID().toString(),
                 null,
                 "image-override",
                 UUID.randomUUID().toString(),
@@ -112,6 +113,7 @@ public class ECSTaskTemplateStepExecutionTest {
         step.setLaunchType(expected.getLaunchType());
         step.setOperatingSystemFamily(expected.getOperatingSystemFamily());
         step.setCpuArchitecture(expected.getCpuArchitecture());
+        step.setAgentContainerName(expected.getAgentContainerName());
         step.setTaskDefinitionOverride(expected.getTaskDefinitionOverride());
         step.setRepositoryCredentials(expected.getRepositoryCredentials());
         step.setNetworkMode(expected.getNetworkMode());
@@ -154,6 +156,7 @@ public class ECSTaskTemplateStepExecutionTest {
         return new ECSTaskTemplate(
                 templateName,
                 label,
+                "",
                 "",
                 null,
                 "image",

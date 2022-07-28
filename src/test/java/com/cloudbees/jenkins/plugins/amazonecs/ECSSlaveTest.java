@@ -76,6 +76,7 @@ public class ECSSlaveTest {
         return new ECSTaskTemplate(
             "templateName",
             "label",
+            "agentContainerName",
             "taskDefinitionOverride",
             null,
             "image",

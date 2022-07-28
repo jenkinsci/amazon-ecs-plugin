@@ -111,6 +111,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     @CheckForNull
     private final String label;
 
+    @CheckForNull
+    private final String agentContainerName;
+
     /**
      * Task Definition Override to use, instead of a Jenkins-managed Task definition. May be a family name or an ARN.
      */
@@ -359,6 +362,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     @DataBoundConstructor
     public ECSTaskTemplate(String templateName,
                            @Nullable String label,
+                           @Nullable String agentContainerName,
                            @Nullable String taskDefinitionOverride,
                            @Nullable String dynamicTaskDefinitionOverride,
                            String image,
@@ -397,6 +401,13 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         // if the user enters a task definition override, always prefer to use it, rather than the jenkins template.
         if (taskDefinitionOverride != null && !taskDefinitionOverride.trim().isEmpty()) {
             this.taskDefinitionOverride = taskDefinitionOverride.trim();
+
+            if (agentContainerName != null && !agentContainerName.trim().isEmpty()) {
+                this.agentContainerName = agentContainerName.trim();
+            } else {
+                this.agentContainerName = null;
+            }
+
             // Always set the template name to the empty string if we are using a task definition override,
             // since we don't want Jenkins to touch our definitions.
             this.templateName = "";
@@ -407,6 +418,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                     "jenkinsTask-" + UUID.randomUUID().toString() : templateName;
             // Make sure we don't have both a template name and a task definition override.
             this.taskDefinitionOverride = null;
+            // An agent container name doesn't make sense when there is only one container
+            // definition.
+            this.agentContainerName = null;
         }
 
         this.label = label;
@@ -526,6 +540,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
     public String getLabel() {
         return label;
+    }
+
+    public String getAgentContainerName() {
+
+        return agentContainerName;
     }
 
     public String getTaskDefinitionOverride() {
@@ -761,6 +780,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         }
         String templateName = isNullOrEmpty(this.templateName) ? parent.getTemplateName() : this.templateName;
         String label = isNullOrEmpty(this.label) ? parent.getLabel() : this.label;
+        String agentContainerName = isNullOrEmpty(this.agentContainerName) ? parent.getAgentContainerName() : this.agentContainerName;
         String taskDefinitionOverride = isNullOrEmpty(this.taskDefinitionOverride) ? parent.getTaskDefinitionOverride() : this.taskDefinitionOverride;
         String image = isNullOrEmpty(this.image) ? parent.getImage() : this.image;
         String repositoryCredentials = isNullOrEmpty(this.repositoryCredentials) ? parent.getRepositoryCredentials() : this.repositoryCredentials;
@@ -808,6 +828,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
         ECSTaskTemplate merged = new ECSTaskTemplate(templateName,
                                                        label,
+                                                       agentContainerName,
                                                        taskDefinitionOverride,
                                                        null,
                                                        image,
@@ -1504,6 +1525,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (label != null ? !label.equals(that.label) : that.label != null) {
             return false;
         }
+        if (agentContainerName != null ? !agentContainerName.equals(that.agentContainerName) : that.agentContainerName != null) {
+            return false;
+        }
         if (taskDefinitionOverride != null ? !taskDefinitionOverride.equals(that.taskDefinitionOverride) : that.taskDefinitionOverride != null) {
             return false;
         }
@@ -1592,6 +1616,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     public int hashCode() {
         int result = templateName.hashCode();
         result = 31 * result + (label != null ? label.hashCode() : 0);
+        result = 31 * result + (agentContainerName != null ? agentContainerName.hashCode() : 0);
         result = 31 * result + (taskDefinitionOverride != null ? taskDefinitionOverride.hashCode() : 0);
         result = 31 * result + (image != null ? image.hashCode() : 0);
         result = 31 * result + (remoteFSRoot != null ? remoteFSRoot.hashCode() : 0);

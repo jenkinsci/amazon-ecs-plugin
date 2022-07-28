@@ -184,6 +184,7 @@ public class ECSCloudTest {
                 templateName,
                 label,
                 "",
+                "",
                 null,
                 "image",
                 "repositoryCredentials",

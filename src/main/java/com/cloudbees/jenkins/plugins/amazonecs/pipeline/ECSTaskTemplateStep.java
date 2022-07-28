@@ -48,6 +48,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private final String label;
     private final String name;
     private String cloud = DEFAULT_CLOUD;
+    private String agentContainerName;
     private String taskDefinitionOverride;
     private String repositoryCredentials;
     private String image;
@@ -108,6 +109,15 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
 
     public String getCloud() {
         return cloud;
+    }
+
+    @DataBoundSetter
+    public void setAgentContainerName(String agentContainerName) {
+        this.agentContainerName = agentContainerName;
+    }
+
+    public String getAgentContainerName() {
+        return agentContainerName;
     }
 
     @DataBoundSetter
