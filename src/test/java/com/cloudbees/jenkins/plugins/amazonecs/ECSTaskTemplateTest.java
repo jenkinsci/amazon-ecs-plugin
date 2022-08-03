@@ -1,10 +1,14 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
+import com.amazonaws.services.ecs.model.Tag;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import org.apache.commons.lang.builder.EqualsBuilder;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class ECSTaskTemplateTest {
 
@@ -97,5 +101,7 @@ public class ECSTaskTemplateTest {
         child.setEntrypoint("/bin/false");
         expected.setEntrypoint("/bin/false");
         assertTrue(EqualsBuilder.reflectionEquals(expected, child.merge(parent)));
+
+        List<Tag> tags = expected.getTags();
     }
 }

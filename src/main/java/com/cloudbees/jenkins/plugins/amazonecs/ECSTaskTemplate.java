@@ -314,7 +314,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     /**
      * Tags to be added to template & task
      */
-    private HashMap<String,String> tags = new HashMap<String,String>();
+    private HashMap<String,String> tags;
 
     /**
      * User for container
@@ -452,7 +452,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.sharedMemorySize = sharedMemorySize;
         this.dynamicTaskDefinitionOverride = StringUtils.trimToNull(dynamicTaskDefinitionOverride);
         this.enableExecuteCommand = enableExecuteCommand;
-        this.tags = tags;
+        this.tags = (tags == null ? new HashMap<String,String>() : tags);
     }
 
     @DataBoundSetter
