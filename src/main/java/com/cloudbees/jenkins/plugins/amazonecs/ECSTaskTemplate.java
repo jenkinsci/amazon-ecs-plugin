@@ -1605,6 +1605,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (logDriverOptions != null ? !logDriverOptions.equals(that.logDriverOptions) : that.logDriverOptions != null) {
             return false;
         }
+        if (tags != null ? !tags.equals(that.tags) : that.tags != null) {
+            return false;
+        }
         return inheritFrom != null ? inheritFrom.equals(that.inheritFrom) : that.inheritFrom == null;
     }
 
@@ -1650,6 +1653,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + (logDriverOptions != null ? logDriverOptions.hashCode() : 0);
         result = 31 * result + (inheritFrom != null ? inheritFrom.hashCode() : 0);
         result = 31 * result + (enableExecuteCommand ? 1 : 0);
+        result = 31 * result + (tags != null ? tags.hashCode() : 0);
         return result;
     }
 }
