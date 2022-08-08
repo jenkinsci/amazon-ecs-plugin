@@ -78,21 +78,10 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.Collections;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -725,6 +714,19 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         }
 
         @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Tag tag = (Tag) o;
+            return Objects.equals(name, tag.name);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name);
+        }
+
+        @Override
         public String toString() {
             return "Tag{" + name + ": " + value + "}";
         }
@@ -836,10 +838,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         String kernelCapabilities = isNullOrEmpty(this.kernelCapabilities) ? parent.getKernelCapabilities() : this.kernelCapabilities;
         String logDriver = isNullOrEmpty(this.logDriver) ? parent.getLogDriver() : this.logDriver;
         String entrypoint = isNullOrEmpty(this.entrypoint) ? parent.getEntrypoint() : this.entrypoint;
-
+        Set<Tag> mergedTagsSet = new HashSet<>(isEmpty(this.tags) ? new ArrayList<>() : this.tags);
+        Optional.ofNullable(parent.getTags()).ifPresent(mergedTagsSet::addAll);
+        List<Tag> tags = new ArrayList<>(mergedTagsSet);
         // TODO probably merge lists with parent instead of overriding them
         List<LogDriverOption> logDriverOptions = isEmpty(this.logDriverOptions) ? parent.getLogDriverOptions() : this.logDriverOptions;
-        List<Tag> tags = isEmpty(this.tags) ? parent.getTags() : this.tags;
         List<EnvironmentEntry> environments = isEmpty(this.environments) ? parent.getEnvironments() : this.environments;
         List<ExtraHostEntry> extraHosts = isEmpty(this.extraHosts) ? parent.getExtraHosts() : this.extraHosts;
         List<MountPointEntry> mountPoints = isEmpty(this.mountPoints) ? parent.getMountPoints() : this.mountPoints;

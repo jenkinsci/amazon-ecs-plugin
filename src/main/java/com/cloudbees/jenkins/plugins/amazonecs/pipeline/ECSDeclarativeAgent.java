@@ -17,6 +17,7 @@ import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.ExtraHostEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.LogDriverOption;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.MountPointEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.PortMappingEntry;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.Tag;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +50,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private String taskrole;
     private String inheritFrom;
     private String logDriver;
+    private List<Tag> tags;
     private List<LogDriverOption> logDriverOptions;
     private List<EnvironmentEntry> environments;
     private List<ExtraHostEntry> extraHosts;
@@ -292,6 +294,16 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         overrides.add("logDriverOptions");
     }
 
+    public List<Tag> getTags() {
+        return tags;
+    }
+
+    @DataBoundSetter
+    public void setTags(List<Tag> tags) {
+        this.tags = tags;
+        overrides.add("tags");
+    }
+
     public List<EnvironmentEntry> getEnvironments() {
         return environments;
     }
@@ -428,6 +440,10 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
 
         if (logDriverOptions != null && logDriverOptions.size() > 0) {
             argMap.put("logDriverOptions", logDriverOptions);
+        }
+
+        if (tags != null && tags.size() > 0) {
+            argMap.put("tags", tags);
         }
 
         if (environments != null && environments.size() > 0) {
