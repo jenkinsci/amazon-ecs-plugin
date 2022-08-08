@@ -26,8 +26,10 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -250,6 +252,7 @@ public class ECSService extends BaseAWSService {
 
         TaskDefinition currentTaskDefinition = findTaskDefinition(familyName);
 
+        boolean templateTagsMatchesExistingTags = false;
         boolean templateMatchesExistingContainerDefinition = false;
         boolean templateMatchesExistingVolumes = false;
         boolean templateMatchesExistingTaskRole = false;
@@ -258,6 +261,11 @@ public class ECSService extends BaseAWSService {
 
         if (currentTaskDefinition != null) {
             final ContainerDefinition currentContainerDefinition = currentTaskDefinition.getContainerDefinitions().get(0);
+            final List<Tag> tags = getTaskDefinitionTags(currentTaskDefinition.getTaskDefinitionArn());
+
+            templateTagsMatchesExistingTags = ObjectUtils.equals(template.getTags(), tags);
+            LOGGER.log(Level.INFO, "Match on tags: {0}", new Object[]{templateTagsMatchesExistingTags});
+            LOGGER.log(Level.FINE, "Match on tags: {0}; template={1}; last={2}", new Object[]{templateTagsMatchesExistingTags, template.getTags(), tags});
 
             templateMatchesExistingContainerDefinition = def.equals(currentContainerDefinition);
             LOGGER.log(Level.INFO, "Match on container definition: {0}", new Object[]{templateMatchesExistingContainerDefinition});
@@ -296,10 +304,17 @@ public class ECSService extends BaseAWSService {
             Tag jenkinsLabelTag = new Tag().withKey(AWS_TAG_JENKINS_LABEL_KEY).withValue(template.getLabel());
             Tag jenkinsTemplateNameTag =
                     new Tag().withKey(AWS_TAG_JENKINS_TEMPLATENAME_KEY).withValue(template.getTemplateName());
+            List<Tag> taskDefinitionTags = new ArrayList<>();
+            taskDefinitionTags.add(jenkinsLabelTag);
+            taskDefinitionTags.add(jenkinsTemplateNameTag);
+            for (ECSTaskTemplate.Tag tag: template.getTags()) {
+                taskDefinitionTags.add(new Tag().withKey(tag.name).withValue(tag.value));
+            }
+
             final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()
                     .withFamily(familyName)
                     .withVolumes(template.getVolumeEntries())
-                    .withTags(jenkinsLabelTag, jenkinsTemplateNameTag)
+                    .withTags(taskDefinitionTags)
                     .withContainerDefinitions(def);
 
             //If network mode is default, that means Null in the request, so do not set.
@@ -393,6 +408,23 @@ public class ECSService extends BaseAWSService {
         }
     }
 
+    List<Tag> getTaskDefinitionTags(String taskDefinitionArn){
+        AmazonECS client = clientSupplier.get();
+
+        try {
+            ListTagsForResourceResult tagsResult = client.listTagsForResource(
+                    new ListTagsForResourceRequest().withResourceArn(taskDefinitionArn)
+            );
+
+            return tagsResult.getTags();
+        } catch (ClientException e) {
+            LOGGER.log(Level.FINE, "No existing task definition found for ARN: " + taskDefinitionArn, e);
+            LOGGER.log(Level.INFO, "No existing task definition found for ARN: " + taskDefinitionArn);
+
+            return null;
+        }
+    }
+
     private String fullQualifiedTemplateName(final String cloudName, final ECSTaskTemplate template) {
         return cloudName.replaceAll("\\s+", "") + '-' + template.getTemplateName();
     }
@@ -435,7 +467,8 @@ public class ECSService extends BaseAWSService {
                                 .withEnvironment(envNodeName)
                                 .withEnvironment(envNodeSecret)))
                 .withPlacementStrategy(template.getPlacementStrategyEntries())
-                .withCluster(clusterArn);
+                .withCluster(clusterArn)
+                .withPropagateTags("TASK_DEFINITION");
         if ( ! template.getDefaultCapacityProvider() && template.getCapacityProviderStrategies() == null ) {
             req.withLaunchType(LaunchType.fromValue(template.getLaunchType()));
         }

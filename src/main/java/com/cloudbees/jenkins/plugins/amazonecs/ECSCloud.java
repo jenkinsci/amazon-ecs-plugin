@@ -208,6 +208,7 @@ public class ECSCloud extends Cloud {
     }
 
     public boolean canProvision(String label) {
+
         return getTemplate(label) != null;
     }
 

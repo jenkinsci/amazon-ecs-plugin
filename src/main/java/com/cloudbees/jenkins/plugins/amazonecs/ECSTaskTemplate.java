@@ -327,6 +327,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private List<PlacementStrategyEntry> placementStrategies;
     private List<CapacityProviderStrategyEntry> capacityProviderStrategies;
 
+    private List<Tag> tags;
 
     /**
     * The log configuration specification for the container.
@@ -383,6 +384,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            @Nullable String containerUser,
                            @Nullable String kernelCapabilities,
                            @Nullable List<LogDriverOption> logDriverOptions,
+                           @Nullable List<Tag> tags,
                            @Nullable List<EnvironmentEntry> environments,
                            @Nullable List<ExtraHostEntry> extraHosts,
                            @Nullable List<MountPointEntry> mountPoints,
@@ -432,6 +434,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.containerUser = StringUtils.trimToNull(containerUser);
         this.kernelCapabilities = StringUtils.trimToNull(kernelCapabilities);
         this.logDriverOptions = logDriverOptions;
+        this.tags = tags;
         this.environments = environments;
         this.extraHosts = extraHosts;
         this.mountPoints = mountPoints;
@@ -711,6 +714,32 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         return logDriverOptions;
     }
 
+    public static class Tag extends AbstractDescribableImpl<Tag> implements Serializable {
+        private static final long serialVersionUID = 4357423231051873086L;
+        public String name, value;
+
+        @DataBoundConstructor
+        public Tag(String name, String value) {
+            this.name = name;
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return "Tag{" + name + ": " + value + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<Tag> {
+            @Override
+            public String getDisplayName() {
+                return "tag";
+            }
+        }
+    }
+
+    public List<Tag> getTags() { return tags; }
+
     Map<String,String> getLogDriverOptionsMap() {
         if (null == logDriverOptions || logDriverOptions.isEmpty()) {
             return null;
@@ -719,6 +748,22 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         for (LogDriverOption logDriverOption : logDriverOptions) {
             String name = logDriverOption.name;
             String value = logDriverOption.value;
+            if (StringUtils.isEmpty(name) || StringUtils.isEmpty(value)) {
+                continue;
+            }
+            options.put(name, value);
+        }
+        return options;
+    }
+
+    Map<String,String> getTagsMap() {
+        if (null == tags || tags.isEmpty()) {
+            return null;
+        }
+        Map<String,String> options = new HashMap<String,String>();
+        for (Tag tag : tags) {
+            String name = tag.name;
+            String value = tag.value;
             if (StringUtils.isEmpty(name) || StringUtils.isEmpty(value)) {
                 continue;
             }
@@ -794,6 +839,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
         // TODO probably merge lists with parent instead of overriding them
         List<LogDriverOption> logDriverOptions = isEmpty(this.logDriverOptions) ? parent.getLogDriverOptions() : this.logDriverOptions;
+        List<Tag> tags = isEmpty(this.tags) ? parent.getTags() : this.tags;
         List<EnvironmentEntry> environments = isEmpty(this.environments) ? parent.getEnvironments() : this.environments;
         List<ExtraHostEntry> extraHosts = isEmpty(this.extraHosts) ? parent.getExtraHosts() : this.extraHosts;
         List<MountPointEntry> mountPoints = isEmpty(this.mountPoints) ? parent.getMountPoints() : this.mountPoints;
@@ -832,6 +878,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        containerUser,
                                                        kernelCapabilities,
                                                        logDriverOptions,
+                                                       tags,
                                                        environments,
                                                        extraHosts,
                                                        mountPoints,
@@ -848,8 +895,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
         return merged;
     }
-
-
 
     Collection<KeyValuePair> getEnvironmentKeyValuePairs() {
         if (null == environments || environments.isEmpty()) {
@@ -1585,6 +1630,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (logDriverOptions != null ? !logDriverOptions.equals(that.logDriverOptions) : that.logDriverOptions != null) {
             return false;
         }
+        if (tags != null ? !tags.equals(that.tags) : that.tags != null) {
+            return false;
+        }
+
         return inheritFrom != null ? inheritFrom.equals(that.inheritFrom) : that.inheritFrom == null;
     }
 
@@ -1628,6 +1677,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + (placementStrategies != null ? placementStrategies.hashCode() : 0);
         result = 31 * result + (logDriver != null ? logDriver.hashCode() : 0);
         result = 31 * result + (logDriverOptions != null ? logDriverOptions.hashCode() : 0);
+        result = 31 * result + (tags != null ? tags.hashCode() : 0);
         result = 31 * result + (inheritFrom != null ? inheritFrom.hashCode() : 0);
         result = 31 * result + (enableExecuteCommand ? 1 : 0);
         return result;
