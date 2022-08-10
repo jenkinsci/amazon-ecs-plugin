@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import java.util.HashMap;
 
 
 public class ECSCloudTest {
@@ -217,6 +218,7 @@ public class ECSCloudTest {
                 null,
                 null,
                 0,
-                false);
+                false,
+                new HashMap<String,String>());
     }
 }

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.HashMap;
 
 import com.amazonaws.services.ecs.model.ClientException;
 
@@ -110,6 +111,7 @@ public class ECSSlaveTest {
             null,
             null,
             0,
-            false);
+            false,
+             new HashMap<String,String>());
     }
 }
