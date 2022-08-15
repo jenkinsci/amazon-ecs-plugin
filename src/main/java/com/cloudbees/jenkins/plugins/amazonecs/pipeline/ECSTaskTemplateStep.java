@@ -433,7 +433,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     }
 
     @DataBoundSetter
-    public void setCapacityProviderStrategy(List<CapacityProviderStrategyEntry> capacityProviderStrategies) {
+    public void setCapacityProviderStrategies(List<CapacityProviderStrategyEntry> capacityProviderStrategies) {
         this.capacityProviderStrategies = capacityProviderStrategies;
     }
     
