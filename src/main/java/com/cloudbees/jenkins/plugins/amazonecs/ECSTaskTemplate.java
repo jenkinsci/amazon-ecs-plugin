@@ -51,7 +51,6 @@ import com.amazonaws.services.ecs.model.Volume;
 import com.amazonaws.services.ecs.model.DescribeClustersRequest;
 import com.amazonaws.services.ecs.model.DescribeClustersResult;
 import com.amazonaws.services.ecs.model.Cluster;
-import com.amazonaws.services.ecs.model.Tag;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import com.amazonaws.services.elasticfilesystem.model.AccessPointDescription;
@@ -84,7 +83,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Map.Entry;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -312,11 +310,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private final String platformVersion;
 
     /**
-     * Tags to be added to template & task
-     */
-    private HashMap<String,String> tags;
-
-    /**
      * User for container
      */
     @Nullable
@@ -400,8 +393,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            @Nullable String taskrole,
                            @Nullable String inheritFrom,
                            int sharedMemorySize,
-                           boolean enableExecuteCommand,
-                           HashMap<String,String> tags) {
+                           boolean enableExecuteCommand) {
         // if the user enters a task definition override, always prefer to use it, rather than the jenkins template.
         if (taskDefinitionOverride != null && !taskDefinitionOverride.trim().isEmpty()) {
             this.taskDefinitionOverride = taskDefinitionOverride.trim();
@@ -452,7 +444,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.sharedMemorySize = sharedMemorySize;
         this.dynamicTaskDefinitionOverride = StringUtils.trimToNull(dynamicTaskDefinitionOverride);
         this.enableExecuteCommand = enableExecuteCommand;
-        this.tags = (tags == null ? new HashMap<String,String>() : tags);
     }
 
     @DataBoundSetter
@@ -681,14 +672,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         return enableExecuteCommand;
     }
 
-    public List<Tag> getTags() {
-        List<Tag> tagList= new ArrayList<Tag>();
-        for(Entry<String, String> entry: tags.entrySet()) {
-            tagList.add(new Tag().withKey(entry.getKey()).withValue(entry.getValue()));
-        }
-        return tagList;
-    }
-
     @Override
     public String toString() {
         return Arrays.stream(this.getClass().getDeclaredFields()).filter(f -> !Modifier.isStatic(f.getModifiers()) ).map(f -> {
@@ -823,46 +806,43 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         String taskrole = isNullOrEmpty(this.taskrole) ? parent.getTaskrole() : this.taskrole;
         boolean enableExecuteCommand = this.enableExecuteCommand ? true : parent.isEnableExecuteCommand();
 
-        HashMap<String,String> tags = this.tags.isEmpty() ? parent.tags : this.tags;
-
         ECSTaskTemplate merged = new ECSTaskTemplate(templateName,
-                                                        label,
-                                                        taskDefinitionOverride,
-                                                        null,
-                                                        image,
-                                                        repositoryCredentials,
-                                                        launchType,
-                                                        operatingSystemFamily,
-                                                        cpuArchitecture,
-                                                        defaultCapacityProvider,
-                                                        capacityProviderStrategies,
-                                                        networkMode,
-                                                        remoteFSRoot,
-                                                        uniqueRemoteFSRoot,
-                                                        platformVersion,
-                                                        memory,
-                                                        memoryReservation,
-                                                        cpu,
-                                                        ephemeralStorageSizeInGiB,
-                                                        subnets,
-                                                        securityGroups,
-                                                        assignPublicIp,
-                                                        privileged,
-                                                        containerUser,
-                                                        kernelCapabilities,
-                                                        logDriverOptions,
-                                                        environments,
-                                                        extraHosts,
-                                                        mountPoints,
-                                                        efsMountPoints,
-                                                        portMappings,
-                                                        executionRole,
-                                                        placementStrategies,
-                                                        taskrole,
+                                                       label,
+                                                       taskDefinitionOverride,
+                                                       null,
+                                                       image,
+                                                       repositoryCredentials,
+                                                       launchType,
+                                                       operatingSystemFamily,
+                                                       cpuArchitecture,
+                                                       defaultCapacityProvider,
+                                                       capacityProviderStrategies,
+                                                       networkMode,
+                                                       remoteFSRoot,
+                                                       uniqueRemoteFSRoot,
+                                                       platformVersion,
+                                                       memory,
+                                                       memoryReservation,
+                                                       cpu,
+                                                       ephemeralStorageSizeInGiB,
+                                                       subnets,
+                                                       securityGroups,
+                                                       assignPublicIp,
+                                                       privileged,
+                                                       containerUser,
+                                                       kernelCapabilities,
+                                                       logDriverOptions,
+                                                       environments,
+                                                       extraHosts,
+                                                       mountPoints,
+                                                       efsMountPoints,
+                                                       portMappings,
+                                                       executionRole,
+                                                       placementStrategies,
+                                                       taskrole,
                                                        null,
                                                         sharedMemorySize,
-                                                        enableExecuteCommand,
-                                                        tags);
+                                                        enableExecuteCommand);
         merged.setLogDriver(logDriver);
         merged.setEntrypoint(entrypoint);
 
@@ -1605,9 +1585,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (logDriverOptions != null ? !logDriverOptions.equals(that.logDriverOptions) : that.logDriverOptions != null) {
             return false;
         }
-        if (tags != null ? !tags.equals(that.tags) : that.tags != null) {
-            return false;
-        }
         return inheritFrom != null ? inheritFrom.equals(that.inheritFrom) : that.inheritFrom == null;
     }
 
@@ -1653,7 +1630,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + (logDriverOptions != null ? logDriverOptions.hashCode() : 0);
         result = 31 * result + (inheritFrom != null ? inheritFrom.hashCode() : 0);
         result = 31 * result + (enableExecuteCommand ? 1 : 0);
-        result = 31 * result + (tags != null ? tags.hashCode() : 0);
         return result;
     }
 }

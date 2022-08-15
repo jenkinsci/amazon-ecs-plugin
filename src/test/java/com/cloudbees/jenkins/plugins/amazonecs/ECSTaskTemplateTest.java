@@ -1,14 +1,9 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
-import com.amazonaws.services.ecs.model.Tag;
-import org.junit.Test;
 import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 import static org.junit.Assert.assertTrue;
 import org.apache.commons.lang.builder.EqualsBuilder;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 public class ECSTaskTemplateTest {
 
@@ -17,7 +12,7 @@ public class ECSTaskTemplateTest {
                 "parent-name", "parent-label",
                 null, null, "parent-image", "parent-repository-credentials", "FARGATE", "LINUX", "X86_64",false, null, "parent-network-mode", "parent-remoteFSRoot",
                 false, null, 0, 0, 0, null, null, null, false, false,
-                "parent-containerUser", "parent-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false, new HashMap<String,String>());
+                "parent-containerUser", "parent-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false);
     }
 
     ECSTaskTemplate getChild(String parent) {
@@ -25,7 +20,7 @@ public class ECSTaskTemplateTest {
                 "child-name", "child-label",
                 null, null, "child-image", "child-repository-credentials", "EC2", "LINUX", "X86_64",false, null, "child-network-mode", "child-remoteFSRoot",
                 false, null, 0, 0, 0, null, null, null, false, false,
-                "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, parent, 0, false, new HashMap<String,String>());
+                "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, parent, 0, false);
     }
 
     @Test
@@ -38,7 +33,7 @@ public class ECSTaskTemplateTest {
             "child-name", "child-label",
             null, null, "child-image", "child-repository-credentials", "EC2", "LINUX", "X86_64",false, null, "child-network-mode", "child-remoteFSRoot",
             false, null, 0, 0, 0, null, null, null, false, false,
-            "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false, new HashMap<String,String>());
+            "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false);
 
 
         ECSTaskTemplate result = child.merge(parent);
@@ -55,7 +50,7 @@ public class ECSTaskTemplateTest {
             "child-name", "child-label",
             null, null, "child-image", "child-repository-credentials", "EC2", "LINUX", "X86_64",false, null, "child-network-mode", "child-remoteFSRoot",
             false, null, 0, 0, 0, null, null, null, false, false,
-            "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false, new HashMap<String,String>());
+            "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false);
 
         ECSTaskTemplate result = child.merge(parent);
 
@@ -71,7 +66,7 @@ public class ECSTaskTemplateTest {
             "child-name", "child-label",
             null, null, "child-image", "child-repository-credentials", "EC2", "LINUX", "X86_64",false, null, "child-network-mode", "child-remoteFSRoot",
             false, null, 0, 0, 0, null, null, null, false, false,
-            "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false, new HashMap<String,String>());
+            "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false);
 
         ECSTaskTemplate result = child.merge(null);
 
@@ -89,7 +84,7 @@ public class ECSTaskTemplateTest {
                 "child-name", "child-label",
                 null, null, "child-image", "child-repository-credentials", "EC2", "LINUX", "X86_64",false, null, "child-network-mode", "child-remoteFSRoot",
                 false, null, 0, 0, 0, null, null, null, false, false,
-                "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false, new HashMap<String,String>());
+                "child-containerUser", "child-kernelCapabilities", null, null, null, null, null, null, null, null, null, null, 0, false);
 
         //Child entrypoint should equal to parent by default
         parent.setEntrypoint(entrypoint);
@@ -101,7 +96,5 @@ public class ECSTaskTemplateTest {
         child.setEntrypoint("/bin/false");
         expected.setEntrypoint("/bin/false");
         assertTrue(EqualsBuilder.reflectionEquals(expected, child.merge(parent)));
-
-        List<Tag> tags = expected.getTags();
     }
 }

@@ -21,11 +21,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.Map;
 
-import com.amazonaws.services.ecs.model.Tag;
 import com.amazonaws.services.ecs.model.LaunchType;
 import com.amazonaws.services.ecs.model.NetworkMode;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.EFSMountPointEntry;
@@ -87,7 +83,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private List<PortMappingEntry> portMappings;
     private List<PlacementStrategyEntry> placementStrategies;
     private List<CapacityProviderStrategyEntry> capacityProviderStrategies;
-    private HashMap<String,String> tags = new HashMap<String,String>();
+
     private List<String> overrides;
 
     @DataBoundConstructor
@@ -429,11 +425,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     public void setCapacityProviderStrategy(List<CapacityProviderStrategyEntry> capacityProviderStrategies) {
         this.capacityProviderStrategies = capacityProviderStrategies;
     }
-
-    public  HashMap<String,String> getTags() { return tags; }
-
-    @DataBoundSetter
-    public void setTags(HashMap<String,String> tags) { this.tags = tags; }
+    
 
     @DataBoundSetter
     public void setOverrides(List<String> overrides) {

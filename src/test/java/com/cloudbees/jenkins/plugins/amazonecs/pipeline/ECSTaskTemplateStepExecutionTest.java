@@ -18,7 +18,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Random;
 import java.util.UUID;
 
@@ -101,8 +100,7 @@ public class ECSTaskTemplateStepExecutionTest {
                 "override-task-role",
                 null,
                 r.nextInt(123),
-                false,
-                new HashMap<String,String>());
+                false);
 
         // Overriding the entrypoint is inconsistent... why? You can't do it in the step
 //        expected.setEntrypoint("entrypoint-override");
@@ -190,7 +188,6 @@ public class ECSTaskTemplateStepExecutionTest {
                 null,
                 null,
                 0,
-                false,
-                new HashMap<String,String>());
+                false);
     }
 }
