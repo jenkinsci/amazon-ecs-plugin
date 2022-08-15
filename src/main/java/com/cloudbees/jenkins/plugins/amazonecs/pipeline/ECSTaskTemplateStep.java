@@ -28,6 +28,7 @@ import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.EFSMountPointEntr
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.EnvironmentEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.ExtraHostEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.LogDriverOption;
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.Tag;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.MountPointEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.PortMappingEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.PlacementStrategyEntry;
@@ -76,6 +77,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private boolean enableExecuteCommand;
     private String logDriver;
     private List<LogDriverOption> logDriverOptions;
+    private List<Tag> tags;
     private List<EnvironmentEntry> environments;
     private List<ExtraHostEntry> extraHosts;
     private List<MountPointEntry> mountPoints;
@@ -361,6 +363,15 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     @DataBoundSetter
     public void setLogDriverOptions(List<LogDriverOption> logDriverOptions) {
         this.logDriverOptions = logDriverOptions;
+    }
+
+    public List<Tag> getTags() {
+        return tags;
+    }
+
+    @DataBoundSetter
+    public void setTags(List<Tag> tags) {
+        this.tags = tags;
     }
 
     public List<EnvironmentEntry> getEnvironments() {

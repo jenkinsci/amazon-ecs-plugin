@@ -137,6 +137,23 @@
     <f:entry title="${%Add Kernel Capabilities}" field="kernelCapabilities" description="List of kernel capabilities to be added, separated by comma">
       <f:textbox />
     </f:entry>
+    <f:entry title="${%Tags}">
+        <f:repeatable field="tags">
+          <table width="100%">
+            <f:entry field="name" title="${%Name}">
+              <f:textbox/>
+            </f:entry>
+            <f:entry field="value" title="${%Value}">
+              <f:textbox/>
+            </f:entry>
+            <f:entry>
+              <div align="right">
+                <f:repeatableDeleteButton />
+              </div>
+            </f:entry>
+          </table>
+        </f:repeatable>
+    </f:entry>
     <f:entry title="${%Logging Driver}" field="logDriver">
       <f:textbox />
     </f:entry>
