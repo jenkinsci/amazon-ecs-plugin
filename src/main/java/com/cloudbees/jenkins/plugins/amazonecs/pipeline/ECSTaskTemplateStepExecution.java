@@ -88,8 +88,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getTaskrole(),
                                           step.getInheritFrom(),
                                           step.getSharedMemorySize(),
-                                          step.getEnableExecuteCommand(),
-                                          step.getTags());
+                                          step.getEnableExecuteCommand());
         newTemplate.setLogDriver(step.getLogDriver());
 
         ECSTaskTemplate parentTemplate = ecsCloud.findParentTemplate(parentLabel);

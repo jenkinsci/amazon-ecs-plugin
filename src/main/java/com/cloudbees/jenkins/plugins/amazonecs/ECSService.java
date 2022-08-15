@@ -28,7 +28,6 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -297,13 +296,10 @@ public class ECSService extends BaseAWSService {
             Tag jenkinsLabelTag = new Tag().withKey(AWS_TAG_JENKINS_LABEL_KEY).withValue(template.getLabel());
             Tag jenkinsTemplateNameTag =
                     new Tag().withKey(AWS_TAG_JENKINS_TEMPLATENAME_KEY).withValue(template.getTemplateName());
-            List<Tag> tags = template.getTags();
-            tags.add(jenkinsLabelTag);
-            tags.add(jenkinsTemplateNameTag);
             final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()
                     .withFamily(familyName)
                     .withVolumes(template.getVolumeEntries())
-                    .withTags(tags)
+                    .withTags(jenkinsLabelTag, jenkinsTemplateNameTag)
                     .withContainerDefinitions(def);
 
             //If network mode is default, that means Null in the request, so do not set.
@@ -429,12 +425,9 @@ public class ECSService extends BaseAWSService {
         Tag jenkinsLabelTag = new Tag().withKey(AWS_TAG_JENKINS_LABEL_KEY).withValue(template.getLabel());
         Tag jenkinsTemplateNameTag =
                 new Tag().withKey(AWS_TAG_JENKINS_TEMPLATENAME_KEY).withValue(template.getTemplateName());
-        List<Tag> tags = template.getTags();
-        tags.add(jenkinsLabelTag);
-        tags.add(jenkinsTemplateNameTag);
         RunTaskRequest req = new RunTaskRequest()
                 .withTaskDefinition(taskDefinition.getTaskDefinitionArn())
-                .withTags(tags)
+                .withTags(jenkinsLabelTag, jenkinsTemplateNameTag)
                 .withOverrides(new TaskOverride()
                         .withContainerOverrides(new ContainerOverride()
                                 .withName(agentContainerName)
