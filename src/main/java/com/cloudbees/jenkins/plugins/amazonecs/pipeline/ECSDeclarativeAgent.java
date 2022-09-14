@@ -478,7 +478,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         }
 
         if (placementStrategies != null && placementStrategies.size() > 0){
-            argMap.put("placementStrategies", placementStrategies)
+            argMap.put("placementStrategies", placementStrategies);
         }
 
         argMap.put("overrides", overrides);
