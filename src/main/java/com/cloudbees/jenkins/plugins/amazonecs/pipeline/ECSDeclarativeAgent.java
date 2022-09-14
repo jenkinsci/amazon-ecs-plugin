@@ -57,6 +57,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private List<MountPointEntry> mountPoints;
     private List<EFSMountPointEntry> efsMountPoints;
     private List<PortMappingEntry> portMappings;
+    private List<PlacementStrategyEntry> placementStrategies;
 
     private ArrayList<String> overrides = new ArrayList<String>();
 
@@ -354,6 +355,16 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         overrides.add("portMappings");
     }
 
+    public List<PlacementStrategyEntry> getPlacementStrategies() {
+        return placementStrategies;
+    }
+
+    @DataBoundSetter
+    public void setPlacementStrategies(List<PlacementStrategyEntry> placementStrategies) {
+        this.placementStrategies = placementStrategies;
+        overrides.add("placementStrategies");
+    }
+
     public Map<String,Object> getAsArgs() {
         Map<String,Object> argMap = new TreeMap<String, Object>();
 
@@ -464,6 +475,10 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
 
         if (portMappings != null && portMappings.size() > 0) {
             argMap.put("portMappings", portMappings);
+        }
+
+        if (placementStrategies != null && placementStrategies.size() > 0){
+            argMap.put("placementStrategies", placementStrategies)
         }
 
         argMap.put("overrides", overrides);
