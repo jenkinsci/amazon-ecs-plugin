@@ -21,6 +21,7 @@ The scope of the plugin is only using existing and pre-configured AWS Infrastruc
 -   Jenkins with at least version 2.289.1
 -   AWS Account
 
+
 ### Plugin install
 
 Use the Jenkins plugin manager to install the [Amazon Elastic Container Service plugin](https://plugins.jenkins.io/amazon-ecs)
