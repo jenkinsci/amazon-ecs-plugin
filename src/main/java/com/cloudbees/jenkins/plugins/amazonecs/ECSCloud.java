@@ -211,14 +211,13 @@ public class ECSCloud extends Cloud {
         return getTemplate(label) != null;
     }
 
-    public boolean isAtLimit(int onlineExecutors, int connectingExecutors) {
-       // maxAgents equals 0 indicates that we don't have restriction on number of nodes.
-        if (maxAgents != 0) {
-            if (onlineExecutors + connectingExecutors >= maxAgents ) {
-                return true;
-            }
+    public int getProvisioningCapacity(int excessWorkload, int onlineExecutors, int connectingExecutors) {
+        // When maxAgents is zero don't limit the number of agents available for provisioning.
+        if (maxAgents == 0) {
+            return excessWorkload;
         }
-        return false;
+        int currentAgentCapacity = (maxAgents - (onlineExecutors + connectingExecutors));
+        return Math.min(excessWorkload, currentAgentCapacity);
     }
 
     private ECSTaskTemplate getTemplate(Label label) {
