@@ -225,7 +225,9 @@ public class ECSCloud extends Cloud {
             return 0;
         }
         int currentAgentCapacity = (maxAgents - (onlineExecutors + connectingExecutors));
-        return Math.min(excessWorkload, currentAgentCapacity);
+        // Return the lowest value between excessWorkload and currentAgentCapacity, with zero being the minimum returned
+        // value.
+        return Math.max(0, Math.min(excessWorkload, currentAgentCapacity));
     }
 
     private ECSTaskTemplate getTemplate(Label label) {
