@@ -216,6 +216,14 @@ public class ECSCloud extends Cloud {
         if (maxAgents == 0) {
             return excessWorkload;
         }
+        try {
+            int currentAgentCapacity = Math.subtractExact(Math.addExact(onlineExecutors, onlineExecutors), maxAgents);
+        } catch (ArithmeticException e) {
+            LOGGER.log(Level.WARNING, "Overflow encountered when calculating agent capacity.", e);
+            // Where an overflow is detected the safest thing to do is probably return zero here so as not to compound
+            // the problem.
+            return 0;
+        }
         int currentAgentCapacity = (maxAgents - (onlineExecutors + connectingExecutors));
         return Math.min(excessWorkload, currentAgentCapacity);
     }

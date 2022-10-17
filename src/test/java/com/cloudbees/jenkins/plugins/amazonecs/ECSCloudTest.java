@@ -219,6 +219,27 @@ public class ECSCloudTest {
         Assert.assertEquals(4, provisioningCapacity);
     }
 
+    @Test
+    public void getProvisioningCapacity_returnsZeroWhenOverflowEncountered () {
+        int onlineExecutors = Integer.MAX_VALUE;
+        int connectingExecutors = 1;
+        int excessWorkload = 1;
+
+        List<ECSTaskTemplate> templates = new ArrayList<>();
+        templates.add(getTaskTemplate("my-template","label"));
+
+        ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
+        sut.setMaxAgents(10);
+        sut.setTemplates(templates);
+        sut.setRegionName("eu-west-1");
+        sut.setJenkinsUrl("http://jenkins.local");
+        sut.setSlaveTimeoutInSeconds(5);
+        sut.setRetentionTimeout(5);
+
+        int provisioningCapacity = sut.getProvisioningCapacity(excessWorkload, onlineExecutors, connectingExecutors);
+        Assert.assertEquals(0, provisioningCapacity);
+    }
+
     private ECSTaskTemplate getTaskTemplate() {
         return getTaskTemplate(UUID.randomUUID().toString(),UUID.randomUUID().toString());
     }
