@@ -79,7 +79,7 @@
     <f:entry field="retentionTimeout" title="${%Container Cleanup Timeout (minutes)}" description="Timeout (in minutes) for how long instances can be idle before they are cleaned up. Should be at least 1.">
       <f:textbox default="${descriptor.defaultRetentionTimeout}"/>
     </f:entry>
-    <f:entry field="taskPollingIntervalInSeconds" title="${%ECS task polling interval}" description="Polling interval (in seconds) to use when waiting for ECS tasks to enter the RUNNING state. Use higher values to avoid throtting from AWS if you're running many tasks in one account.">
+    <f:entry field="taskPollingIntervalInSeconds" title="${%ECS task polling interval}" description="Polling interval (in seconds) to use when waiting for ECS tasks to enter the RUNNING state. Use higher values to avoid throttling from AWS if you're running many tasks in one account.">
       <f:textbox default="${descriptor.defaultTaskPollingIntervalInSeconds}" />
     </f:entry>
   </f:advanced>
