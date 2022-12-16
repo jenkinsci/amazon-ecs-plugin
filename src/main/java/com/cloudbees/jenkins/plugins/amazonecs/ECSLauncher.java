@@ -80,7 +80,7 @@ public class ECSLauncher extends JNLPLauncher {
     }
 
     @Override
-    public void launch(SlaveComputer computer, TaskListener listener) {
+    public synchronized void launch(SlaveComputer computer, TaskListener listener) {
 
         PrintStream logger = listener.getLogger();
         logger.println("ECS: Launching agent");
