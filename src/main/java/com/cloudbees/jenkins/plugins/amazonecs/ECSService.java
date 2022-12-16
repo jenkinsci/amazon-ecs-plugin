@@ -307,8 +307,10 @@ public class ECSService extends BaseAWSService {
             List<Tag> taskDefinitionTags = new ArrayList<>();
             taskDefinitionTags.add(jenkinsLabelTag);
             taskDefinitionTags.add(jenkinsTemplateNameTag);
-            for (ECSTaskTemplate.Tag tag: template.getTags()) {
-                taskDefinitionTags.add(new Tag().withKey(tag.name).withValue(tag.value));
+            if (template.getTags() != null) {
+                for (ECSTaskTemplate.Tag tag: template.getTags()) {
+                    taskDefinitionTags.add(new Tag().withKey(tag.name).withValue(tag.value));
+                }
             }
 
             final RegisterTaskDefinitionRequest request = new RegisterTaskDefinitionRequest()
