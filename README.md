@@ -251,6 +251,7 @@ ecsTaskTemplate(
     containerUser: 'ubuntu',
     remoteFSRoot: '/home/ubuntu',
     overrides: [],
+    agentContainerName: 'java',    
     taskDefinitionOverride: "arn:aws:redacted:redacted:task-definition/${env.task}"
 ) {
   node(dynamic_label) {

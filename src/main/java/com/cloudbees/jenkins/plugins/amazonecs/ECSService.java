@@ -447,12 +447,23 @@ public class ECSService extends BaseAWSService {
         envNodeSecret.setName("SLAVE_NODE_SECRET");
         envNodeSecret.setValue(agentComputer.getJnlpMac());
 
-        // by convention, we assume the jenkins agent container is the first container in the task definition. ECS requires
-        // all task definitions to contain at least one container, and all containers to have a name, so we do not need
-        // to null- or bounds-check for the presence of a container definition.
-        String agentContainerName = taskDefinition.getContainerDefinitions().get(0).getName();
+        // by convention, unless agent container name is specified, we assume the jenkins agent container is the first
+        // container in the task definition. ECS requires all task definitions to contain at least one container, and
+        // all containers to have a name, so we do not need to null- or bounds-check for the presence of a container
+        // definition.
+        String agentContainerName;
+        if (template.getAgentContainerName() != null) {
+            agentContainerName = template.getAgentContainerName();
 
-        LOGGER.log(Level.FINE, "Found container definition with {0} container(s). Assuming first container is the Jenkins agent: {1}", new Object[]{taskDefinition.getContainerDefinitions().size(), agentContainerName});
+            if (!taskDefinition.getContainerDefinitions().stream().anyMatch(d -> d.getName().equals(agentContainerName))) {
+                LOGGER.log(Level.SEVERE, "Could not find agent container name: {0} for template: {1}", new Object[] {agentContainerName, template.getDisplayName()});
+                throw new RuntimeException("Could not find agent container name: " + agentContainerName);
+            }
+            LOGGER.log(Level.FINE, "Using the following container name as the Jenkins agent: {0}", agentContainerName);
+        } else {
+            agentContainerName = taskDefinition.getContainerDefinitions().get(0).getName();
+            LOGGER.log(Level.FINE, "Found container definition with {0} container(s). Assuming first container is the Jenkins agent: {1}", new Object[]{taskDefinition.getContainerDefinitions().size(), agentContainerName});
+        }
 
         Tag jenkinsLabelTag = new Tag().withKey(AWS_TAG_JENKINS_LABEL_KEY).withValue(template.getLabel());
         Tag jenkinsTemplateNameTag =
