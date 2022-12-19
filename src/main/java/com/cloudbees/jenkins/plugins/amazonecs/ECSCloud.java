@@ -95,7 +95,7 @@ public class ECSCloud extends Cloud {
     private int maxMemory;
     private int maxMemoryReservation;
     private int maxAgents = DescriptorImpl.DEFAULT_MAXIMUM_AGENTS;
-    private int numExecutors;
+    private int numExecutors = DescriptorImpl.DEFAULT_NUM_EXECUTORS;
 
     @DataBoundConstructor
     public ECSCloud(String name, @Nonnull String credentialsId, String assumedRoleArn, String cluster) {
@@ -480,6 +480,7 @@ public class ECSCloud extends Cloud {
         public static final String DEFAULT_ALLOWED_OVERRIDES = "";
         private static String CLOUD_NAME_PATTERN = "[a-z|A-Z|0-9|_|-]{1,127}";
         private static final int DEFAULT_MAXIMUM_AGENTS = 0; //Unlimited
+        private static final int DEFAULT_NUM_EXECUTORS = 1;
 
         @Override
         public String getDisplayName() {
