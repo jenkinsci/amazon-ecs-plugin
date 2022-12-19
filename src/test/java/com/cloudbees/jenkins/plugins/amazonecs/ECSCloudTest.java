@@ -138,15 +138,16 @@ public class ECSCloudTest {
     }
 
     @Test
-    public void isAtLimit_returnsTrue () {
-        int onlineExecutors = 6;
-        int connectingExecutors = 2;
+    public void getProvisioningCapacity_returnsZeroWhenMaxAgentsReached () {
+        int onlineExecutors = 4;
+        int connectingExecutors = 1;
+        int excessWorkload = 5;
 
         List<ECSTaskTemplate> templates = new ArrayList<>();
         templates.add(getTaskTemplate("my-template","label"));
 
         ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
-        sut.setMaxAgents(3);
+        sut.setMaxAgents(5);
         sut.setTemplates(templates);
         sut.setRegionName("eu-west-1");
         sut.setNumExecutors(1);
@@ -154,20 +155,21 @@ public class ECSCloudTest {
         sut.setSlaveTimeoutInSeconds(5);
         sut.setRetentionTimeout(5);
 
-        Boolean isAtLimit = sut.isAtLimit(onlineExecutors, connectingExecutors);
-
-        Assert.assertTrue(isAtLimit);
+        int provisioningCapacity = sut.getProvisioningCapacity(excessWorkload, onlineExecutors, connectingExecutors);
+        Assert.assertEquals(0, provisioningCapacity);
     }
 
     @Test
-    public void isAtLimit_returnsFalse () {
-        int onlineExecutors = 3;
-        int connectingExecutors = 0;
+    public void getProvisioningCapacity_returnsRemainingMaxAgentsWhenWorkloadExceedsAvailability () {
+        int onlineExecutors = 7;
+        int connectingExecutors = 4;
+        int excessWorkload = 8;
 
         List<ECSTaskTemplate> templates = new ArrayList<>();
         templates.add(getTaskTemplate("my-template","label"));
 
         ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
+        sut.setMaxAgents(14);
         sut.setTemplates(templates);
         sut.setRegionName("eu-west-1");
         sut.setNumExecutors(1);
@@ -175,9 +177,92 @@ public class ECSCloudTest {
         sut.setSlaveTimeoutInSeconds(5);
         sut.setRetentionTimeout(5);
 
-        Boolean isAtLimit = sut.isAtLimit(onlineExecutors, connectingExecutors);
+        int provisioningCapacity = sut.getProvisioningCapacity(excessWorkload, onlineExecutors, connectingExecutors);
+        Assert.assertEquals(3, provisioningCapacity);
+    }
 
-        Assert.assertFalse(isAtLimit);
+    @Test
+    public void getProvisioningCapacity_returnsExcessWorkloadWithoutMaxAgents () {
+        int onlineExecutors = 6;
+        int connectingExecutors = 2;
+        int excessWorkload = 10;
+
+        List<ECSTaskTemplate> templates = new ArrayList<>();
+        templates.add(getTaskTemplate("my-template","label"));
+
+        ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
+        sut.setMaxAgents(0);
+        sut.setTemplates(templates);
+        sut.setRegionName("eu-west-1");
+        sut.setJenkinsUrl("http://jenkins.local");
+        sut.setSlaveTimeoutInSeconds(5);
+        sut.setRetentionTimeout(5);
+
+        int provisioningCapacity = sut.getProvisioningCapacity(excessWorkload, onlineExecutors, connectingExecutors);
+        Assert.assertEquals(10, provisioningCapacity);
+    }
+
+    @Test
+    public void getProvisioningCapacity_returnsExcessWorkloadWhenWorkloadDoesNotExceedAvailability () {
+        int onlineExecutors = 3;
+        int connectingExecutors = 2;
+        int excessWorkload = 4;
+
+        List<ECSTaskTemplate> templates = new ArrayList<>();
+        templates.add(getTaskTemplate("my-template","label"));
+
+        ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
+        sut.setMaxAgents(10);
+        sut.setTemplates(templates);
+        sut.setRegionName("eu-west-1");
+        sut.setJenkinsUrl("http://jenkins.local");
+        sut.setSlaveTimeoutInSeconds(5);
+        sut.setRetentionTimeout(5);
+
+        int provisioningCapacity = sut.getProvisioningCapacity(excessWorkload, onlineExecutors, connectingExecutors);
+        Assert.assertEquals(4, provisioningCapacity);
+    }
+
+    @Test
+    public void getProvisioningCapacity_returnsZeroWhenOverflowEncountered () {
+        int onlineExecutors = Integer.MAX_VALUE;
+        int connectingExecutors = 1;
+        int excessWorkload = 1;
+
+        List<ECSTaskTemplate> templates = new ArrayList<>();
+        templates.add(getTaskTemplate("my-template","label"));
+
+        ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
+        sut.setMaxAgents(10);
+        sut.setTemplates(templates);
+        sut.setRegionName("eu-west-1");
+        sut.setJenkinsUrl("http://jenkins.local");
+        sut.setSlaveTimeoutInSeconds(5);
+        sut.setRetentionTimeout(5);
+
+        int provisioningCapacity = sut.getProvisioningCapacity(excessWorkload, onlineExecutors, connectingExecutors);
+        Assert.assertEquals(0, provisioningCapacity);
+    }
+
+    @Test
+    public void getProvisioningCapacity_returnsZeroWhenCurrentAgentsGreaterThanMaxAgents () {
+        int onlineExecutors = 5;
+        int connectingExecutors = 5;
+        int excessWorkload = 1;
+
+        List<ECSTaskTemplate> templates = new ArrayList<>();
+        templates.add(getTaskTemplate("my-template","label"));
+
+        ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
+        sut.setMaxAgents(1);
+        sut.setTemplates(templates);
+        sut.setRegionName("eu-west-1");
+        sut.setJenkinsUrl("http://jenkins.local");
+        sut.setSlaveTimeoutInSeconds(5);
+        sut.setRetentionTimeout(5);
+
+        int provisioningCapacity = sut.getProvisioningCapacity(excessWorkload, onlineExecutors, connectingExecutors);
+        Assert.assertEquals(0, provisioningCapacity);
     }
 
     private ECSTaskTemplate getTaskTemplate() {

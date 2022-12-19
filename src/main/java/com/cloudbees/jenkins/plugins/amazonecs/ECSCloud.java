@@ -212,14 +212,23 @@ public class ECSCloud extends Cloud {
         return getTemplate(label) != null;
     }
 
-    public boolean isAtLimit(int onlineExecutors, int connectingExecutors) {
-       // maxAgents equals 0 indicates that we don't have restriction on number of nodes.
-        if (maxAgents != 0) {
-            if (onlineExecutors + connectingExecutors >= maxAgents ) {
-                return true;
-            }
+    public int getProvisioningCapacity(int excessWorkload, int onlineExecutors, int connectingExecutors) {
+        // When maxAgents is zero don't limit the number of agents available for provisioning.
+        if (maxAgents == 0) {
+            return excessWorkload;
         }
-        return false;
+        try {
+            int currentAgentCapacity = Math.subtractExact(Math.addExact(onlineExecutors, connectingExecutors), maxAgents);
+        } catch (ArithmeticException e) {
+            LOGGER.log(Level.WARNING, "Overflow encountered when calculating agent capacity.", e);
+            // Where an overflow is detected the safest thing to do is probably return zero here so as not to compound
+            // the problem.
+            return 0;
+        }
+        int currentAgentCapacity = (maxAgents - (onlineExecutors + connectingExecutors));
+        // Return the lowest value between excessWorkload and currentAgentCapacity, with zero being the minimum returned
+        // value.
+        return Math.max(0, Math.min(excessWorkload, currentAgentCapacity));
     }
 
     private ECSTaskTemplate getTemplate(Label label) {
