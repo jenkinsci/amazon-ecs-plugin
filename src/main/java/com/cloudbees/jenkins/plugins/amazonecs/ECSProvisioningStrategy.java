@@ -55,14 +55,15 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
                 }
             }
 
+            int provisioningCapacity = 0;
             if (c instanceof ECSCloud) {
-                Boolean isAtLimit = ((ECSCloud) c).isAtLimit(snap.getOnlineExecutors(), snap.getConnectingExecutors());
-                if ( isAtLimit ) {
-                    return NodeProvisioner.StrategyDecision.PROVISIONING_COMPLETED; //maxAgents provisioned
+                provisioningCapacity = ((ECSCloud) c).getProvisioningCapacity(excessWorkload, snap.getOnlineExecutors(), snap.getConnectingExecutors());
+                if (provisioningCapacity == 0) {
+                    return NodeProvisioner.StrategyDecision.PROVISIONING_COMPLETED;
                 }
             }
-
-            Collection<NodeProvisioner.PlannedNode> additionalCapacities = c.provision(label, excessWorkload);
+            int requestAdditionalCapacities = provisioningCapacity == 0 ? excessWorkload : provisioningCapacity;
+            Collection<NodeProvisioner.PlannedNode> additionalCapacities = c.provision(label, requestAdditionalCapacities);
 
             // compat with what the default NodeProvisioner.Strategy does
             fireOnStarted(c, label, additionalCapacities);
