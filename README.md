@@ -128,6 +128,7 @@ TaskRole:
                             - "ecs:ListTaskDefinitions"
                             - "ecs:DescribeTaskDefinition"
                             - "ecs:DeregisterTaskDefinition"
+                            - "ecs:ListTagsForResource"
                         Effect: Allow
                         Resource: "*"
                       - Action:
