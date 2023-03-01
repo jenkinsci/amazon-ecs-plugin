@@ -1070,10 +1070,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (null == ulimits || ulimits.isEmpty())
             return null;
         Collection<Ulimit> ulimits = new ArrayList<Ulimit>();
-        for (UlimitEntry portMapping : this.ulimits) {
-            Integer hardLimit = portMapping.hardLimit;
-            Integer softLimit = portMapping.softLimit;
-            String ulimitName = portMapping.ulimitName;
+        for (UlimitEntry ulimitEntry : this.ulimits) {
+            Integer hardLimit = ulimitEntry.hardLimit;
+            Integer softLimit = ulimitEntry.softLimit;
+            String ulimitName = ulimitEntry.ulimitName;
 
             ulimits.add(new Ulimit().withHardLimit(hardLimit)
                     .withSoftLimit(softLimit)
@@ -1344,7 +1344,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
 
         @Override
         public String toString() {
-            return "PortMappingEntry{" +
+            return "UlimitEntry{" +
                     "softLimit=" + softLimit +
                     ", hardLimit=" + hardLimit +
                     ", ulimitName='" + ulimitName + "}";
