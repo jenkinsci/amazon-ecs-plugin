@@ -264,6 +264,26 @@
         </table>
       </f:repeatable>
     </f:entry>
+    <f:entry field="ulimits" title="${%Ulimits}">
+      <f:repeatable field="ulimits">
+        <table width="100%">
+          <f:entry field="softLimit" title="${%Soft Limit}">
+            <f:textbox />
+          </f:entry>
+          <f:entry field="hardLimit" title="${%Hard Limit}">
+            <f:textbox />
+          </f:entry>
+          <f:entry field="ulimitName" title="${%Ulimit Name}">
+            <f:select />
+          </f:entry>
+          <f:entry>
+            <div align="right">
+              <f:repeatableDeleteButton />
+            </div>
+          </f:entry>
+        </table>
+      </f:repeatable>
+    </f:entry>
     <f:entry field="placementStrategies" title="${%Placement Strategy}">
       <f:repeatable field="placementStrategies">
         <table width="100%">

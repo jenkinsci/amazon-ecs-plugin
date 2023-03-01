@@ -1,5 +1,7 @@
 package com.cloudbees.jenkins.plugins.amazonecs.pipeline;
 
+
+import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
 import com.cloudbees.jenkins.plugins.amazonecs.SerializableSupplier;
 import hudson.Extension;
 import hudson.model.TaskListener;
@@ -84,6 +86,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private List<MountPointEntry> mountPoints;
     private List<EFSMountPointEntry> efsMountPoints;
     private List<PortMappingEntry> portMappings;
+    private List<ECSTaskTemplate.UlimitEntry> ulimits;
     private List<PlacementStrategyEntry> placementStrategies;
     private List<CapacityProviderStrategyEntry> capacityProviderStrategies;
 
@@ -423,10 +426,18 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     public List<PortMappingEntry> getPortMappings() {
         return portMappings;
     }
+    public List<ECSTaskTemplate.UlimitEntry> getUlimits() {
+        return ulimits;
+    }
 
     @DataBoundSetter
     public void setPortMappings(List<PortMappingEntry> portMappings) {
         this.portMappings = portMappings;
+    }
+
+    @DataBoundSetter
+    public void setUlimits(List<ECSTaskTemplate.UlimitEntry> ulimits) {
+        this.ulimits = ulimits;
     }
 
     public List<PlacementStrategyEntry> getPlacementStrategies() {

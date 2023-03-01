@@ -59,6 +59,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private List<MountPointEntry> mountPoints;
     private List<EFSMountPointEntry> efsMountPoints;
     private List<PortMappingEntry> portMappings;
+    private List<ECSTaskTemplate.UlimitEntry> ulimits;
     private List<PlacementStrategyEntry> placementStrategies;
 
     private ArrayList<String> overrides = new ArrayList<String>();
@@ -361,11 +362,24 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         return portMappings;
     }
 
+
     @DataBoundSetter
     public void setPortMappings(List<PortMappingEntry> portMappings) {
         this.portMappings = portMappings;
         overrides.add("portMappings");
     }
+
+    public List<ECSTaskTemplate.UlimitEntry> getUlimits() {
+        return ulimits;
+    }
+
+
+    @DataBoundSetter
+    public void setUlimits(List<ECSTaskTemplate.UlimitEntry> ulimits) {
+        this.ulimits = ulimits;
+        overrides.add("ulimits");
+    }
+
 
     public List<PlacementStrategyEntry> getPlacementStrategies() {
         return placementStrategies;

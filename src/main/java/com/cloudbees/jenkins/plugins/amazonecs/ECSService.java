@@ -205,6 +205,7 @@ public class ECSService extends BaseAWSService {
                 .withMountPoints(template.getMountPointEntries())
                 .withPortMappings(template.getPortMappingEntries())
                 .withCpu(template.getCpu())
+                .withUlimits(template.getUlimitsEntries())
                 .withPrivileged(template.getPrivileged())
                 .withEssential(true);
 
