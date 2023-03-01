@@ -98,6 +98,7 @@ public class ECSTaskTemplateStepExecutionTest {
                 null,
                 null,
                 null,
+                null,
                 UUID.randomUUID().toString(),
                 null,
                 "override-task-role",
@@ -138,6 +139,7 @@ public class ECSTaskTemplateStepExecutionTest {
         step.setMountPoints(expected.getMountPoints());
         step.setEfsMountPoints(expected.getEfsMountPoints());
         step.setPortMappings(expected.getPortMappings());
+        step.setUlimits(expected.getUlimits());
         step.setExecutionRole(expected.getExecutionRole());
         step.setPlacementStrategies(expected.getPlacementStrategies());
         step.setTaskrole(expected.getTaskrole());
@@ -184,6 +186,7 @@ public class ECSTaskTemplateStepExecutionTest {
                 null,
                 null,
                 new ArrayList<>(),
+                null,
                 null,
                 null,
                 null,

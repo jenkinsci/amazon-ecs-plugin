@@ -51,6 +51,8 @@ import com.amazonaws.services.ecs.model.Volume;
 import com.amazonaws.services.ecs.model.DescribeClustersRequest;
 import com.amazonaws.services.ecs.model.DescribeClustersResult;
 import com.amazonaws.services.ecs.model.Cluster;
+import com.amazonaws.services.ecs.model.Ulimit;
+import com.amazonaws.services.ecs.model.UlimitName;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import com.amazonaws.services.elasticfilesystem.model.AccessPointDescription;
@@ -76,6 +78,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.Serializable;
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -316,6 +319,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     private List<EnvironmentEntry> environments;
     private List<ExtraHostEntry> extraHosts;
     private List<PortMappingEntry> portMappings;
+    private List<UlimitEntry> ulimits;
     private List<PlacementStrategyEntry> placementStrategies;
     private List<CapacityProviderStrategyEntry> capacityProviderStrategies;
 
@@ -383,6 +387,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            @Nullable List<MountPointEntry> mountPoints,
                            @Nullable List<EFSMountPointEntry> efsMountPoints,
                            @Nullable List<PortMappingEntry> portMappings,
+                           @Nullable List<UlimitEntry> ulimits,
                            @Nullable String executionRole,
                            @Nullable List<PlacementStrategyEntry> placementStrategies,
                            @Nullable String taskrole,
@@ -443,6 +448,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.mountPoints = mountPoints;
         this.efsMountPoints = efsMountPoints;
         this.portMappings = portMappings;
+        this.ulimits = ulimits;
         this.executionRole = executionRole;
         this.placementStrategies = placementStrategies;
         this.taskrole = taskrole;
@@ -803,6 +809,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     public List<PortMappingEntry> getPortMappings() {
         return portMappings;
     }
+    public List<UlimitEntry> getUlimits() {
+        return ulimits;
+    }
 
     public List<PlacementStrategyEntry> getPlacementStrategies() {
         return placementStrategies;
@@ -811,6 +820,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     public List<CapacityProviderStrategyEntry> getCapacityProviderStrategies() {
         return capacityProviderStrategies;
     }
+
 
     /**
      * This merge does not take an into consideration the child intentionally setting empty values for parameters like "entrypoint" - in fact
@@ -867,6 +877,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         List<MountPointEntry> mountPoints = isEmpty(this.mountPoints) ? parent.getMountPoints() : this.mountPoints;
         List<EFSMountPointEntry> efsMountPoints = isEmpty(this.efsMountPoints) ? parent.getEfsMountPoints() : this.efsMountPoints;
         List<PortMappingEntry> portMappings = isEmpty(this.portMappings) ? parent.getPortMappings() : this.portMappings;
+        List<UlimitEntry> ulimits = isEmpty(this.ulimits) ? parent.getUlimits() : this.ulimits;
         List<PlacementStrategyEntry> placementStrategies = isEmpty(this.placementStrategies) ? parent.getPlacementStrategies() : this.placementStrategies;
         List<CapacityProviderStrategyEntry> capacityProviderStrategies = isEmpty(this.capacityProviderStrategies) ? parent.getCapacityProviderStrategies() : this.capacityProviderStrategies;
 
@@ -907,6 +918,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        mountPoints,
                                                        efsMountPoints,
                                                        portMappings,
+                                                       ulimits,
                                                        executionRole,
                                                        placementStrategies,
                                                        taskrole,
@@ -1049,10 +1061,25 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
             String protocol = portMapping.protocol;
 
             ports.add(new PortMapping().withContainerPort(container)
-                                       .withHostPort(host)
-                                       .withProtocol(protocol));
+                    .withHostPort(host)
+                    .withProtocol(protocol));
         }
         return ports;
+    }
+    Collection<Ulimit> getUlimitsEntries() {
+        if (null == ulimits || ulimits.isEmpty())
+            return null;
+        Collection<Ulimit> ulimits = new ArrayList<Ulimit>();
+        for (UlimitEntry ulimitEntry : this.ulimits) {
+            Integer hardLimit = ulimitEntry.hardLimit;
+            Integer softLimit = ulimitEntry.softLimit;
+            String ulimitName = ulimitEntry.ulimitName;
+
+            ulimits.add(new Ulimit().withHardLimit(hardLimit)
+                    .withSoftLimit(softLimit)
+                    .withName(ulimitName));
+        }
+        return ulimits;
     }
 
     Collection<PlacementStrategy> getPlacementStrategyEntries() {
@@ -1303,6 +1330,44 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
             }
         }
     }
+    public static class UlimitEntry extends AbstractDescribableImpl<UlimitEntry> implements Serializable {
+        private static final long serialVersionUID = 8223725139080497838L;
+        public Integer hardLimit, softLimit;
+        public String ulimitName;
+
+        @DataBoundConstructor
+        public UlimitEntry(Integer softLimit,Integer hardLimit, String ulimitName) {
+            this.softLimit = softLimit;
+            this.hardLimit = hardLimit;
+            this.ulimitName = ulimitName;
+        }
+
+        @Override
+        public String toString() {
+            return "UlimitEntry{" +
+                    "softLimit=" + softLimit +
+                    ", hardLimit=" + hardLimit +
+                    ", ulimitName='" + ulimitName + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<UlimitEntry> {
+            public ListBoxModel doFillUlimitNameItems() {
+                final ListBoxModel options = new ListBoxModel();
+                for (UlimitName ulimitName : UlimitName.values()) {
+                    options.add(ulimitName.toString());
+                }
+                return options;
+            }
+
+            @Override
+            public String getDisplayName() {
+                return "UlimitEntry";
+            }
+        }
+    }
+
+
 
     public static class PlacementStrategyEntry extends AbstractDescribableImpl<PlacementStrategyEntry> implements Serializable {
         //private static final long serialVersionUID = 4195862080979262875L;
@@ -1647,6 +1712,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         if (portMappings != null ? !portMappings.equals(that.portMappings) : that.portMappings != null) {
             return false;
         }
+        if (ulimits != null ? !ulimits.equals(that.ulimits) : that.ulimits != null) {
+            return false;
+        }
         if (placementStrategies != null ? !placementStrategies.equals(that.placementStrategies) : that.placementStrategies != null) {
             return false;
         }
@@ -1701,6 +1769,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + (environments != null ? environments.hashCode() : 0);
         result = 31 * result + (extraHosts != null ? extraHosts.hashCode() : 0);
         result = 31 * result + (portMappings != null ? portMappings.hashCode() : 0);
+        result = 31 * result + (ulimits != null ? ulimits.hashCode() : 0);
         result = 31 * result + (placementStrategies != null ? placementStrategies.hashCode() : 0);
         result = 31 * result + (logDriver != null ? logDriver.hashCode() : 0);
         result = 31 * result + (logDriverOptions != null ? logDriverOptions.hashCode() : 0);
