@@ -2,6 +2,7 @@
  * The MIT License
  *
  *  Copyright (c) 2015, CloudBees, Inc.
+ *  Copyright (c) Amazon.com, Inc. or its affiliates. All rights reserved.
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +30,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,6 +44,7 @@ import com.amazonaws.services.ecs.model.ClientException;
 import com.amazonaws.services.ecs.model.ClusterNotFoundException;
 import com.amazonaws.services.ecs.model.InvalidParameterException;
 import com.amazonaws.services.ecs.model.ServerException;
+import com.amazonaws.services.ecs.model.Task;
 
 import org.jenkinsci.plugins.durabletask.executors.OnceRetentionStrategy;
 import hudson.model.Descriptor;
@@ -61,6 +65,13 @@ public class ECSSlave extends AbstractCloudSlave {
 
     private static final Logger LOGGER = Logger.getLogger(ECSSlave.class.getName());
 
+    /**
+     * ECS task lifecyle statuses.
+     * See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-lifecycle.html
+     */
+    private static final HashSet<String> upTaskStatuses = new HashSet<>(Arrays.asList("PROVISIONING", "PENDING", "ACTIVATING", "RUNNING"));
+    private static final HashSet<String> downTaskStatuses = new HashSet<>(Arrays.asList("DEACTIVATING", "STOPPING", "DEPROVISIONING", "STOPPED", "DELETED"));
+
     @Nonnull
     private final ECSCloud cloud;
     @Nonnull
@@ -79,6 +90,8 @@ public class ECSSlave extends AbstractCloudSlave {
      */
     @CheckForNull
     private String taskArn;
+
+    private boolean survivable = true;
 
     public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, ECSTaskTemplate template, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
         super(
@@ -124,6 +137,31 @@ public class ECSSlave extends AbstractCloudSlave {
 
     public void setTaskDefinitonArn(String taskDefinitonArn) {
         this.taskDefinitonArn = taskDefinitonArn;
+    }
+
+    public boolean isSurvivable() {
+        if (!survivable) {
+            /* Task in this state will not come back again. */
+            return false;
+        }
+
+        Task task = cloud.getEcsService().describeTask(taskArn, clusterArn);
+        if (task == null) {
+            survivable = false;
+            return false;
+        }
+
+        String lastStatus = task.getLastStatus();
+        String desiredStatus = task.getDesiredStatus();
+
+        LOGGER.log(Level.FINE, "Task {0} last status={1}, desired status={2}", new Object[]{taskArn, lastStatus, desiredStatus});
+
+        if (upTaskStatuses.contains(lastStatus) && !downTaskStatuses.contains(desiredStatus)) {
+            return true;
+        }
+
+        survivable = false;
+        return false;
     }
 
     @Override
