@@ -35,6 +35,7 @@ import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -47,6 +48,7 @@ import com.amazonaws.waiters.WaiterTimedOutException;
 import com.amazonaws.waiters.WaiterUnrecoverableException;
 import com.google.common.base.Throwables;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -66,6 +68,11 @@ public class ECSLauncher extends JNLPLauncher {
     private final ECSCloud cloud;
     private final ECSService ecsService;
     private boolean launched;
+    private final int maxAttempts = 2;
+
+    private static final List<String> FARGATE_RETRYABLE_MESSAGES = ImmutableList.of(
+            "Timeout waiting for network interface provisioning to complete"
+    );
 
     @DataBoundConstructor
     public ECSLauncher(ECSCloud cloud, String tunnel, String vmargs) {
@@ -107,7 +114,7 @@ public class ECSLauncher extends JNLPLauncher {
         try {
             long timeout = System.currentTimeMillis() + Duration.ofSeconds(cloud.getSlaveTimeoutInSeconds()).toMillis();
 
-            launchECSTask(ecsComputer, listener, timeout);
+            launchECSTaskWithRetry(ecsComputer, listener, timeout, maxAttempts);
 
             // now wait for agent to be online
             waitForAgent(agent, listener, timeout);
@@ -135,7 +142,21 @@ public class ECSLauncher extends JNLPLauncher {
         }
     }
 
-    protected Task launchECSTask(ECSComputer ecsComputer, TaskListener listener, long timeout) throws IOException, InterruptedException {
+    protected Task launchECSTaskWithRetry(ECSComputer ecsComputer, TaskListener listener, long timeout, int maxAttempts) throws IOException, InterruptedException {
+        int attempt = 1;
+        do {
+            try {
+                return launchECSTask(ecsComputer, listener, timeout);
+            } catch (RetryableLaunchFailure e) {
+                LOGGER.log(Level.WARNING, "Attempt {0}: Failed to start task due to {1}", new Object[]{attempt, e});
+            }
+            ++attempt;
+        } while (attempt <= maxAttempts);
+
+        throw new IllegalStateException(MessageFormat.format("Failed to start task after {0} attempts", maxAttempts));
+    }
+
+    protected Task launchECSTask(ECSComputer ecsComputer, TaskListener listener, long timeout) throws IOException, InterruptedException, RetryableLaunchFailure {
         PrintStream logger = listener.getLogger();
 
         ECSSlave agent = ecsComputer.getNode();
@@ -167,6 +188,11 @@ public class ECSLauncher extends JNLPLauncher {
         }
         catch (WaiterUnrecoverableException exception){
             LOGGER.log(Level.WARNING, MessageFormat.format("[{0}]: ECS Task stopped: {1}", agent.getNodeName(), startedTask.getTaskArn()), exception);
+
+            if (FARGATE_RETRYABLE_MESSAGES.stream().anyMatch(exception.getMessage()::contains)) {
+                throw new RetryableLaunchFailure(exception);
+            }
+
             throw new IllegalStateException("Task stopped before coming online. TaskARN: " + startedTask.getTaskArn());
         }
         catch (AmazonServiceException exception){
@@ -244,5 +270,11 @@ public class ECSLauncher extends JNLPLauncher {
         command.add(agent.getJnlpMac());
         command.add(agent.getName());
         return command;
+    }
+
+    protected static final class RetryableLaunchFailure extends Exception {
+        public RetryableLaunchFailure(Exception e) {
+            super(e);
+        }
     }
 }
