@@ -1,9 +1,5 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
@@ -18,6 +14,8 @@ import org.mockito.Mockito;
 
 import hudson.model.TaskListener;
 import hudson.slaves.JNLPLauncher;
+
+import static org.mockito.Mockito.*;
 
 public class ECSSlaveTest {
 
@@ -178,5 +176,31 @@ public class ECSSlaveTest {
         Mockito.when(ecsService.describeTask(sut.getTaskArn(), sut.getClusterArn())).thenReturn(null);
 
         Assert.assertFalse(sut.isSurvivable());
+    }
+
+    @Test
+    public void agent_has_1_executor_as_default() throws Exception {
+        ECSService ecsService = mock(ECSService.class);
+        ECSCloud cloud = mock(ECSCloud.class);
+        Mockito.when(cloud.getEcsService()).thenReturn(ecsService);
+        ECSTaskTemplate template = getTaskTemplate();
+
+        ECSSlave sut = new ECSSlave(cloud, "myagent", template, new JNLPLauncher());
+
+        Assert.assertEquals(1, sut.getNumExecutors());
+    }
+
+    @Test
+    public void agent_has_4_executors_when_configured() throws Exception {
+        ECSService ecsService = mock(ECSService.class);
+        ECSCloud cloud = mock(ECSCloud.class);
+        Mockito.when(cloud.getEcsService()).thenReturn(ecsService);
+        ECSTaskTemplate template = getTaskTemplate();
+
+        when(cloud.getNumExecutors()).thenReturn(4);
+
+        ECSSlave sut = new ECSSlave(cloud, "myagent", template, new JNLPLauncher());
+
+        Assert.assertEquals(4, sut.getNumExecutors());
     }
 }
