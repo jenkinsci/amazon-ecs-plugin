@@ -77,7 +77,6 @@ public class ECSSlaveTest {
 
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         TaskListener listener = mock(TaskListener.class);
-        Mockito.when(listener.getLogger()).thenReturn(new PrintStream(bo));
         ECSTaskTemplate template = getTaskTemplate();
 
         ECSSlave sut = new ECSSlave(cloud, "myagent", template, new JNLPLauncher());
@@ -103,7 +102,6 @@ public class ECSSlaveTest {
 
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         TaskListener listener = mock(TaskListener.class);
-        Mockito.when(listener.getLogger()).thenReturn(new PrintStream(bo));
         ECSTaskTemplate template = getTaskTemplate();
 
         ECSSlave sut = new ECSSlave(cloud, "myagent", template, new JNLPLauncher());
