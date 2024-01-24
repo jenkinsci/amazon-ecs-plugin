@@ -7,6 +7,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.retry.RetryPolicy;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
+import com.google.common.base.Joiner;
 import hudson.ProxyConfiguration;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
@@ -38,6 +39,10 @@ public abstract class BaseAWSService {
             clientConfiguration.setProxyPort(proxy.port);
             clientConfiguration.setProxyUsername(proxy.getUserName());
             clientConfiguration.setProxyPassword(proxy.getPassword());
+            if (proxy.getNoProxyHost() != null) {
+                String[] noProxyParts = proxy.getNoProxyHost().split("[ \t\n,|]+");
+                clientConfiguration.setNonProxyHosts(Joiner.on(',').join(noProxyParts));
+            }
         }
 
         clientConfiguration.setRetryPolicy(ecsRetryPolicy());
