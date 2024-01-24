@@ -41,6 +41,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private int memory;
     private int memoryReservation;
     private int cpu;
+    private Integer ephemeralStorageSizeInGiB;
     private int sharedMemorySize;
     private String subnets;
     private String securityGroups;
@@ -186,6 +187,14 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     public void setCpu(int cpu) {
         this.cpu = cpu;
         overrides.add("cpu");
+    }
+
+    public Integer getEphemeralStorageSizeInGiB() { return ephemeralStorageSizeInGiB; }
+
+    @DataBoundSetter
+    public void setEphemeralStorageSizeInGiB(Integer ephemeralStorageSizeInGiB) {
+        this.ephemeralStorageSizeInGiB = ephemeralStorageSizeInGiB;
+        overrides.add("ephemeralStorageSizeInGiB");
     }
 
     public int getSharedMemorySize() {
@@ -434,6 +443,10 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
 
         if (cpu != 0) {
             argMap.put("cpu", cpu);
+        }
+
+        if (ephemeralStorageSizeInGiB != null && ephemeralStorageSizeInGiB != 0 ) {
+            argMap.put("ephemeralStorageSizeInGiB", ephemeralStorageSizeInGiB);
         }
 
         if (sharedMemorySize != 0) {
