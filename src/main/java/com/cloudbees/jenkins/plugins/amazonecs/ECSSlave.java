@@ -98,7 +98,7 @@ public class ECSSlave extends AbstractCloudSlave {
             name,
             "ECS Agent",
             template.makeRemoteFSRoot(name),
-            1,
+            Math.max(1, cloud.getNumExecutors()),
             Mode.EXCLUSIVE,
             template.getLabel(),
             launcher,
