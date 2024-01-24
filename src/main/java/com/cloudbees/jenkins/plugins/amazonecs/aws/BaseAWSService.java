@@ -4,6 +4,7 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.retry.RetryPolicy;
 import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsHelper;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import hudson.ProxyConfiguration;
@@ -39,10 +40,19 @@ public abstract class BaseAWSService {
             clientConfiguration.setProxyPassword(proxy.getPassword());
         }
 
+        clientConfiguration.setRetryPolicy(ecsRetryPolicy());
+
         // Default is 3. 10 helps us actually utilize the SDK's backoff strategy
         // The strategy will wait up to 20 seconds per request (after multiple failures)
         clientConfiguration.setMaxErrorRetry(10);
 
         return clientConfiguration;
+    }
+
+    private RetryPolicy ecsRetryPolicy() {
+        return new RetryPolicy(new RetryCondition(),
+                       null,
+                       10,
+                       true);
     }
 }
