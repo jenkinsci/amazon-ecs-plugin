@@ -92,6 +92,7 @@ public class ECSSlave extends AbstractCloudSlave {
     private String taskArn;
 
     private boolean survivable = true;
+    private String jobName;
 
     public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, ECSTaskTemplate template, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
         super(
@@ -202,5 +203,13 @@ public class ECSSlave extends AbstractCloudSlave {
 
     private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
         stream.defaultReadObject();
+    }
+
+    public void setJobName(String jobName) {
+        this.jobName = jobName;
+    }
+
+    public String getJobName() {
+        return jobName;
     }
 }

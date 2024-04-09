@@ -29,7 +29,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -329,7 +331,7 @@ public class ECSService extends BaseAWSService {
                 request.withExecutionRoleArn(template.getExecutionRole());
             }
 
-            if (!StringUtils.isEmpty(template.getTaskrole())) {
+            if (!StringUtils.isEmpty(template.getTaskrole()) && !template.getUseSessionTags()) {
                 request.withTaskRoleArn(template.getTaskrole());
             }
 
@@ -475,11 +477,7 @@ public class ECSService extends BaseAWSService {
                 .withTaskDefinition(taskDefinition.getTaskDefinitionArn())
                 .withTags(jenkinsLabelTag, jenkinsTemplateNameTag)
                 .withOverrides(new TaskOverride()
-                        .withContainerOverrides(new ContainerOverride()
-                                .withName(agentContainerName)
-                                .withCommand(command)
-                                .withEnvironment(envNodeName)
-                                .withEnvironment(envNodeSecret)))
+                        .withContainerOverrides(getContainerOverride(command, agentContainerName, envNodeName, envNodeSecret, template, agent.getJobName())))
                 .withPlacementStrategy(template.getPlacementStrategyEntries())
                 .withCluster(clusterArn)
                 .withPropagateTags("TASK_DEFINITION");
@@ -510,4 +508,49 @@ public class ECSService extends BaseAWSService {
         return client.runTask(req);
     }
 
+    private static ContainerOverride getContainerOverride(Collection<String> command, String agentContainerName, KeyValuePair envNodeName,
+            KeyValuePair envNodeSecret, ECSTaskTemplate template, String jobName) {
+        var overrides = new ContainerOverride()
+                .withName(agentContainerName)
+                .withCommand(command)
+                .withEnvironment(envNodeName)
+                .withEnvironment(envNodeSecret);
+
+        if(template.getUseSessionTags()) {
+            String roleArn = template.getTaskrole();
+            String regionName = "us-east-1";
+
+            AWSSecurityTokenService stsClient = AWSSecurityTokenServiceClientBuilder.standard()
+                    .withRegion(regionName)
+                    .build();
+
+            com.amazonaws.services.securitytoken.model.Tag sessionTag = new com.amazonaws.services.securitytoken.model.Tag().withKey("jobNamw").withValue(jobName); // replace with your session tag key and value
+
+            AssumeRoleRequest roleRequest = new AssumeRoleRequest()
+                    .withRoleArn(roleArn)
+                    .withRoleSessionName(UUID.randomUUID().toString())
+                    .withTags(Collections.singletonList(sessionTag));
+
+            AssumeRoleResult roleResponse = stsClient.assumeRole(roleRequest);
+            Credentials sessionCredentials = roleResponse.getCredentials();
+
+            KeyValuePair accessKeyIdEnv = new KeyValuePair();
+            accessKeyIdEnv.setName("AWS_ACCESS_KEY_ID");
+            accessKeyIdEnv.setValue(sessionCredentials.getAccessKeyId());
+
+            KeyValuePair accessKeyEnv = new KeyValuePair();
+            accessKeyEnv.setName("AWS_SECRET_ACCESS_KEY");
+            accessKeyEnv.setValue(sessionCredentials.getSecretAccessKey());
+
+            KeyValuePair sessionTokenEnv = new KeyValuePair();
+            sessionTokenEnv.setName("AWS_SESSION_TOKEN");
+            sessionTokenEnv.setValue(sessionCredentials.getSessionToken());
+
+            overrides = overrides.withEnvironment(accessKeyIdEnv)
+                    .withEnvironment(accessKeyEnv)
+                    .withEnvironment(sessionTokenEnv);
+        }
+
+        return overrides;
+    }
 }

@@ -353,6 +353,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
      */
     private boolean enableExecuteCommand;
 
+    private boolean useSessionTags;
+
     @DataBoundConstructor
     public ECSTaskTemplate(String templateName,
                            @Nullable String label,
@@ -393,7 +395,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                            @Nullable String taskrole,
                            @Nullable String inheritFrom,
                            int sharedMemorySize,
-                           boolean enableExecuteCommand) {
+                           boolean enableExecuteCommand,
+                           boolean useSessionTags) {
         // if the user enters a task definition override, always prefer to use it, rather than the jenkins template.
         if (taskDefinitionOverride != null && !taskDefinitionOverride.trim().isEmpty()) {
             this.taskDefinitionOverride = taskDefinitionOverride.trim();
@@ -456,6 +459,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         this.sharedMemorySize = sharedMemorySize;
         this.dynamicTaskDefinitionOverride = StringUtils.trimToNull(dynamicTaskDefinitionOverride);
         this.enableExecuteCommand = enableExecuteCommand;
+        this.useSessionTags = useSessionTags;
     }
 
     @DataBoundSetter
@@ -687,6 +691,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     public boolean isEnableExecuteCommand() {
         return enableExecuteCommand;
     }
+
+    public boolean getUseSessionTags() { return useSessionTags; }
 
     @Override
     public String toString() {
@@ -924,7 +930,8 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                        taskrole,
                                                        null,
                                                         sharedMemorySize,
-                                                        enableExecuteCommand);
+                                                        enableExecuteCommand,
+                                                        useSessionTags);
         merged.setLogDriver(logDriver);
         merged.setEntrypoint(entrypoint);
 

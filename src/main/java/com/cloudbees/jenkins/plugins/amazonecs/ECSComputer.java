@@ -49,6 +49,7 @@ public class ECSComputer extends AbstractCloudComputer<ECSSlave> {
     @Override
     public void taskAccepted(Executor executor, Queue.Task task) {
         super.taskAccepted(executor, task);
+        this.getNode().setJobName(task.getDisplayName());
         LOGGER.log(Level.INFO, "[{0}]: JobName: {1}", new Object[] {this.getName(), task.getDisplayName()});
         LOGGER.log(Level.INFO, "[{0}]: JobUrl: {1}", new Object[] {this.getName(), task.getUrl()});
         LOGGER.log(Level.FINE, "[{0}]: taskAccepted", this);
