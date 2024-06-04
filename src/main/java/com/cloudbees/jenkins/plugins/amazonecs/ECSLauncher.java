@@ -269,7 +269,9 @@ public class ECSLauncher extends JNLPLauncher {
         if (agent == null) {
             throw new IllegalStateException("Node was deleted, computer is null");
         }
+        command.add("-secret");
         command.add(agent.getJnlpMac());
+        command.add("-name");
         command.add(agent.getName());
         return command;
     }
