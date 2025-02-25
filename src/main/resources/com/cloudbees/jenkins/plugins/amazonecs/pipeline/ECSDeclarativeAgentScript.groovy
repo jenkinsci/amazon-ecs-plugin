@@ -26,35 +26,33 @@ package com.cloudbees.jenkins.plugins.amazonecs.pipeline
 import hudson.model.Result
 import org.jenkinsci.plugins.pipeline.modeldefinition.SyntheticStageNames
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.CheckoutScript
-import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgentScript
+import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgentScript2
 import org.jenkinsci.plugins.workflow.cps.CpsScript
 import org.apache.commons.lang.RandomStringUtils;
 
 
-public class ECSDeclarativeAgentScript extends DeclarativeAgentScript<ECSDeclarativeAgent> {
+public class ECSDeclarativeAgentScript extends DeclarativeAgentScript2<ECSDeclarativeAgent> {
     public ECSDeclarativeAgentScript(CpsScript s, ECSDeclarativeAgent a) {
         super(s, a)
     }
 
     @Override
-    public Closure run(Closure body) {
-        return {
-            try {
-                if (describable.label == null || describable.label == "") {
-                    String projectName = script.getProperty("currentBuild").projectName.toLowerCase().replaceAll("[^a-z-]", "-")
-                    String number = script.getProperty("currentBuild").number
-                    String label = projectName + "-" + number + "-" + RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
-                    describable.setLabel(label)
-                }
-                script.ecsTaskTemplate(describable.asArgs) {
-                    script.node(describable.label) {
-                        CheckoutScript.doCheckout(script, describable, null, body).call()
-                    }
-                }
-            } catch (Exception e) {
-                script.getProperty("currentBuild").result = Result.FAILURE
-                throw e
+    public void run(Closure body) {
+        try {
+            if (describable.label == null || describable.label == "") {
+                String projectName = script.getProperty("currentBuild").projectName.toLowerCase().replaceAll("[^a-z-]", "-")
+                String number = script.getProperty("currentBuild").number
+                String label = projectName + "-" + number + "-" + RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
+                describable.setLabel(label)
             }
+            script.ecsTaskTemplate(describable.asArgs) {
+                script.node(describable.label) {
+                    CheckoutScript.doCheckout2(script, describable, null, body)
+                }
+            }
+        } catch (Exception e) {
+            script.getProperty("currentBuild").result = Result.FAILURE
+            throw e
         }
     }
 }
