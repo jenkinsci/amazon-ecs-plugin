@@ -20,7 +20,6 @@ import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.MountPointEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.PlacementStrategyEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.PortMappingEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.Tag;
-import hudson.Extension;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -539,7 +538,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         }
     }
 
-    @Extension
+    @OptionalExtension(requirePlugins = "pipeline-model-extensions")
     public static final class Compat implements CompatibilityLoader {
         @Override
         public URL loadGroovySource(String clazz) {
