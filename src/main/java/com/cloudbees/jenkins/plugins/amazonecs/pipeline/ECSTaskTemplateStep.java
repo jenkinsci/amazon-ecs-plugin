@@ -47,7 +47,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(ECSTaskTemplateStep.class.getName());
 
-    private final String DEFAULT_CLOUD = "cloud-default";
+    private static final String DEFAULT_CLOUD = "cloud-default";
     private final String label;
     private final String name;
     private String cloud = DEFAULT_CLOUD;

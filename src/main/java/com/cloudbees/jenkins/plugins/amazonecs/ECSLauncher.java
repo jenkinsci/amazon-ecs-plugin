@@ -69,7 +69,7 @@ public class ECSLauncher extends JNLPLauncher {
     private final ECSCloud cloud;
     private final ECSService ecsService;
     private boolean launched;
-    private final int maxAttempts = 2;
+    private static final int maxAttempts = 2;
 
     private static final List<String> FARGATE_RETRYABLE_MESSAGES = ImmutableList.of(
             "Timeout waiting for network interface provisioning to complete"
