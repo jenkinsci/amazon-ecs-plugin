@@ -39,7 +39,7 @@ import java.util.logging.Logger;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import javax.servlet.ServletException;
+import jakarta.servlet.ServletException;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.regions.Region;
