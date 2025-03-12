@@ -41,7 +41,7 @@ public abstract class BaseAWSService {
             clientConfiguration.setProxyPassword(proxy.getPassword());
             if (proxy.getNoProxyHost() != null) {
                 String[] noProxyParts = proxy.getNoProxyHost().split("[ \t\n,|]+");
-                clientConfiguration.setNonProxyHosts(Joiner.on(',').join(noProxyParts));
+                clientConfiguration.setNonProxyHosts(Joiner.on('|').join(noProxyParts));
             }
         }
 
