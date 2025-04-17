@@ -82,6 +82,7 @@ public class ECSCloud extends Cloud {
     private final String cluster;
     private String regionName;
     private String assumedRoleArn;
+    private String authRegion;
     @CheckForNull
     private String tunnel;
     private String jenkinsUrl;
@@ -121,7 +122,7 @@ public class ECSCloud extends Cloud {
 
     synchronized ECSService getEcsService() {
         if (ecsService == null) {
-            ecsService = new ECSService(credentialsId, assumedRoleArn, regionName);
+            ecsService = new ECSService(credentialsId, assumedRoleArn, authRegion, regionName);
         }
         return ecsService;
     }
@@ -164,6 +165,11 @@ public class ECSCloud extends Cloud {
         return assumedRoleArn;
     }
 
+
+    public String getAuthRegion() {
+        return authRegion;
+    }
+
     @DataBoundSetter
     public void setRegionName(String regionName) {
         this.regionName = regionName;
@@ -172,6 +178,11 @@ public class ECSCloud extends Cloud {
     @DataBoundSetter
     public void setAssumedRoleArn(String assumedRoleArn) {
         this.assumedRoleArn = assumedRoleArn;
+    }
+    
+    @DataBoundSetter
+    public void setAuthRegion(String authRegion) {
+        this.authRegion = authRegion;
     }
 
     public String getTunnel() {
@@ -428,12 +439,20 @@ public class ECSCloud extends Cloud {
         }
     }
 
-    public static Region getRegion(String regionName) {
-        if (StringUtils.isNotEmpty(regionName)) {
-            return RegionUtils.getRegion(regionName);
-        } else {
-            return Region.getRegion(Regions.US_EAST_1);
+    public ListBoxModel doFillAuthRegionItems() {
+        final ListBoxModel options = new ListBoxModel();
+        for (Region region : RegionUtils.getRegions()) {
+            options.add(region.getName());
         }
+        return options;
+    }
+
+    public ListBoxModel doFillRegionNameItems() {
+        final ListBoxModel options = new ListBoxModel();
+        for (Region region : RegionUtils.getRegions()) {
+            options.add(region.getName());
+        }
+        return options;
     }
 
     public String getJenkinsUrl() {
@@ -507,9 +526,17 @@ public class ECSCloud extends Cloud {
             }
             return options;
         }
+        
+        public ListBoxModel doFillAuthRegionItems() {
+            final ListBoxModel options = new ListBoxModel();
+            for (Region region : RegionUtils.getRegions()) {
+                options.add(region.getName());
+            }
+            return options;
+        }
 
-        public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId, @QueryParameter String assumedRoleArn, @QueryParameter String regionName) {
-            ECSService ecsService = new ECSService(credentialsId, assumedRoleArn, regionName);
+        public ListBoxModel doFillClusterItems(@QueryParameter String credentialsId, @QueryParameter String assumedRoleArn, @QueryParameter String authRegion, @QueryParameter String regionName) {
+            ECSService ecsService = new ECSService(credentialsId, assumedRoleArn, authRegion, regionName);
             try {
                 final AmazonECS client = ecsService.getAmazonECSClient();
                 final List<String> allClusterArns = new ArrayList<String>();
