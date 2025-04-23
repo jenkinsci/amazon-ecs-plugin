@@ -1,19 +1,29 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
 import hudson.slaves.OfflineCause;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.Mockito;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
-public class ECSComputerListenerTest {
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+@WithJenkins
+class ECSComputerListenerTest {
+
+    private JenkinsRule j;
+
+    @BeforeEach
+    void setUp(JenkinsRule rule) {
+        j = rule;
+    }
 
     @Test
-    public void unsurvivable_node_is_terminated_when_computer_is_offline() throws Exception {
+    void unsurvivable_node_is_terminated_when_computer_is_offline() throws Exception {
         ECSComputer computer = mock(ECSComputer.class);
         OfflineCause cause = mock(OfflineCause.class);
         ECSSlave node = mock(ECSSlave.class);
@@ -27,7 +37,7 @@ public class ECSComputerListenerTest {
     }
 
     @Test
-    public void survivable_node_is_not_terminated_when_computer_is_offline() throws Exception {
+    void survivable_node_is_not_terminated_when_computer_is_offline() throws Exception {
         ECSComputer computer = mock(ECSComputer.class);
         OfflineCause cause = mock(OfflineCause.class);
         ECSSlave node = mock(ECSSlave.class);

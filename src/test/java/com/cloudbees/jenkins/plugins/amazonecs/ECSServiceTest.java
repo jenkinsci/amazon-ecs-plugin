@@ -1,32 +1,29 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
-import static org.junit.Assert.*;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 
 /**
  * Whoever wrote the original class should implement some tests
  */
-public class ECSServiceTest {
-
+class ECSServiceTest {
 
     @Test
-    @Ignore
-    public void testDescribeTask() {
+    @Disabled
+    void testDescribeTask() {
 
     }
 
     @Test
-    @Ignore
-    public void registerTemplate() {
-        
+    @Disabled
+    void registerTemplate() {
+
     }
 
     @Test
-    @Ignore
-    public void testStopTask() {
-//        ECSService service = new ECSService("us-east-1");
-
+    @Disabled
+    void testStopTask() {
+        // ECSService service = new ECSService("us-east-1");
     }
 }
