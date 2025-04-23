@@ -7,40 +7,41 @@ import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.BodyInvoker;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 /**
  * @author cbongiorno on 2020-04-09.
  */
-public class ECSTaskTemplateStepExecutionTest {
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+@WithJenkins
+class ECSTaskTemplateStepExecutionTest {
+
     private ECSTaskTemplateStep step;
 
+    private JenkinsRule j;
 
-    @Before
-    public void setUp() throws Exception {
-
-
+    @BeforeEach
+    void setUp(JenkinsRule rule) {
+        j = rule;
     }
 
     @Test
-    public void testMerge() throws Exception {
-        StepContext  context = mock(StepContext.class);
-        BodyInvoker invoker    = mock(BodyInvoker.class);
+    void testMerge() throws Exception {
+        StepContext context = mock(StepContext.class);
+        BodyInvoker invoker = mock(BodyInvoker.class);
         when(context.newBodyInvoker()).thenReturn(invoker);
         when(invoker.withCallback(any(BodyExecutionCallback.TailCall.class))).thenReturn(invoker);
 
@@ -60,7 +61,7 @@ public class ECSTaskTemplateStepExecutionTest {
 
         Jenkins.CloudList clouds = new Jenkins.CloudList();
         clouds.add(cloud);
-        step.setOverrides(Arrays.asList("image","taskRole"));
+        step.setOverrides(Arrays.asList("image", "taskRole"));
 
         ECSTaskTemplateStepExecution executionStep = new ECSTaskTemplateStepExecution(step, context, (SerializableSupplier<Jenkins.CloudList>) () -> clouds);
         Random r = new Random();
@@ -148,14 +149,13 @@ public class ECSTaskTemplateStepExecutionTest {
         when(invoker.withContext(step)).thenReturn(invoker);
         executionStep.start();
 
-        verify(cloud,times(1)).addDynamicTemplate(expected);
-
-
-
+        verify(cloud, times(1)).addDynamicTemplate(expected);
     }
+
     private ECSTaskTemplate getTaskTemplate() {
-        return getTaskTemplate(UUID.randomUUID().toString(),UUID.randomUUID().toString());
+        return getTaskTemplate(UUID.randomUUID().toString(), UUID.randomUUID().toString());
     }
+
     private ECSTaskTemplate getTaskTemplate(String templateName, String label) {
         return new ECSTaskTemplate(
                 templateName,

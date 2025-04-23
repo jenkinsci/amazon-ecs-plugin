@@ -4,27 +4,37 @@ package com.cloudbees.jenkins.plugins.amazonecs;
 import com.amazonaws.services.ecs.model.Task;
 import com.amazonaws.waiters.WaiterUnrecoverableException;
 import hudson.model.TaskListener;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.Mockito;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 
-public class ECSLauncherTest {
+@WithJenkins
+class ECSLauncherTest {
 
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+    private JenkinsRule j;
+
+    @BeforeEach
+    void setUp(JenkinsRule rule) {
+        j = rule;
+    }
 
     @Test
-    public void generic_ecs_exception_is_not_retried() throws Exception {
-
+    void generic_ecs_exception_is_not_retried() throws Exception {
         ECSService ecsService = mock(ECSService.class);
         ECSCloud cloud = mock(ECSCloud.class);
         ECSComputer computer = mock(ECSComputer.class);
@@ -38,16 +48,14 @@ public class ECSLauncherTest {
 
         doThrow(new WaiterUnrecoverableException("Generic ecs exception")).when(launcher).launchECSTask(any(ECSComputer.class), any(TaskListener.class), anyLong());
 
-        assertThrows("Generic ECS exception", WaiterUnrecoverableException.class, () -> {
-            launcher.launch(computer, listener);
-        });
+        assertThrows(WaiterUnrecoverableException.class, () ->
+                launcher.launch(computer, listener), "Generic ECS exception");
 
         verify(launcher, times(1)).launchECSTask(any(ECSComputer.class), any(TaskListener.class), anyLong());
     }
 
     @Test
-    public void eni_timeout_exception_is_retried() throws Exception {
-
+    void eni_timeout_exception_is_retried() throws Exception {
         ECSService ecsService = mock(ECSService.class);
         ECSCloud cloud = mock(ECSCloud.class);
         ECSComputer computer = mock(ECSComputer.class);
