@@ -27,7 +27,7 @@ public class ECSAgentPool extends AbstractDescribableImpl<ECSAgentPool> implemen
      */
     private String id;
 
-
+    @DataBoundConstructor
     public ECSAgentPool(@CheckForNull String label, String id, int minIdleAgents, @CheckForNull String maintainSchedule, int maxIdleMinutes, @CheckForNull String description) {
         this.label = label;
         this.id = StringUtils.isBlank(id) ? UUID.randomUUID().toString() : id;
