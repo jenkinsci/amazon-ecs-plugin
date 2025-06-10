@@ -11,6 +11,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -75,8 +76,9 @@ public class ECSAgentPoolMaintainer extends AsyncPeriodicWork {
     }
 
     private int countIdle(@Nonnull ECSAgentPool ecsAgentPool) {
-        Set<String> poolLabels = new HashSet<>(Arrays.asList(ecsAgentPool.getLabel().split("\\s+")));
         int count = 0;
+
+        Set<String> poolLabels = new HashSet<>(Arrays.asList(Objects.requireNonNull(ecsAgentPool.getLabel()).split("\\s+")));
 
         for (Computer computer : Jenkins.get().getComputers()) {
             if (!(computer instanceof ECSComputer)) {
