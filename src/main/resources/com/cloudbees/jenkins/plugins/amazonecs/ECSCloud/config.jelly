@@ -95,5 +95,15 @@
         </f:entry>
       </f:repeatableProperty>
     </f:entry>
+
+    <f:entry title="${%ECS Agent Pools}">
+      <f:repeatableProperty field="agentPools" >
+        <f:entry title="">
+          <div align="right">
+            <f:repeatableDeleteButton />
+          </div>
+        </f:entry>
+      </f:repeatableProperty>
+    </f:entry>
   </f:advanced>
 </j:jelly>

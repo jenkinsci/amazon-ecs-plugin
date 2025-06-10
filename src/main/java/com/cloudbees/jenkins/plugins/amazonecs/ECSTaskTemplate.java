@@ -26,35 +26,7 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
 import com.amazonaws.services.ecs.AmazonECS;
-import com.amazonaws.services.ecs.model.AwsVpcConfiguration;
-import com.amazonaws.services.ecs.model.ContainerDefinition;
-import com.amazonaws.services.ecs.model.EFSAuthorizationConfig;
-import com.amazonaws.services.ecs.model.EFSAuthorizationConfigIAM;
-import com.amazonaws.services.ecs.model.EFSTransitEncryption;
-import com.amazonaws.services.ecs.model.EFSVolumeConfiguration;
-import com.amazonaws.services.ecs.model.HostEntry;
-import com.amazonaws.services.ecs.model.HostVolumeProperties;
-import com.amazonaws.services.ecs.model.KeyValuePair;
-import com.amazonaws.services.ecs.model.LaunchType;
-import com.amazonaws.services.ecs.model.OSFamily;
-import com.amazonaws.services.ecs.model.CPUArchitecture;
-import com.amazonaws.services.ecs.model.CapacityProviderStrategyItem;
-import com.amazonaws.services.ecs.model.LinuxParameters;
-import com.amazonaws.services.ecs.model.MountPoint;
-import com.amazonaws.services.ecs.model.NetworkMode;
-import com.amazonaws.services.ecs.model.PlacementStrategy;
-import com.amazonaws.services.ecs.model.PlacementStrategyType;
-import com.amazonaws.services.ecs.model.PortMapping;
-import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
-import com.amazonaws.services.ecs.model.RepositoryCredentials;
-import com.amazonaws.services.ecs.model.Volume;
-import com.amazonaws.services.ecs.model.DescribeClustersRequest;
-import com.amazonaws.services.ecs.model.DescribeClustersResult;
-import com.amazonaws.services.ecs.model.Cluster;
-import com.amazonaws.services.ecs.model.Ulimit;
-import com.amazonaws.services.ecs.model.UlimitName;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
+import com.amazonaws.services.ecs.model.*;
 import com.amazonaws.services.elasticfilesystem.model.AccessPointDescription;
 import com.amazonaws.services.elasticfilesystem.model.FileSystemDescription;
 import com.cloudbees.jenkins.plugins.amazonecs.aws.EFSService;
@@ -66,7 +38,7 @@ import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import static org.apache.commons.collections.CollectionUtils.isEmpty;
+import jakarta.servlet.ServletException;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -76,15 +48,16 @@ import org.kohsuke.stapler.QueryParameter;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import jakarta.servlet.ServletException;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.Serializable;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -353,6 +326,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
      */
     private boolean enableExecuteCommand;
 
+
     @DataBoundConstructor
     public ECSTaskTemplate(String templateName,
                            @Nullable String label,
@@ -518,6 +492,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     public void setDnsSearchDomains(String dnsSearchDomains) {
         this.dnsSearchDomains = StringUtils.trimToNull(dnsSearchDomains);
     }
+
 
     public boolean isFargate() {
         if (!this.defaultCapacityProvider && this.capacityProviderStrategies != null && ! this.capacityProviderStrategies.isEmpty()) {
@@ -927,7 +902,6 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                         enableExecuteCommand);
         merged.setLogDriver(logDriver);
         merged.setEntrypoint(entrypoint);
-
         return merged;
     }
 

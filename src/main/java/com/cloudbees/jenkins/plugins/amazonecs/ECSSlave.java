@@ -46,13 +46,10 @@ import com.amazonaws.services.ecs.model.InvalidParameterException;
 import com.amazonaws.services.ecs.model.ServerException;
 import com.amazonaws.services.ecs.model.Task;
 
+import hudson.slaves.*;
 import org.jenkinsci.plugins.durabletask.executors.OnceRetentionStrategy;
 import hudson.model.Descriptor;
 import hudson.model.TaskListener;
-import hudson.slaves.AbstractCloudComputer;
-import hudson.slaves.AbstractCloudSlave;
-import hudson.slaves.CloudRetentionStrategy;
-import hudson.slaves.ComputerLauncher;
 
 /**
  * This agent should only handle a single task and then be shutdown.
@@ -93,22 +90,30 @@ public class ECSSlave extends AbstractCloudSlave {
 
     private boolean survivable = true;
 
-    public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, ECSTaskTemplate template, @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
+
+    protected ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, ECSTaskTemplate template,
+                       @Nonnull ComputerLauncher launcher, RetentionStrategy<?> retention) throws Descriptor.FormException, IOException {
         super(
-            name,
-            "ECS Agent",
-            template.makeRemoteFSRoot(name),
-            Math.max(1, cloud.getNumExecutors()),
-            Mode.EXCLUSIVE,
-            template.getLabel(),
-            launcher,
-            cloud.getRetainAgents() ?
-                new CloudRetentionStrategy(cloud.getRetentionTimeout()) :
-                new OnceRetentionStrategy(cloud.getRetentionTimeout()),
-            Collections.emptyList()
+                name,
+                "ECS Agent",
+                template.makeRemoteFSRoot(name),
+                Math.max(1, cloud.getNumExecutors()),
+                Mode.EXCLUSIVE,
+                template.getLabel(),
+                launcher,
+                retention,
+                Collections.emptyList()
         );
         this.cloud = cloud;
         this.template = template;
+    }
+
+    public ECSSlave(@Nonnull ECSCloud cloud, @Nonnull String name, ECSTaskTemplate template,
+                    @Nonnull ComputerLauncher launcher) throws Descriptor.FormException, IOException {
+        this(cloud, name, template, launcher,
+                cloud.getRetainAgents() ?
+                        new CloudRetentionStrategy(cloud.getRetentionTimeout()) :
+                        new OnceRetentionStrategy(cloud.getRetentionTimeout()));
     }
 
     public String getClusterArn() {
