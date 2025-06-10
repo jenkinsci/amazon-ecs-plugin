@@ -77,6 +77,7 @@ public class ECSCloud extends Cloud {
 
     private static final Logger LOGGER = Logger.getLogger(ECSCloud.class.getName());
 
+    private List<ECSAgentPool> agentPools;
     private List<ECSTaskTemplate> templates;
     private final String credentialsId;
     private final String cluster;
@@ -127,12 +128,17 @@ public class ECSCloud extends Cloud {
     }
 
     @Nonnull
+    public List<ECSAgentPool> getAgentPools() {
+        return agentPools != null ? agentPools : Collections.<ECSAgentPool> emptyList();
+    }
+
+    @Nonnull
     public List<ECSTaskTemplate> getTemplates() {
         return templates != null ? templates : Collections.<ECSTaskTemplate> emptyList();
     }
 
     @Nonnull
-    private List<ECSTaskTemplate> getAllTemplates() {
+    public List<ECSTaskTemplate> getAllTemplates() {
         List<ECSTaskTemplate> dynamicTemplates = TaskTemplateMap.get().getTemplates(this);
         List<ECSTaskTemplate> allTemplates = new CopyOnWriteArrayList<>();
 
@@ -141,6 +147,11 @@ public class ECSCloud extends Cloud {
             allTemplates.addAll(templates);
         }
         return allTemplates;
+    }
+
+    @DataBoundSetter
+    public void setAgentPools(List<ECSAgentPool> agentPools) {
+        this.agentPools = agentPools;
     }
 
     @DataBoundSetter

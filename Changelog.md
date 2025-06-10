@@ -2,6 +2,8 @@
 
 ## vNext
 
+-   Feature - Support ECS agent pools to avoid cold start
+
 ## 1.35 / 1.36
 
 -   allow certain classes to be used from other plugins (#192)
