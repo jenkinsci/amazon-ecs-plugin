@@ -133,7 +133,10 @@ public class ECSCloud extends Cloud {
 
     @Nonnull
     private List<ECSTaskTemplate> getAllTemplates() {
-        List<ECSTaskTemplate> dynamicTemplates = TaskTemplateMap.get().getTemplates(this);
+        TaskTemplateMap taskTemplateMap = TaskTemplateMap.get();
+        List<ECSTaskTemplate> dynamicTemplates = taskTemplateMap != null
+                ? taskTemplateMap.getTemplates(this)
+                : Collections.emptyList();
         List<ECSTaskTemplate> allTemplates = new CopyOnWriteArrayList<>();
 
         allTemplates.addAll(dynamicTemplates);
