@@ -37,7 +37,12 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
         LoadStatistics.LoadStatisticsSnapshot snap = state.getSnapshot();
         Label label = state.getLabel();
 
-        int excessWorkload = snap.getQueueLength() - snap.getAvailableExecutors() - snap.getConnectingExecutors();
+        // plannedCapacitySnapshot covers nodes provisioned in a previous cycle whose
+        // ProvisioningCallback futures have not yet completed (not yet in Jenkins.getNodes()).
+        // Without this, a rapid event-triggered provisioner cycle can see those nodes as
+        // neither online nor offline and provision duplicates.
+        int excessWorkload = snap.getQueueLength() - snap.getAvailableExecutors() - snap.getConnectingExecutors()
+                - state.getPlannedCapacitySnapshot();
 
         // ECS agents use JNLP (the agent calls home to Jenkins), so they never appear in
         // connectingExecutors while the container is starting up. Without this adjustment,

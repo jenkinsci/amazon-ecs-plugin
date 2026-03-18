@@ -62,6 +62,11 @@ public class ECSProvisioningStrategyTest {
      */
     private NodeProvisioner.StrategyState createStrategyState(Label label, int queueLength)
             throws Exception {
+        return createStrategyState(label, queueLength, 0);
+    }
+
+    private NodeProvisioner.StrategyState createStrategyState(Label label, int queueLength, int plannedCapacity)
+            throws Exception {
         LoadStatistics.LoadStatisticsSnapshot snap =
                 LoadStatistics.LoadStatisticsSnapshot.builder()
                         .withQueueLength(queueLength)
@@ -74,8 +79,7 @@ public class ECSProvisioningStrategyTest {
                         Label.class,
                         int.class);
         ctor.setAccessible(true);
-        // label.nodeProvisioner is the NodeProvisioner associated with this label
-        return ctor.newInstance(label.nodeProvisioner, snap, label, 0);
+        return ctor.newInstance(label.nodeProvisioner, snap, label, plannedCapacity);
     }
 
     // -----------------------------------------------------------------------
@@ -176,6 +180,30 @@ public class ECSProvisioningStrategyTest {
         Assert.assertEquals(
                 "Should provision exactly the remaining gap after accounting for pending node",
                 1, state.getAdditionalPlannedCapacity());
+    }
+
+    /**
+     * plannedCapacitySnapshot covers nodes provisioned in a previous cycle whose
+     * ProvisioningCallback futures have not yet completed (not yet in Jenkins.getNodes()).
+     * The strategy must subtract this from excessWorkload to avoid launching duplicates
+     * when the provisioner is triggered again before those futures resolve.
+     */
+    @Test
+    public void apply_plannedCapacityFromPreviousCycle_suppressesProvisioning() throws Exception {
+        Label label = new LabelAtom("my-label");
+        j.jenkins.clouds.add(makeCloud("my-label"));
+
+        // Simulate 1 job queued, 1 agent already planned in a previous cycle
+        // (its ProvisioningCallback future not yet done → not in Jenkins.getNodes())
+        NodeProvisioner.StrategyState state = createStrategyState(label, 1, 1);
+        NodeProvisioner.StrategyDecision decision = new ECSProvisioningStrategy().apply(state);
+
+        Assert.assertEquals(
+                "Should return PROVISIONING_COMPLETED when plannedCapacitySnapshot covers workload",
+                NodeProvisioner.StrategyDecision.PROVISIONING_COMPLETED, decision);
+        Assert.assertEquals(
+                "Should not provision additional tasks when previous cycle already planned enough",
+                0, state.getAdditionalPlannedCapacity());
     }
 
     /**
