@@ -43,7 +43,7 @@ import com.amazonaws.services.elasticfilesystem.model.DescribeFileSystemsResult;
 import com.amazonaws.services.elasticfilesystem.model.FileSystemDescription;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Encapsulates interactions with Amazon EFS.
