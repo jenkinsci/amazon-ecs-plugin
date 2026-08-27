@@ -1,7 +1,7 @@
 package com.cloudbees.jenkins.plugins.amazonecs.pipeline;
 
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgent;
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgentDescriptor;

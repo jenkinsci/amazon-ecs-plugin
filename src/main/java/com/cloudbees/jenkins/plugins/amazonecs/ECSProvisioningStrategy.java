@@ -1,8 +1,10 @@
 package com.cloudbees.jenkins.plugins.amazonecs;
 
 import hudson.Extension;
+import hudson.model.Computer;
 import hudson.model.Label;
 import hudson.model.LoadStatistics;
+import hudson.model.Node;
 import hudson.model.queue.CauseOfBlockage;
 import hudson.slaves.Cloud;
 import hudson.slaves.CloudProvisioningListener;
@@ -35,7 +37,36 @@ public class ECSProvisioningStrategy extends NodeProvisioner.Strategy {
         LoadStatistics.LoadStatisticsSnapshot snap = state.getSnapshot();
         Label label = state.getLabel();
 
-        int excessWorkload = snap.getQueueLength() - snap.getAvailableExecutors() - snap.getConnectingExecutors();
+        // plannedCapacitySnapshot covers nodes provisioned in a previous cycle whose
+        // ProvisioningCallback futures have not yet completed (not yet in Jenkins.getNodes()).
+        // Without this, a rapid event-triggered provisioner cycle can see those nodes as
+        // neither online nor offline and provision duplicates.
+        int excessWorkload = snap.getQueueLength() - snap.getAvailableExecutors() - snap.getConnectingExecutors()
+                - state.getPlannedCapacitySnapshot();
+
+        // ECS agents use JNLP (the agent calls home to Jenkins), so they never appear in
+        // connectingExecutors while the container is starting up. Without this adjustment,
+        // every provisioner cycle that runs before the agent connects sees excessWorkload > 0
+        // and launches a duplicate task. We subtract offline ECS nodes matching this label
+        // to treat them as already-pending capacity.
+        // Note: failed agents are removed from Jenkins by ECSLauncher.launch()'s catch block
+        // (agent.terminate()), so they won't linger here indefinitely.
+        int pendingECSExecutors = 0;
+        if (label != null) {
+            for (Node node : Jenkins.get().getNodes()) {
+                if (node instanceof ECSSlave && label.matches(node)) {
+                    Computer c = node.toComputer();
+                    if (c != null && !c.isOnline()) {
+                        pendingECSExecutors += node.getNumExecutors();
+                    }
+                }
+            }
+        }
+        excessWorkload = Math.max(0, excessWorkload - pendingECSExecutors);
+        if (pendingECSExecutors > 0) {
+            LOGGER.log(Level.FINE, "Adjusting excess workload by {0} pending (offline) ECS executor(s); adjusted excessWorkload={1}",
+                    new Object[]{pendingECSExecutors, excessWorkload});
+        }
 
         CLOUD:
         for (Cloud c : Jenkins.get().clouds) {
