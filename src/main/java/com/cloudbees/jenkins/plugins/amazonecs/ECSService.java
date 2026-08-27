@@ -25,7 +25,9 @@
 
 package com.cloudbees.jenkins.plugins.amazonecs;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,8 +58,7 @@ import com.cloudbees.jenkins.plugins.amazonecs.aws.BaseAWSService;
 import com.cloudbees.jenkins.plugins.amazonecs.aws.MaxTimeRetryStrategy;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 
-import org.apache.commons.lang.ObjectUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import hudson.AbortException;
 import hudson.slaves.SlaveComputer;
@@ -172,6 +173,11 @@ public class ECSService extends BaseAWSService {
      * If no, register a new task definition with desired parameters and returns the new TaskDefinition.
      * If a TaskDefinitionOverride is set, we only look to see if the task definition exists and return it.
      */
+    @SuppressFBWarnings(
+            value = "EC_UNRELATED_TYPES",
+            justification = "Pre-existing: template tags and task definition tags are different Tag"
+                    + " types, so the comparison is always false. Preserved as-is by the Commons"
+                    + " Lang 3 migration; fixing it would change behaviour.")
     TaskDefinition registerTemplate(final String cloudName, final ECSTaskTemplate template) {
         if (template.getTaskDefinitionOverride() != null){
             TaskDefinition overrideTaskDefinition = findTaskDefinition(template.getTaskDefinitionOverride());
@@ -264,7 +270,11 @@ public class ECSService extends BaseAWSService {
             final ContainerDefinition currentContainerDefinition = currentTaskDefinition.getContainerDefinitions().get(0);
             final List<Tag> tags = getTaskDefinitionTags(currentTaskDefinition.getTaskDefinitionArn());
 
-            templateTagsMatchesExistingTags = ObjectUtils.equals(template.getTags(), tags);
+            // NB: these two lists hold different Tag types (ECSTaskTemplate.Tag vs the AWS SDK's
+            // Tag), so the comparison is only ever true when both are empty. That was already the
+            // case with ObjectUtils.equals — keeping it as-is here so this migration does not
+            // change behaviour. See the PR description.
+            templateTagsMatchesExistingTags = Objects.equals(template.getTags(), tags);
             LOGGER.log(Level.INFO, "Match on tags: {0}", new Object[]{templateTagsMatchesExistingTags});
             LOGGER.log(Level.FINE, "Match on tags: {0}; template={1}; last={2}", new Object[]{templateTagsMatchesExistingTags, template.getTags(), tags});
 
@@ -272,7 +282,7 @@ public class ECSService extends BaseAWSService {
             LOGGER.log(Level.INFO, "Match on container definition: {0}", new Object[]{templateMatchesExistingContainerDefinition});
             LOGGER.log(Level.FINE, "Match on container definition: {0}; template={1}; last={2}", new Object[]{templateMatchesExistingContainerDefinition, def, currentContainerDefinition});
 
-            templateMatchesExistingVolumes = ObjectUtils.equals(template.getVolumeEntries(), currentTaskDefinition.getVolumes());
+            templateMatchesExistingVolumes = Objects.equals(template.getVolumeEntries(), currentTaskDefinition.getVolumes());
             LOGGER.log(Level.INFO, "Match on volumes: {0}", new Object[]{templateMatchesExistingVolumes});
             LOGGER.log(Level.FINE, "Match on volumes: {0}; template={1}; last={2}", new Object[]{templateMatchesExistingVolumes, template.getVolumeEntries(), currentTaskDefinition.getVolumes()});
 

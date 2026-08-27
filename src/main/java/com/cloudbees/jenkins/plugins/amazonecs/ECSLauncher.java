@@ -50,7 +50,7 @@ import com.amazonaws.waiters.WaiterUnrecoverableException;
 import com.google.common.base.Throwables;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import hudson.AbortException;
