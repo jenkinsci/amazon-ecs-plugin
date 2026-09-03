@@ -170,6 +170,7 @@ public class ECSCloudTest {
         ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
         sut.setMaxAgents(14);
         sut.setTemplates(templates);
+        sut.setAuthRegion("eu-west-1");
         sut.setRegionName("eu-west-1");
         sut.setNumExecutors(1);
         sut.setJenkinsUrl("http://jenkins.local");
@@ -192,6 +193,7 @@ public class ECSCloudTest {
         ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
         sut.setMaxAgents(0);
         sut.setTemplates(templates);
+        sut.setAuthRegion("eu-west-1");
         sut.setRegionName("eu-west-1");
         sut.setJenkinsUrl("http://jenkins.local");
         sut.setSlaveTimeoutInSeconds(5);
@@ -213,6 +215,7 @@ public class ECSCloudTest {
         ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
         sut.setMaxAgents(10);
         sut.setTemplates(templates);
+        sut.setAuthRegion("eu-west-1");
         sut.setRegionName("eu-west-1");
         sut.setJenkinsUrl("http://jenkins.local");
         sut.setSlaveTimeoutInSeconds(5);
@@ -234,6 +237,7 @@ public class ECSCloudTest {
         ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
         sut.setMaxAgents(10);
         sut.setTemplates(templates);
+        sut.setAuthRegion("eu-west-1");
         sut.setRegionName("eu-west-1");
         sut.setJenkinsUrl("http://jenkins.local");
         sut.setSlaveTimeoutInSeconds(5);
@@ -255,6 +259,7 @@ public class ECSCloudTest {
         ECSCloud sut = new ECSCloud("mycloud", "", "", "mycluster");
         sut.setMaxAgents(1);
         sut.setTemplates(templates);
+        sut.setAuthRegion("eu-west-1");
         sut.setRegionName("eu-west-1");
         sut.setJenkinsUrl("http://jenkins.local");
         sut.setSlaveTimeoutInSeconds(5);

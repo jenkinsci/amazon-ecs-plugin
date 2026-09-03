@@ -1429,10 +1429,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
             public ListBoxModel doFillProviderItems(
                 @RelativePath("../..") @QueryParameter String credentialsId,
                 @RelativePath("../..") @QueryParameter String assumedRoleArn,
+                @RelativePath("../..") @QueryParameter String authRegion,
                 @RelativePath("../..") @QueryParameter String regionName,
                 @RelativePath("../..") @QueryParameter String cluster
             ){
-                ECSService ecsService = new ECSService(credentialsId, assumedRoleArn, regionName);
+                ECSService ecsService = new ECSService(credentialsId, assumedRoleArn, authRegion, regionName);
                 final AmazonECS client = ecsService.getAmazonECSClient();
                 final List<Cluster> allClusters = new ArrayList<Cluster>();
                 DescribeClustersResult result = client.describeClusters(new DescribeClustersRequest().withClusters(cluster));

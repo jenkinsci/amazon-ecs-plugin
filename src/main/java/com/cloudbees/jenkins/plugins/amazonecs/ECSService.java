@@ -77,7 +77,7 @@ public class ECSService extends BaseAWSService {
     @Nonnull
     private final Supplier<AmazonECS> clientSupplier;
 
-    public ECSService(String credentialsId, String assumedRoleArn, String regionName) {
+    public ECSService(String credentialsId, String assumedRoleArn, String authRegion, String regionName) {
         this.clientSupplier = () -> {
             AmazonECSClientBuilder builder = AmazonECSClientBuilder
                     .standard()
@@ -95,7 +95,13 @@ public class ECSService extends BaseAWSService {
                         .withCredentials(credentials);
             }
             else if (StringUtils.isNotBlank(assumedRoleArn)) {
-                builder.withCredentials(getCredentialsForRole(assumedRoleArn, regionName));
+		if (StringUtils.isNotBlank(authRegion)) {
+                    builder.withCredentials(getCredentialsForRole(assumedRoleArn, authRegion));
+		}
+		else {
+                    builder.withCredentials(getCredentialsForRole(assumedRoleArn, regionName));
+		}
+
             }
 
             LOGGER.log(Level.FINE, "Selected Region: {0}", regionName);

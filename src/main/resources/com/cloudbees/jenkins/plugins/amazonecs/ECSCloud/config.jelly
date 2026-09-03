@@ -39,6 +39,10 @@
       <f:textbox />
     </f:entry>
 
+    <f:entry field="authRegion" title="${%Amazon IAM Auth Region}" description="AWS regionName for credentials authentication. If not specified, use us-east-1.">
+      <f:select />
+    </f:entry>
+
     <f:entry field="regionName" title="${%Amazon ECS Region Name}" description="AWS regionName for ECS. If not specified, use us-east-1.">
       <f:select />
     </f:entry>
