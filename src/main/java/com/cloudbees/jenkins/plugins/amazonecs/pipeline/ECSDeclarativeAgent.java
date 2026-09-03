@@ -5,7 +5,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgent;
 import org.jenkinsci.plugins.pipeline.modeldefinition.agent.DeclarativeAgentDescriptor;
-import org.jenkinsci.plugins.pipeline.modeldefinition.parser.CompatibilityLoader;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.jenkinsci.plugins.variant.OptionalExtension;
@@ -21,7 +20,6 @@ import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.PlacementStrategy
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.PortMappingEntry;
 import com.cloudbees.jenkins.plugins.amazonecs.ECSTaskTemplate.Tag;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -538,13 +536,4 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
         }
     }
 
-    @OptionalExtension(requirePlugins = "pipeline-model-extensions")
-    public static final class Compat implements CompatibilityLoader {
-        @Override
-        public URL loadGroovySource(String clazz) {
-            return "com.cloudbees.jenkins.plugins.amazonecs.pipeline.ECSDeclarativeAgentScript".equals(clazz)
-                    ? ECSDeclarativeAgent.class.getResource("ECSDeclarativeAgentScript-old.groovy")
-                    : null;
-        }
-    }
 }
