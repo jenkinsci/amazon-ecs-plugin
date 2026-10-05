@@ -265,6 +265,7 @@ public class ECSService extends BaseAWSService {
         boolean templateMatchesExistingTaskRole = false;
         boolean templateMatchesExistingExecutionRole = false;
         boolean templateMatchesExistingNetworkMode = false;
+        boolean templateMatchesExistingEphemeralStorage = false;
 
         if (currentTaskDefinition != null) {
             final ContainerDefinition currentContainerDefinition = currentTaskDefinition.getContainerDefinitions().get(0);
@@ -306,9 +307,20 @@ public class ECSService extends BaseAWSService {
 
             LOGGER.log(Level.INFO, "Match on network mode: {0}", new Object[]{templateMatchesExistingNetworkMode});
             LOGGER.log(Level.FINE, "Match on network mode: {0}; template={1}; last={2}", new Object[]{templateMatchesExistingNetworkMode, templateNetworkMode, currentTaskDefinition.getNetworkMode()});
+
+            // Ephemeral storage is a task-level setting, so it is not covered by the container definition
+            // comparison above. Without this check, changing it on a template keeps reusing the previous
+            // revision and the new size is never applied.
+            final Integer templateEphemeralStorage = desiredEphemeralStorageSizeInGiB(template);
+            final Integer existingEphemeralStorage = currentTaskDefinition.getEphemeralStorage() == null
+                    ? null
+                    : currentTaskDefinition.getEphemeralStorage().getSizeInGiB();
+            templateMatchesExistingEphemeralStorage = Objects.equals(templateEphemeralStorage, existingEphemeralStorage);
+            LOGGER.log(Level.INFO, "Match on ephemeral storage: {0}", new Object[]{templateMatchesExistingEphemeralStorage});
+            LOGGER.log(Level.FINE, "Match on ephemeral storage: {0}; template={1}; last={2}", new Object[]{templateMatchesExistingEphemeralStorage, templateEphemeralStorage, existingEphemeralStorage});
         }
 
-        if (templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole && templateMatchesExistingExecutionRole && templateMatchesExistingNetworkMode) {
+        if (templateMatchesExistingContainerDefinition && templateMatchesExistingVolumes && templateMatchesExistingTaskRole && templateMatchesExistingExecutionRole && templateMatchesExistingNetworkMode && templateMatchesExistingEphemeralStorage) {
             LOGGER.log(Level.FINE, "Task Definition already exists: {0}", new Object[]{currentTaskDefinition.getTaskDefinitionArn()});
             return currentTaskDefinition;
         } else {
@@ -352,9 +364,10 @@ public class ECSService extends BaseAWSService {
                         .withNetworkMode(NetworkMode.Awsvpc.toString())
                         .withMemory(String.valueOf(template.getMemoryConstraint()))
                         .withCpu(String.valueOf(template.getCpu()));
-                if (template.getEphemeralStorageSizeInGiB() != null && template.getEphemeralStorageSizeInGiB() > 0) {
+                final Integer ephemeralStorageSizeInGiB = desiredEphemeralStorageSizeInGiB(template);
+                if (ephemeralStorageSizeInGiB != null) {
                     request.withEphemeralStorage(new EphemeralStorage()
-                            .withSizeInGiB(template.getEphemeralStorageSizeInGiB())
+                            .withSizeInGiB(ephemeralStorageSizeInGiB)
                     );
                 }
             }
@@ -370,6 +383,20 @@ public class ECSService extends BaseAWSService {
             }
             return result.getTaskDefinition();
         }
+    }
+
+    /**
+     * The ephemeral storage size (in GiB) the task definition should be registered with, or {@code null}
+     * when the template does not request one. Only applies to Fargate templates; mirrors the condition
+     * used when registering the task definition so that the reuse check and the registration agree.
+     */
+    @CheckForNull
+    private static Integer desiredEphemeralStorageSizeInGiB(final ECSTaskTemplate template) {
+        final Integer size = template.getEphemeralStorageSizeInGiB();
+        if (template.isFargate() && size != null && size > 0) {
+            return size;
+        }
+        return null;
     }
 
     /**
