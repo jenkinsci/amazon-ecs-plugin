@@ -76,6 +76,7 @@ One or several ECS agent templates can be defined for the Amazon EC2 Container S
 -   `Filesystem root`: working directory used by Jenkins (e.g. `/home/jenkins/`).
 -   `Memory`: number of MiB of memory reserved for the container. If your container attempts to exceed the memory allocated here, the container is killed.  
 -   `CPU units`: number of `cpu units` to reserve for the container. A container instance has 1,024 cpu units for every CPU core.
+-   `GPUs`: number of physical GPUs to reserve for the container (`gpu` in Configuration as Code). Adds a `GPU` resource requirement to the container definition, which ECS needs in order to expose GPU devices to the container. Only supported with the EC2 launch type on GPU-enabled container instances (e.g. the Amazon ECS GPU-optimized AMI); leave at 0 for no GPU.
 
 _Advanced Configuration_
 -   `Override entrypoint`: overwritten Docker image entrypoint. Container command can't be overriden as it is used to pass jenkins agent connection parameters.

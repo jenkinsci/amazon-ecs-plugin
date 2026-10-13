@@ -45,6 +45,7 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     private int cpu;
     private Integer ephemeralStorageSizeInGiB;
     private int sharedMemorySize;
+    private int gpu;
     private String subnets;
     private String securityGroups;
     private boolean assignPublicIp;
@@ -207,6 +208,14 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
     public void setSharedMemorySize(int sharedMemorySize) {
         this.sharedMemorySize = sharedMemorySize;
         overrides.add("sharedMemorySize");
+    }
+    public int getGpu() {
+        return gpu;
+    }
+    @DataBoundSetter
+    public void setGpu(int gpu) {
+        this.gpu = gpu;
+        overrides.add("gpu");
     }
 
     public String getSubnets() {
@@ -453,6 +462,9 @@ public class ECSDeclarativeAgent extends DeclarativeAgent<ECSDeclarativeAgent> {
 
         if (sharedMemorySize != 0) {
             argMap.put("sharedMemorySize", sharedMemorySize);
+        }
+        if (gpu != 0) {
+            argMap.put("gpu", gpu);
         }
 
         if (!StringUtils.isEmpty(subnets)) {

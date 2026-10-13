@@ -47,6 +47,7 @@ import com.amazonaws.services.ecs.model.PlacementStrategyType;
 import com.amazonaws.services.ecs.model.PortMapping;
 import com.amazonaws.services.ecs.model.RegisterTaskDefinitionRequest;
 import com.amazonaws.services.ecs.model.RepositoryCredentials;
+import com.amazonaws.services.ecs.model.ResourceRequirement;
 import com.amazonaws.services.ecs.model.Volume;
 import com.amazonaws.services.ecs.model.DescribeClustersRequest;
 import com.amazonaws.services.ecs.model.DescribeClustersResult;
@@ -184,6 +185,17 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
      * @see LinuxParameters#withSharedMemorySize(Integer)
      */
     private final int sharedMemorySize;
+
+    /**
+     * The number of physical GPUs ECS reserves for the container. ECS only
+     * exposes GPU devices (and the NVIDIA runtime) to a container when a GPU
+     * resource requirement is declared on the container definition, so this
+     * is required for GPU workloads. A 0 value means no GPU is requested.
+     * Only supported with the EC2 launch type.
+     *
+     * @see ContainerDefinition#withResourceRequirements(ResourceRequirement...)
+     */
+    private int gpu;
 
     /**
      * Subnets to be assigned on the awsvpc network when using Fargate
@@ -464,6 +476,11 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     }
 
     @DataBoundSetter
+    public void setGpu(int gpu) {
+        this.gpu = gpu;
+    }
+
+    @DataBoundSetter
     public void setTaskrole(String taskRoleArn) {
         this.taskrole = StringUtils.trimToNull(taskRoleArn);
     }
@@ -588,6 +605,10 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
     }
 
     public int getSharedMemorySize() { return sharedMemorySize; }
+
+    public int getGpu() {
+        return gpu;
+    }
 
     public Integer getEphemeralStorageSizeInGiB() {
         return ephemeralStorageSizeInGiB;
@@ -855,6 +876,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         int cpu = this.cpu == 0 ? parent.getCpu() : this.cpu;
         Integer ephemeralStorageSizeInGiB = this.ephemeralStorageSizeInGiB == null ? parent.getEphemeralStorageSizeInGiB() : this.ephemeralStorageSizeInGiB;
         int sharedMemorySize = this.sharedMemorySize == 0 ? parent.getSharedMemorySize() : this.sharedMemorySize;
+        int gpu = this.gpu == 0 ? parent.getGpu() : this.gpu;
         String subnets = isNullOrEmpty(this.subnets) ? parent.getSubnets() : this.subnets;
         String securityGroups = isNullOrEmpty(this.securityGroups) ? parent.getSecurityGroups() : this.securityGroups;
 
@@ -927,6 +949,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
                                                         enableExecuteCommand);
         merged.setLogDriver(logDriver);
         merged.setEntrypoint(entrypoint);
+        merged.setGpu(gpu);
 
         return merged;
     }
@@ -1547,6 +1570,24 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
             return FormValidation.ok();
         }
 
+        public FormValidation doCheckGpu(
+            @QueryParameter("gpu") int gpu,
+            @QueryParameter("launchType") String launchType,
+            @QueryParameter String taskDefinitionOverride
+        ) throws IOException, ServletException {
+            if (!isNullOrEmpty(taskDefinitionOverride)) {
+                return FormValidation.ok();
+            }
+            if (gpu < 0) {
+                return FormValidation.error("gpu must be 0 or a positive integer");
+            }
+            // ECS only schedules GPU resource requirements onto EC2 container instances.
+            if (gpu > 0 && LaunchType.FARGATE.toString().equals(launchType)) {
+                return FormValidation.error("GPU resource requirements are not supported with the FARGATE launch type");
+            }
+            return FormValidation.ok();
+        }
+
         public FormValidation doCheckSubnetsNetworkMode(@QueryParameter("subnets") String subnets, @QueryParameter("networkMode") String networkMode) throws IOException, ServletException {
             if (networkMode.equals(NetworkMode.Awsvpc.toString()) && subnets.isEmpty()) {
                 return FormValidation.error("Subnets need to be set when using awsvpc network mode");
@@ -1617,6 +1658,9 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
             return false;
         }
         if (sharedMemorySize != that.sharedMemorySize) {
+            return false;
+        }
+        if (gpu != that.gpu) {
             return false;
         }
         if (assignPublicIp != that.assignPublicIp) {
@@ -1744,6 +1788,7 @@ public class ECSTaskTemplate extends AbstractDescribableImpl<ECSTaskTemplate> im
         result = 31 * result + cpu;
         result = 31 * result + (ephemeralStorageSizeInGiB != null ? ephemeralStorageSizeInGiB : 0);
         result = 31 * result + sharedMemorySize;
+        result = 31 * result + gpu;
         result = 31 * result + (platformVersion != null ? platformVersion.hashCode() : 0);
         result = 31 * result + (subnets != null ? subnets.hashCode() : 0);
         result = 31 * result + (securityGroups != null ? securityGroups.hashCode() : 0);

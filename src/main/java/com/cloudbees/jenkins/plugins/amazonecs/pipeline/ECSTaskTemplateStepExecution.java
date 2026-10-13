@@ -93,6 +93,7 @@ public class ECSTaskTemplateStepExecution extends AbstractStepExecutionImpl {
                                           step.getSharedMemorySize(),
                                           step.getEnableExecuteCommand());
         newTemplate.setLogDriver(step.getLogDriver());
+        newTemplate.setGpu(step.getGpu());
 
         ECSTaskTemplate parentTemplate = ecsCloud.findParentTemplate(parentLabel);
         if(parentLabel != null && parentTemplate == null){
