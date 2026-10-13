@@ -68,6 +68,7 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
     private int cpu;
     private Integer ephemeralStorageSizeInGiB;
     private int sharedMemorySize;
+    private int gpu;
     private String subnets;
     private String securityGroups;
     private boolean assignPublicIp;
@@ -259,6 +260,15 @@ public class ECSTaskTemplateStep extends Step implements Serializable {
 
     public int getSharedMemorySize() {
         return sharedMemorySize;
+    }
+
+    @DataBoundSetter
+    public void setGpu(int gpu) {
+        this.gpu = gpu;
+    }
+
+    public int getGpu() {
+        return gpu;
     }
 
     @DataBoundSetter

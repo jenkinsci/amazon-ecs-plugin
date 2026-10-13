@@ -97,6 +97,9 @@
   <f:entry title="${%Ephemeral Storage (GiB)}" field="ephemeralStorageSizeInGiB">
     <f:textbox />
   </f:entry>
+  <f:entry title="${%GPUs}" field="gpu">
+    <f:textbox default="0"/>
+  </f:entry>
   <f:entry title="${%Subnets}" field="subnets" description="List of subnets, separated by comma, only needed when using fargate or awsvpc network mode">
     <f:textbox />
   </f:entry>

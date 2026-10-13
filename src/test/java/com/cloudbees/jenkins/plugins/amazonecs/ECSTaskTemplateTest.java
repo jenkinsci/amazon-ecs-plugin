@@ -99,4 +99,21 @@ public class ECSTaskTemplateTest {
         expected.setEntrypoint("/bin/false");
         assertTrue(EqualsBuilder.reflectionEquals(expected, child.merge(parent)));
     }
+
+    @Test
+    public void shouldMergeGpu() {
+        ECSTaskTemplate parent = getParent();
+        ECSTaskTemplate child = getChild("parent");
+
+        // Child inherits the parent's GPU count when it does not set one
+        parent.setGpu(1);
+        assertEquals(1, child.merge(parent).getGpu());
+
+        // A GPU count set on the child takes precedence
+        child.setGpu(2);
+        assertEquals(2, child.merge(parent).getGpu());
+
+        // No parent keeps the child's value
+        assertEquals(2, child.merge(null).getGpu());
+    }
 }

@@ -243,6 +243,14 @@ public class ECSService extends BaseAWSService {
             def.withLinuxParameters(new LinuxParameters().withCapabilities(new KernelCapabilities().withAdd(Arrays.asList(template.getKernelCapabilities().split(",")))));
         }
 
+        // ECS only exposes GPU devices to a container when the container
+        // definition declares a GPU resource requirement.
+        if (template.getGpu() > 0) {
+            def.withResourceRequirements(new ResourceRequirement()
+                    .withType(ResourceType.GPU)
+                    .withValue(String.valueOf(template.getGpu())));
+        }
+
         if (template.getRepositoryCredentials() != null)
             def.withRepositoryCredentials(new RepositoryCredentials().withCredentialsParameter(template.getRepositoryCredentials()));
 
