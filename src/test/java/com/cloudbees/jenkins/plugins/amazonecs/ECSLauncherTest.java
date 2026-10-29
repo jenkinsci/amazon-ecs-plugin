@@ -30,9 +30,7 @@ public class ECSLauncherTest {
         ECSComputer computer = mock(ECSComputer.class);
         TaskListener listener = mock(TaskListener.class);
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
-        Mockito.when(computer.getNode()).thenReturn(mock(ECSSlave.class));
-        Mockito.when(cloud.getEcsService()).thenReturn(ecsService);
-        Mockito.when(listener.getLogger()).thenReturn(new PrintStream(bo));
+        setupAbstractCloudComputerGetNodeAndGetEcsServiceAndGetLoggerStubs(computer, cloud, ecsService, listener, bo);
 
         ECSLauncher launcher = Mockito.spy(new ECSLauncher(cloud, "tunnel", ""));
 
@@ -53,9 +51,7 @@ public class ECSLauncherTest {
         ECSComputer computer = mock(ECSComputer.class);
         TaskListener listener = mock(TaskListener.class);
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
-        Mockito.when(computer.getNode()).thenReturn(mock(ECSSlave.class));
-        Mockito.when(cloud.getEcsService()).thenReturn(ecsService);
-        Mockito.when(listener.getLogger()).thenReturn(new PrintStream(bo));
+        setupAbstractCloudComputerGetNodeAndGetEcsServiceAndGetLoggerStubs(computer, cloud, ecsService, listener, bo);
 
         ECSLauncher launcher = Mockito.spy(new ECSLauncher(cloud, "tunnel", ""));
 
@@ -65,5 +61,11 @@ public class ECSLauncherTest {
         launcher.launch(computer, listener);
 
         verify(launcher, times(2)).launchECSTask(any(ECSComputer.class), any(TaskListener.class), anyLong());
+    }
+
+    private void setupAbstractCloudComputerGetNodeAndGetEcsServiceAndGetLoggerStubs(ECSComputer computer, ECSCloud cloud, ECSService ecsService, TaskListener listener, ByteArrayOutputStream bo) {
+        Mockito.when(computer.getNode()).thenReturn(mock(ECSSlave.class));
+        Mockito.when(cloud.getEcsService()).thenReturn(ecsService);
+        Mockito.when(listener.getLogger()).thenReturn(new PrintStream(bo));
     }
 }
